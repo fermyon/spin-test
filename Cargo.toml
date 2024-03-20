@@ -1,0 +1,20 @@
+[package]
+name = "spin-virt"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bitflags = "2.5.0"
+wit-bindgen-rt = "0.22.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[package.metadata.component]
+package = "component:spin-virt"
+
+[package.metadata.component.target.dependencies]
+"fermyon:spin" = { path = "wit/deps/fermyon" }
+
+[workspace]
+members = ["example/host", "example/guest"]

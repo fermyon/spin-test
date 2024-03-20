@@ -1,0 +1,6 @@
+package fermyon:spin-virt;
+
+world virtualized-component {
+    export fermyon:spin/key-value@2.0.0;
+}
+
