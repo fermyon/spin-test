@@ -3,12 +3,19 @@ package example:composition;
 // Instantiate the `spin-virt` component
 let virt = new fermyon:spin-virt {};
 
+// Instantiate the wasi virt component
+let wasi = new wasi:virt {
+  ...
+};
+
 // Instantiate guest app with the key-value interface from `spin-virt`.
 // All other imports and exports are kept fulfilled.
 let guest = new example:guest {
   key-value: virt.key-value,
+  environment: wasi.environment,
   ...
 };
+
 
 // Export everything from the guest
 export guest...;
