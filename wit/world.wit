@@ -1,4 +1,4 @@
-package fermyon:spin-virt;
+package fermyon:spin-test-virt;
 
 /// The exports that can be composed with a Spin app creating
 /// a virtualized component.

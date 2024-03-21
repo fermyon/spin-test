@@ -9,7 +9,7 @@ use std::{
 use bindings::exports::{
     fermyon::{
         spin::{key_value, llm},
-        spin_virt::http_handler,
+        spin_test_virt::http_handler,
     },
     wasi::http::outgoing_handler,
 };

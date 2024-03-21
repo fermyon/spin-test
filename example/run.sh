@@ -1,3 +1,3 @@
 set -ex
 
-cargo r -p host -- composition.wasm
+cargo t -p host 

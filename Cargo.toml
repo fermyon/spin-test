@@ -1,5 +1,5 @@
 [package]
-name = "spin-virt"
+name = "spin-test-virt"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,7 +11,7 @@ wit-bindgen-rt = "0.22.0"
 crate-type = ["cdylib"]
 
 [package.metadata.component]
-package = "component:spin-virt"
+package = "component:spin-test-virt"
 
 [package.metadata.component.target]
 world = "plug"

@@ -7493,7 +7493,7 @@ pub mod exports {
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_method_store_get_cabi<T: GuestStore>(
-                    arg0: *mut u8,
+                    arg0: i32,
                     arg1: *mut u8,
                     arg2: usize,
                 ) -> *mut u8 {
@@ -7584,7 +7584,7 @@ pub mod exports {
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_method_store_set_cabi<T: GuestStore>(
-                    arg0: *mut u8,
+                    arg0: i32,
                     arg1: *mut u8,
                     arg2: usize,
                     arg3: *mut u8,
@@ -7653,7 +7653,7 @@ pub mod exports {
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_method_store_delete_cabi<T: GuestStore>(
-                    arg0: *mut u8,
+                    arg0: i32,
                     arg1: *mut u8,
                     arg2: usize,
                 ) -> *mut u8 {
@@ -7718,7 +7718,7 @@ pub mod exports {
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_method_store_exists_cabi<T: GuestStore>(
-                    arg0: *mut u8,
+                    arg0: i32,
                     arg1: *mut u8,
                     arg2: usize,
                 ) -> *mut u8 {
@@ -7787,7 +7787,7 @@ pub mod exports {
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_method_store_get_keys_cabi<T: GuestStore>(
-                    arg0: *mut u8,
+                    arg0: i32,
                 ) -> *mut u8 {
                     let result0 = T::get_keys(StoreBorrow::lift(arg0 as u32 as usize).get());
                     let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
@@ -7961,7 +7961,7 @@ pub mod exports {
       $($path_to_types)*::__post_return_static_store_open::<<$ty as $($path_to_types)*::Guest>::Store>(arg0)
     }
     #[export_name = "fermyon:spin/key-value@2.0.0#[method]store.get"]
-    unsafe extern "C" fn export_method_store_get(arg0: *mut u8,arg1: *mut u8,arg2: usize,) -> *mut u8 {
+    unsafe extern "C" fn export_method_store_get(arg0: i32,arg1: *mut u8,arg2: usize,) -> *mut u8 {
       $($path_to_types)*::_export_method_store_get_cabi::<<$ty as $($path_to_types)*::Guest>::Store>(arg0, arg1, arg2)
     }
     #[export_name = "cabi_post_fermyon:spin/key-value@2.0.0#[method]store.get"]
@@ -7969,7 +7969,7 @@ pub mod exports {
       $($path_to_types)*::__post_return_method_store_get::<<$ty as $($path_to_types)*::Guest>::Store>(arg0)
     }
     #[export_name = "fermyon:spin/key-value@2.0.0#[method]store.set"]
-    unsafe extern "C" fn export_method_store_set(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+    unsafe extern "C" fn export_method_store_set(arg0: i32,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
       $($path_to_types)*::_export_method_store_set_cabi::<<$ty as $($path_to_types)*::Guest>::Store>(arg0, arg1, arg2, arg3, arg4)
     }
     #[export_name = "cabi_post_fermyon:spin/key-value@2.0.0#[method]store.set"]
@@ -7977,7 +7977,7 @@ pub mod exports {
       $($path_to_types)*::__post_return_method_store_set::<<$ty as $($path_to_types)*::Guest>::Store>(arg0)
     }
     #[export_name = "fermyon:spin/key-value@2.0.0#[method]store.delete"]
-    unsafe extern "C" fn export_method_store_delete(arg0: *mut u8,arg1: *mut u8,arg2: usize,) -> *mut u8 {
+    unsafe extern "C" fn export_method_store_delete(arg0: i32,arg1: *mut u8,arg2: usize,) -> *mut u8 {
       $($path_to_types)*::_export_method_store_delete_cabi::<<$ty as $($path_to_types)*::Guest>::Store>(arg0, arg1, arg2)
     }
     #[export_name = "cabi_post_fermyon:spin/key-value@2.0.0#[method]store.delete"]
@@ -7985,7 +7985,7 @@ pub mod exports {
       $($path_to_types)*::__post_return_method_store_delete::<<$ty as $($path_to_types)*::Guest>::Store>(arg0)
     }
     #[export_name = "fermyon:spin/key-value@2.0.0#[method]store.exists"]
-    unsafe extern "C" fn export_method_store_exists(arg0: *mut u8,arg1: *mut u8,arg2: usize,) -> *mut u8 {
+    unsafe extern "C" fn export_method_store_exists(arg0: i32,arg1: *mut u8,arg2: usize,) -> *mut u8 {
       $($path_to_types)*::_export_method_store_exists_cabi::<<$ty as $($path_to_types)*::Guest>::Store>(arg0, arg1, arg2)
     }
     #[export_name = "cabi_post_fermyon:spin/key-value@2.0.0#[method]store.exists"]
@@ -7993,7 +7993,7 @@ pub mod exports {
       $($path_to_types)*::__post_return_method_store_exists::<<$ty as $($path_to_types)*::Guest>::Store>(arg0)
     }
     #[export_name = "fermyon:spin/key-value@2.0.0#[method]store.get-keys"]
-    unsafe extern "C" fn export_method_store_get_keys(arg0: *mut u8,) -> *mut u8 {
+    unsafe extern "C" fn export_method_store_get_keys(arg0: i32,) -> *mut u8 {
       $($path_to_types)*::_export_method_store_get_keys_cabi::<<$ty as $($path_to_types)*::Guest>::Store>(arg0)
     }
     #[export_name = "cabi_post_fermyon:spin/key-value@2.0.0#[method]store.get-keys"]
@@ -8444,7 +8444,7 @@ pub mod exports {
                 static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 20]);
             }
         }
-        pub mod spin_virt {
+        pub mod spin_test_virt {
             #[allow(clippy::all)]
             pub mod http_handler {
                 #[used]
@@ -8471,17 +8471,17 @@ pub mod exports {
                 }
                 #[doc(hidden)]
 
-                macro_rules! __export_fermyon_spin_virt_http_handler_cabi{
+                macro_rules! __export_fermyon_spin_test_virt_http_handler_cabi{
     ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-      #[export_name = "fermyon:spin-virt/http-handler#set-response"]
+      #[export_name = "fermyon:spin-test-virt/http-handler#set-response"]
       unsafe extern "C" fn export_set_response(arg0: *mut u8,arg1: usize,arg2: i32,) {
         $($path_to_types)*::_export_set_response_cabi::<$ty>(arg0, arg1, arg2)
       }
     };);
   }
                 #[doc(hidden)]
-                pub(crate) use __export_fermyon_spin_virt_http_handler_cabi;
+                pub(crate) use __export_fermyon_spin_test_virt_http_handler_cabi;
             }
         }
     }
@@ -9348,7 +9348,7 @@ macro_rules! __export_plug_impl {
                               $($path_to_types_root)*::exports::fermyon::spin::key_value::__export_fermyon_spin_key_value_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::key_value);
                               $($path_to_types_root)*::exports::fermyon::spin::llm::__export_fermyon_spin_llm_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::llm);
                               $($path_to_types_root)*::exports::wasi::http::outgoing_handler::__export_wasi_http_outgoing_handler_0_2_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wasi::http::outgoing_handler);
-                              $($path_to_types_root)*::exports::fermyon::spin_virt::http_handler::__export_fermyon_spin_virt_http_handler_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_virt::http_handler);
+                              $($path_to_types_root)*::exports::fermyon::spin_test_virt::http_handler::__export_fermyon_spin_test_virt_http_handler_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::http_handler);
                               )
                             }
 #[doc(inline)]
@@ -9357,8 +9357,8 @@ pub(crate) use __export_plug_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.21.0:plug:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7506] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd79\x01A\x02\x01A\x1b\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7516] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe19\x01A\x02\x01A\x1b\
 \x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[\
 method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollab\
 le.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\
@@ -9506,9 +9506,9 @@ ure-incoming-response\x03\0\x04\x02\x03\x02\x01\x0f\x04\0\x0aerror-code\x03\0\x0
 \x07options\x0a\0\x0c\x04\0\x06handle\x01\x0d\x04\x01\x20wasi:http/outgoing-hand\
 ler@0.2.0\x05\x10\x01B\x05\x02\x03\x02\x01\x0e\x04\0\x18future-incoming-response\
 \x03\0\0\x01i\x01\x01@\x02\x03urls\x08response\x02\x01\0\x04\0\x0cset-response\x01\
-\x03\x04\x01\x1efermyon:spin-virt/http-handler\x05\x11\x04\x01\x16fermyon:spin-v\
-irt/plug\x04\0\x0b\x0a\x01\0\x04plug\x03\0\0\0G\x09producers\x01\x0cprocessed-by\
-\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x060.21.0";
+\x03\x04\x01#fermyon:spin-test-virt/http-handler\x05\x11\x04\x01\x1bfermyon:spin\
+-test-virt/plug\x04\0\x0b\x0a\x01\0\x04plug\x03\0\0\0G\x09producers\x01\x0cproce\
+ssed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x060.21.0";
 
 #[inline(never)]
 #[doc(hidden)]

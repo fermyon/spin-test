@@ -1,7 +1,7 @@
 package example:composition;
 
-// Instantiate the `spin-virt` component
-let virt = new fermyon:spin-virt {...};
+// Instantiate the `spin-test-virt` component
+let virt = new fermyon:spin-test-virt {...};
 
 // Instantiate the wasi virt component
 let wasi = new wasi:virt {
@@ -12,7 +12,6 @@ let wasi = new wasi:virt {
 // All other imports and exports are kept fulfilled.
 let guest = new example:guest {
   key-value: virt.key-value,
-  llm: virt.llm,
   outgoing-handler: virt.outgoing-handler,
   environment: wasi.environment,
   ...
