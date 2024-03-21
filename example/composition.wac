@@ -12,6 +12,7 @@ let wasi = new wasi:virt {
 // All other imports and exports are kept fulfilled.
 let guest = new example:guest {
   key-value: virt.key-value,
+  llm: virt.llm,
   environment: wasi.environment,
   ...
 };

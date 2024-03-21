@@ -1,6 +1,12 @@
 package fermyon:spin-virt;
 
-world virtualized-component {
+/// The exports that can be composed with a Spin app creating
+/// a virtualized component.
+world plug {
     export fermyon:spin/key-value@2.0.0;
+    export fermyon:spin/llm@2.0.0;
 }
 
+world config {
+    export fermyon:spin/key-value@2.0.0;
+}

@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
+use wasmtime::component::Instance;
 use wasmtime_wasi::preview2::{self, WasiView};
 use wasmtime_wasi_http::{proxy, WasiHttpView};
 
 mod bindings {
     wasmtime::component::bindgen!({
-        world: "virtualized-component",
+        world: "config",
         path:  "../../wit",
         async: true
     });
@@ -27,8 +30,9 @@ async fn main() {
             .unwrap();
 
     // Set state of the key-value store
-    let virtualized = VirtualizedComponent::open(&mut runtime, &instance, "example").await;
-    virtualized.set(&mut runtime, "hello", b"world").await;
+    let config = Config::new(&mut runtime, &instance).unwrap();
+    let key_value_config = config.key_value_store(&mut runtime, "example").await;
+    key_value_config.set(&mut runtime, "hello", b"world").await;
 
     // Make an HTTP request
     let req = hyper::Request::builder()
@@ -90,37 +94,46 @@ impl Runtime {
     }
 }
 
-struct VirtualizedComponent {
-    component: bindings::VirtualizedComponent,
-    resource: wasmtime::component::ResourceAny,
+#[derive(Clone)]
+struct Config {
+    inner: Arc<bindings::Config>,
 }
 
-impl VirtualizedComponent {
-    async fn open(
-        runtime: &mut Runtime,
-        instance: &wasmtime::component::Instance,
-        store_name: &str,
-    ) -> Self {
-        let virtualized =
-            bindings::VirtualizedComponent::new(&mut runtime.store, &instance).unwrap();
-        let key_value = virtualized
+impl Config {
+    fn new(runtime: &mut Runtime, instance: &Instance) -> Result<Self, wasmtime::Error> {
+        let inner = Arc::new(bindings::Config::new(&mut runtime.store, instance)?);
+        Ok(Self { inner })
+    }
+
+    async fn key_value_store(&self, runtime: &mut Runtime, store_name: &str) -> KeyValueConfig {
+        KeyValueConfig::open(self.clone(), runtime, store_name).await
+    }
+}
+
+struct KeyValueConfig {
+    config: Config,
+    key_value: wasmtime::component::ResourceAny,
+}
+
+impl KeyValueConfig {
+    async fn open(config: Config, runtime: &mut Runtime, store_name: &str) -> Self {
+        let key_value = config
+            .inner
             .fermyon_spin_key_value()
             .store()
             .call_open(&mut runtime.store, store_name)
             .await
             .unwrap()
             .unwrap();
-        Self {
-            component: virtualized,
-            resource: key_value,
-        }
+        Self { config, key_value }
     }
 
     async fn set(&self, runtime: &mut Runtime, key: &str, value: &[u8]) {
-        self.component
+        self.config
+            .inner
             .fermyon_spin_key_value()
             .store()
-            .call_set(&mut runtime.store, self.resource, key, value)
+            .call_set(&mut runtime.store, self.key_value, key, value)
             .await
             .unwrap()
             .unwrap();

@@ -6,7 +6,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-use bindings::exports::fermyon::spin::key_value;
+use bindings::exports::fermyon::spin::{key_value, llm};
 
 struct Component;
 
@@ -48,6 +48,36 @@ impl key_value::GuestStore for KeyValueStore {
 
     fn get_keys(&self) -> Result<Vec<String>, key_value::Error> {
         Ok(self.inner.read().unwrap().keys().cloned().collect())
+    }
+}
+
+impl llm::Guest for Component {
+    fn infer(
+        model: llm::InferencingModel,
+        prompt: String,
+        params: Option<llm::InferencingParams>,
+    ) -> Result<llm::InferencingResult, llm::Error> {
+        let _ = (model, prompt, params);
+        Ok(llm::InferencingResult {
+            text: "Hello, world!".to_string(),
+            usage: llm::InferencingUsage {
+                prompt_token_count: 0,
+                generated_token_count: 0,
+            },
+        })
+    }
+
+    fn generate_embeddings(
+        model: llm::EmbeddingModel,
+        text: Vec<String>,
+    ) -> Result<llm::EmbeddingsResult, llm::Error> {
+        let _ = (model, text);
+        Ok(llm::EmbeddingsResult {
+            embeddings: vec![],
+            usage: llm::EmbeddingsUsage {
+                prompt_token_count: 0,
+            },
+        })
     }
 }
 
