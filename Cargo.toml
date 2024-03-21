@@ -18,6 +18,13 @@ world = "plug"
 
 [package.metadata.component.target.dependencies]
 "fermyon:spin" = { path = "wit/deps/fermyon" }
+"wasi:http" = { path = "wit/deps/http" }
+"wasi:random" = { path = "wit/deps/random" }
+"wasi:cli" = { path = "wit/deps/cli" }
+"wasi:io" = { path = "wit/deps/io" }
+"wasi:clocks" = { path = "wit/deps/clocks" }
+"wasi:filesystem" = { path = "wit/deps/filesystem" }
+"wasi:sockets" = { path = "wit/deps/sockets" }
 
 [workspace]
 members = ["example/host", "example/guest"]

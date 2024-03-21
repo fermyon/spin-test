@@ -6,7 +6,14 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-use bindings::exports::fermyon::spin::{key_value, llm};
+use bindings::exports::{
+    fermyon::{
+        spin::{key_value, llm},
+        spin_virt::http_handler,
+    },
+    wasi::http::outgoing_handler,
+};
+use bindings::wasi::http::types;
 
 struct Component;
 
@@ -78,6 +85,52 @@ impl llm::Guest for Component {
                 prompt_token_count: 0,
             },
         })
+    }
+}
+
+static RESPONSES: std::sync::OnceLock<
+    Mutex<HashMap<String, outgoing_handler::FutureIncomingResponse>>,
+> = std::sync::OnceLock::new();
+
+impl outgoing_handler::Guest for Component {
+    fn handle(
+        request: outgoing_handler::OutgoingRequest,
+        _options: Option<outgoing_handler::RequestOptions>,
+    ) -> Result<outgoing_handler::FutureIncomingResponse, outgoing_handler::ErrorCode> {
+        let url = format!(
+            "{scheme}://{authority}{path_and_query}",
+            scheme = match request.scheme() {
+                Some(types::Scheme::Http) => "http",
+                Some(types::Scheme::Https) | None => "https",
+                Some(types::Scheme::Other(ref s)) => s,
+            },
+            authority = request.authority().expect("TODO: handle"),
+            path_and_query = request
+                .path_with_query()
+                .filter(|p| p != "/")
+                .unwrap_or_default()
+        );
+        let response = RESPONSES
+            .get_or_init(|| Default::default())
+            .lock()
+            .unwrap()
+            .remove(&url);
+        match response {
+            Some(r) => Ok(r),
+            None => Err(outgoing_handler::ErrorCode::InternalError(Some(format!(
+                "{url}"
+            )))),
+        }
+    }
+}
+
+impl http_handler::Guest for Component {
+    fn set_response(url: String, response: http_handler::FutureIncomingResponse) {
+        RESPONSES
+            .get_or_init(|| Default::default())
+            .lock()
+            .unwrap()
+            .insert(url, response);
     }
 }
 
