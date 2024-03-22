@@ -7,6 +7,7 @@ async fn handle_example(req: Request) -> anyhow::Result<impl IntoResponse> {
     let store = key_value::Store::open("cache".into())?;
     let query: Query = serde_qs::from_str(req.query())?;
     let cache = store.get(&query.user_id.to_string())?;
+    println!("ENV: {:?}", std::env::var("x-spin-test"));
     let user: User = match cache {
         Some(hit) => serde_json::from_slice(&hit)?,
         None => {
