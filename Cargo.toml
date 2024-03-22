@@ -4,8 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0"
 bitflags = "2.5.0"
 wit-bindgen-rt = "0.22.0"
+spin-expressions = { git = "https://github.com/fermyon/spin" }
+spin-manifest = { git = "https://github.com/fermyon/spin" }
+spin-outbound-networking = { git = "https://github.com/fermyon/spin" }
+spin-serde = { git = "https://github.com/fermyon/spin" }
+toml = { version = "0.8.0", features = ["preserve_order"] }
+
 
 [lib]
 crate-type = ["cdylib"]

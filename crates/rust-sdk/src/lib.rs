@@ -32,17 +32,22 @@ pub struct Spin {
 
 impl Spin {
     /// Create a new runtime.
-    pub async fn create(component_path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub async fn create(
+        component_path: impl AsRef<Path>,
+        manifest_path: impl AsRef<Path>,
+    ) -> anyhow::Result<Self> {
         let mut config = wasmtime::Config::new();
         config.async_support(true);
         let engine = wasmtime::Engine::new(&config)?;
-        let mut store = wasmtime::Store::new(&engine, Data::new());
+        let mut store =
+            wasmtime::Store::new(&engine, Data::new(std::fs::read_to_string(manifest_path)?));
         let mut linker = wasmtime::component::Linker::new(&engine);
         proxy::add_to_linker(&mut linker)?;
         wasmtime_wasi::bindings::cli::environment::add_to_linker(&mut linker, |x| x)?;
         wasmtime_wasi::bindings::cli::exit::add_to_linker(&mut linker, |x| x)?;
         wasmtime_wasi::bindings::filesystem::types::add_to_linker(&mut linker, |x| x)?;
         wasmtime_wasi::bindings::filesystem::preopens::add_to_linker(&mut linker, |x| x)?;
+        bindings::Config::add_root_to_linker(&mut linker, |x| x)?;
         let component = component::Component::from_file(&engine, component_path)?;
         let (_, instance) =
             bindings::Config::instantiate_async(&mut store, &component, &linker).await?;
@@ -248,14 +253,16 @@ struct Data {
     table: wasmtime::component::ResourceTable,
     ctx: WasiCtx,
     http_ctx: wasmtime_wasi_http::WasiHttpCtx,
+    manifest: String,
 }
 
 impl Data {
-    fn new() -> Self {
+    fn new(manifest: String) -> Self {
         Self {
             table: wasmtime::component::ResourceTable::default(),
             ctx: WasiCtxBuilder::new().inherit_stdout().build(),
             http_ctx: wasmtime_wasi_http::WasiHttpCtx,
+            manifest,
         }
     }
 }
@@ -277,6 +284,13 @@ impl WasiHttpView for Data {
 
     fn table(&mut self) -> &mut wasmtime::component::ResourceTable {
         &mut self.table
+    }
+}
+
+#[async_trait::async_trait]
+impl bindings::ConfigImports for Data {
+    async fn manifest(&mut self) -> wasmtime::Result<String> {
+        Ok(self.manifest.clone())
     }
 }
 

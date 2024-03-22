@@ -6,6 +6,7 @@ use std::{
     sync::{Arc, Mutex, OnceLock, RwLock},
 };
 
+use anyhow::Context;
 use bindings::exports::{
     fermyon::{
         spin::{key_value, llm},
@@ -139,6 +140,11 @@ impl outgoing_handler::Guest for Component {
                 .filter(|p| p != "/")
                 .unwrap_or_default()
         );
+        let url_allowed = AppManifest::allows_url(&url)
+            .map_err(|e| outgoing_handler::ErrorCode::InternalError(Some(format!("{e}"))))?;
+        if !url_allowed {
+            return Err(outgoing_handler::ErrorCode::HttpRequestDenied);
+        }
         let response = RESPONSES
             .get_or_init(|| Default::default())
             .lock()
@@ -200,6 +206,42 @@ impl key_value_calls::Guest for Component {
             .write()
             .unwrap()
             .clear();
+    }
+}
+
+static MANIFEST: OnceLock<spin_manifest::schema::v2::AppManifest> = OnceLock::new();
+struct AppManifest;
+
+impl AppManifest {
+    fn allows_url(url: &str) -> anyhow::Result<bool> {
+        let mut manifest = Self::get()?;
+        spin_manifest::normalize::normalize_manifest(&mut manifest);
+        let id: spin_serde::KebabId = "example"
+            .to_owned()
+            .try_into()
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+        let component = manifest
+            .components
+            .get(&id)
+            .with_context(|| format!("component '{id}'not found"))?;
+        let allowed_outbound_hosts = component.normalized_allowed_outbound_hosts()?;
+        let resolver = spin_expressions::PreparedResolver::default();
+        let allowed_hosts = spin_outbound_networking::AllowedHostsConfig::parse(
+            &allowed_outbound_hosts,
+            &resolver,
+        )?;
+        let url = spin_outbound_networking::OutboundUrl::parse(url, "https")?;
+        Ok(allowed_hosts.allows(&url))
+    }
+
+    fn get() -> anyhow::Result<spin_manifest::schema::v2::AppManifest> {
+        if let Some(m) = MANIFEST.get() {
+            return Ok(m.clone());
+        }
+        let Ok(deserialize) = toml::from_str(&bindings::manifest()) else {
+            anyhow::bail!("failed to deserialize manifest");
+        };
+        Ok(MANIFEST.get_or_init(|| deserialize).clone())
     }
 }
 

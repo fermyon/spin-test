@@ -12,7 +12,7 @@ component = "example"
 
 [component.example]
 source = "target/wasm32-wasi/release/example.wasm"
-allowed_outbound_hosts = []
+allowed_outbound_hosts = ["https://my.api.com"]
 [component.example.build]
 command = "cargo build --target wasm32-wasi --release"
 watch = ["src/**/*.rs", "Cargo.toml"]
