@@ -6,7 +6,7 @@ fn main() {
     // By default this will not virtualize anything.
     let mut virt = WasiVirt::new();
 
-    /// Add some environment variables to the virtualized environment
+    // Add some environment variables to the virtualized environment
     virt.env().deny_all().overrides(&[("x-spin-test", "true")]);
 
     let virt_component_bytes = virt.finish().unwrap();

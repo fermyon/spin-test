@@ -1494,6 +1494,7 @@ dependencies = [
 name = "spin-test-sdk"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "http",
  "http-body-util",
  "hyper",

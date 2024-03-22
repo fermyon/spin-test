@@ -1,5 +1,6 @@
 use std::{path::Path, sync::Arc};
 
+use anyhow::Context;
 use bindings::{exports::fermyon::spin_test_virt::key_value_calls, Config};
 use http_body_util::combinators::BoxBody;
 use hyper::body::Bytes;
@@ -31,17 +32,17 @@ pub struct Spin {
 
 impl Spin {
     /// Create a new runtime.
-    pub async fn create(component_path: impl AsRef<Path>) -> wasmtime::Result<Self> {
+    pub async fn create(component_path: impl AsRef<Path>) -> anyhow::Result<Self> {
         let mut config = wasmtime::Config::new();
         config.async_support(true);
-        let engine = wasmtime::Engine::new(&config).unwrap();
+        let engine = wasmtime::Engine::new(&config)?;
         let mut store = wasmtime::Store::new(&engine, Data::new());
         let mut linker = wasmtime::component::Linker::new(&engine);
-        proxy::add_to_linker(&mut linker).unwrap();
-        wasmtime_wasi::bindings::cli::environment::add_to_linker(&mut linker, |x| x).unwrap();
-        wasmtime_wasi::bindings::cli::exit::add_to_linker(&mut linker, |x| x).unwrap();
-        wasmtime_wasi::bindings::filesystem::types::add_to_linker(&mut linker, |x| x).unwrap();
-        wasmtime_wasi::bindings::filesystem::preopens::add_to_linker(&mut linker, |x| x).unwrap();
+        proxy::add_to_linker(&mut linker)?;
+        wasmtime_wasi::bindings::cli::environment::add_to_linker(&mut linker, |x| x)?;
+        wasmtime_wasi::bindings::cli::exit::add_to_linker(&mut linker, |x| x)?;
+        wasmtime_wasi::bindings::filesystem::types::add_to_linker(&mut linker, |x| x)?;
+        wasmtime_wasi::bindings::filesystem::preopens::add_to_linker(&mut linker, |x| x)?;
         let component = component::Component::from_file(&engine, component_path)?;
         let (_, instance) =
             bindings::Config::instantiate_async(&mut store, &component, &linker).await?;
@@ -52,26 +53,27 @@ impl Spin {
     pub async fn perform_request(
         &mut self,
         req: hyper::Request<BoxBody<Bytes, ErrorCode>>,
-    ) -> Result<http::Response<BoxBody<Bytes, ErrorCode>>, ErrorCode> {
+    ) -> anyhow::Result<http::Response<BoxBody<Bytes, ErrorCode>>> {
         // Reset call tracking
-        let config = bindings::Config::new(&mut self.store, &self.instance).unwrap();
+        let config = bindings::Config::new(&mut self.store, &self.instance)?;
         config
             .fermyon_spin_test_virt_key_value_calls()
             .call_reset(&mut self.store)
-            .await
-            .unwrap();
+            .await?;
 
-        let proxy = wasmtime_wasi_http::proxy::Proxy::new(&mut self.store, &self.instance).unwrap();
-        let req = self.store.data_mut().new_incoming_request(req).unwrap();
+        let proxy = wasmtime_wasi_http::proxy::Proxy::new(&mut self.store, &self.instance)?;
+        let req = self.store.data_mut().new_incoming_request(req)?;
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let out = self.store.data_mut().new_response_outparam(sender).unwrap();
+        let out = self.store.data_mut().new_response_outparam(sender)?;
         proxy
             .wasi_http_incoming_handler()
             .call_handle(&mut self.store, req, out)
-            .await
-            .unwrap();
+            .await?;
 
-        receiver.await.unwrap()
+        Ok(receiver
+            .await
+            .context("issue with response channel")?
+            .context("failed to receive response from Spin")?)
     }
 
     /// Open a key-value store.
@@ -132,7 +134,7 @@ impl<'a> KeyValueConfig<'a> {
         Ok(())
     }
 
-    pub fn calls(&mut self) -> KeyValueCalls {
+    pub fn calls(&mut self) -> anyhow::Result<KeyValueCalls> {
         KeyValueCalls::new(self.spin, self.store_name)
     }
 }
@@ -154,7 +156,7 @@ impl<'a> OutboundHttpHandler<'a> {
         url: &str,
         response: http::Response<BoxBody<Bytes, ErrorCode>>,
     ) -> wasmtime::Result<()> {
-        let response = response_resource(response, self.spin.store.data_mut());
+        let response = response_resource(response, self.spin.store.data_mut())?;
         let config = bindings::Config::new(&mut self.spin.store, &self.spin.instance)?;
         config
             .fermyon_spin_test_virt_http_handler()
@@ -167,7 +169,7 @@ impl<'a> OutboundHttpHandler<'a> {
 fn response_resource(
     response: http::Response<BoxBody<Bytes, ErrorCode>>,
     view: &mut impl WasiView,
-) -> Resource<FutureIncomingResponse> {
+) -> anyhow::Result<Resource<FutureIncomingResponse>> {
     let task = tokio::spawn(async move {
         let worker = tokio::spawn(async { () });
         let response = IncomingResponseInternal {
@@ -180,8 +182,7 @@ fn response_resource(
     });
     let handle: wasmtime_wasi::AbortOnDropJoinHandle<_> = task.into();
     let response = wasmtime_wasi_http::types::HostFutureIncomingResponse::new(handle);
-    let response = WasiView::table(view).push(response).unwrap();
-    Resource::new_own(response.rep())
+    Ok(WasiView::table(view).push(response)?)
 }
 
 pub use key_value_calls::GetCall;
@@ -208,38 +209,38 @@ pub struct KeyValueCalls<'a> {
 
 impl<'a> KeyValueCalls<'a> {
     /// Create a new `KeyValueCalls`.
-    pub fn new(spin: &'a mut Spin, store: &'a str) -> Self {
-        let config = bindings::Config::new(&mut spin.store, &spin.instance).unwrap();
-        Self {
+    pub fn new(spin: &'a mut Spin, store: &'a str) -> anyhow::Result<Self> {
+        let config = bindings::Config::new(&mut spin.store, &spin.instance)?;
+        Ok(Self {
             spin,
             config,
             store,
-        }
+        })
     }
 
     /// Get the calls made to the key-value store.
-    pub async fn get_calls(&mut self) -> Vec<key_value_calls::GetCall> {
-        self.config
+    pub async fn get_calls(&mut self) -> anyhow::Result<Vec<key_value_calls::GetCall>> {
+        Ok(self
+            .config
             .fermyon_spin_test_virt_key_value_calls()
             .call_get(&mut self.spin.store)
-            .await
-            .unwrap()
+            .await?
             .iter()
             .find(|(store, _)| store == self.store)
             .map(|(_, calls)| calls.clone())
-            .unwrap_or_default()
+            .unwrap_or_default())
     }
 
-    pub async fn set_calls(&mut self) -> Vec<key_value_calls::SetCall> {
-        self.config
+    pub async fn set_calls(&mut self) -> anyhow::Result<Vec<key_value_calls::SetCall>> {
+        Ok(self
+            .config
             .fermyon_spin_test_virt_key_value_calls()
             .call_set(&mut self.spin.store)
-            .await
-            .unwrap()
+            .await?
             .iter()
             .find(|(store, _)| store == self.store)
             .map(|(_, calls)| calls.clone())
-            .unwrap_or_default()
+            .unwrap_or_default())
     }
 }
 

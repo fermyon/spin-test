@@ -147,7 +147,7 @@ impl outgoing_handler::Guest for Component {
         match response {
             Some(r) => Ok(r),
             None => Err(outgoing_handler::ErrorCode::InternalError(Some(format!(
-                "{url}"
+                "unrecognized url: {url}"
             )))),
         }
     }
