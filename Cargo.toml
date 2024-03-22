@@ -27,4 +27,5 @@ world = "plug"
 "wasi:sockets" = { path = "wit/deps/sockets" }
 
 [workspace]
-members = ["example/host", "example/guest"]
+members = ["example/host", "example/guest", "crates/*"]
+exclude = ["crates/spin-wasi-virt"]

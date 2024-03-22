@@ -1,0 +1,13 @@
+[package]
+name = "spin-test-sdk"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+http = "1.0"
+http-body-util = "0.1.1"
+hyper = "1.0"
+tokio = { version = "1.0", features = ["rt", "sync"] }
+wasmtime = "19.0.0"
+wasmtime-wasi-http = "19.0.0"
+wasmtime-wasi = "19.0.0"

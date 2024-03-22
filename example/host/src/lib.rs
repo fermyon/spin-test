@@ -1,42 +1,30 @@
 #[cfg(test)]
-mod support;
-
-#[cfg(test)]
 mod tests {
     use std::path::PathBuf;
 
-    use support::{Config, Runtime};
-
-    use super::*;
+    use spin_test_sdk::Spin;
 
     #[tokio::test]
     async fn app_works() {
         // Create a runtime
-        let mut runtime = Runtime::create();
-
-        // Load and instantiate the component
         let component_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../composition.wasm");
-        let instance = support::load(&mut runtime, &component_path).await.unwrap();
+        let mut spin = Spin::create(component_path).await.unwrap();
 
         // Configure the test
-        let config = Config::new(&mut runtime, &instance).unwrap();
         let user = r#"{"id":123,"name":"Ryan"}"#;
 
         // Set state of the key-value store
-        let key_value_config = config.key_value_store(&mut runtime, "cache").await.unwrap();
-        key_value_config
-            .set(&mut runtime, "123", user.as_bytes())
-            .await
-            .unwrap();
+        let mut key_value_config = spin.key_value_store("cache").await.unwrap();
+        key_value_config.set("123", user.as_bytes()).await.unwrap();
 
         // Set a response for an HTTP request
-        let handler = config.outbound_http_handler();
+        let mut handler = spin.outbound_http_handler();
         let response = http::Response::builder()
             .status(200)
-            .body(support::body::full(user.as_bytes().to_vec()))
+            .body(spin_test_sdk::body::full(user.into()))
             .unwrap();
         handler
-            .set_response(&mut runtime, "https://my.api.com", response)
+            .set_response("https://my.api.com", response)
             .await
             .unwrap();
 
@@ -44,11 +32,9 @@ mod tests {
         let req = hyper::Request::builder()
             .uri("http://example.com:8080?user_id=123")
             .method(http::Method::GET)
-            .body(support::body::empty())
+            .body(spin_test_sdk::body::empty())
             .unwrap();
-        let response = support::perform_request(&mut runtime, &instance, req)
-            .await
-            .unwrap();
+        let response = spin.perform_request(req).await.unwrap();
 
         use http_body_util::BodyExt;
         let (http::response::Parts { status, .. }, body) = response.into_parts();

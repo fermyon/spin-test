@@ -5,7 +5,7 @@ use hyper::body::Bytes;
 use wasmtime::component::{self, Instance, Resource};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 use wasmtime_wasi_http::{
-    bindings::http::outgoing_handler::{ErrorCode, FutureIncomingResponse},
+    bindings::http::types::{ErrorCode, FutureIncomingResponse},
     proxy,
     types::IncomingResponseInternal,
     WasiHttpView,
@@ -22,158 +22,111 @@ mod bindings {
     });
 }
 
-/// Call the Spin application with an HTTP request.
-pub async fn perform_request(
-    runtime: &mut Runtime,
-    instance: &Instance,
-    req: hyper::Request<BoxBody<Bytes, ErrorCode>>,
-) -> Result<http::Response<BoxBody<Bytes, ErrorCode>>, ErrorCode> {
-    let proxy = wasmtime_wasi_http::proxy::Proxy::new(&mut runtime.store, instance).unwrap();
-    let req = runtime.store.data_mut().new_incoming_request(req).unwrap();
-    let (sender, receiver) = tokio::sync::oneshot::channel();
-    let out = runtime
-        .store
-        .data_mut()
-        .new_response_outparam(sender)
-        .unwrap();
-    proxy
-        .wasi_http_incoming_handler()
-        .call_handle(&mut runtime.store, req, out)
-        .await
-        .unwrap();
-
-    receiver.await.unwrap()
-}
-
-/// Load a Spin application from a file.
-pub(crate) async fn load(
-    runtime: &mut Runtime,
-    component_path: impl AsRef<Path>,
-) -> wasmtime::Result<Instance> {
-    let component = component::Component::from_file(&runtime.engine, component_path)?;
-    let (_, instance) =
-        bindings::Config::instantiate_async(&mut runtime.store, &component, &runtime.linker)
-            .await?;
-    Ok(instance)
-}
-
 /// The runtime for the Spin application.
-pub struct Runtime {
-    engine: wasmtime::Engine,
+pub struct Spin {
     store: wasmtime::Store<Data>,
-    linker: wasmtime::component::Linker<Data>,
+    instance: Instance,
 }
 
-impl Runtime {
+impl Spin {
     /// Create a new runtime.
-    pub fn create() -> Self {
+    pub async fn create(component_path: impl AsRef<Path>) -> wasmtime::Result<Self> {
         let mut config = wasmtime::Config::new();
         config.async_support(true);
         let engine = wasmtime::Engine::new(&config).unwrap();
-        let store = wasmtime::Store::new(&engine, Data::new());
+        let mut store = wasmtime::Store::new(&engine, Data::new());
         let mut linker = wasmtime::component::Linker::new(&engine);
         proxy::add_to_linker(&mut linker).unwrap();
         wasmtime_wasi::bindings::cli::environment::add_to_linker(&mut linker, |x| x).unwrap();
         wasmtime_wasi::bindings::cli::exit::add_to_linker(&mut linker, |x| x).unwrap();
         wasmtime_wasi::bindings::filesystem::types::add_to_linker(&mut linker, |x| x).unwrap();
         wasmtime_wasi::bindings::filesystem::preopens::add_to_linker(&mut linker, |x| x).unwrap();
-        Self {
-            engine,
-            store,
-            linker,
-        }
+        let component = component::Component::from_file(&engine, component_path)?;
+        let (_, instance) =
+            bindings::Config::instantiate_async(&mut store, &component, &linker).await?;
+        Ok(Self { store, instance })
     }
-}
 
-/// Configuration for how the Spin APIs will behave when called.
-#[derive(Clone)]
-pub struct Config {
-    inner: Arc<bindings::Config>,
-}
+    /// Call the Spin application with an HTTP request.
+    pub async fn perform_request(
+        &mut self,
+        req: hyper::Request<BoxBody<Bytes, ErrorCode>>,
+    ) -> Result<http::Response<BoxBody<Bytes, ErrorCode>>, ErrorCode> {
+        let proxy = wasmtime_wasi_http::proxy::Proxy::new(&mut self.store, &self.instance).unwrap();
+        let req = self.store.data_mut().new_incoming_request(req).unwrap();
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        let out = self.store.data_mut().new_response_outparam(sender).unwrap();
+        proxy
+            .wasi_http_incoming_handler()
+            .call_handle(&mut self.store, req, out)
+            .await
+            .unwrap();
 
-impl Config {
-    /// Create a new `Config`.
-    pub fn new(runtime: &mut Runtime, instance: &Instance) -> wasmtime::Result<Self> {
-        let inner = Arc::new(bindings::Config::new(&mut runtime.store, instance)?);
-        Ok(Self { inner })
+        receiver.await.unwrap()
     }
 
     /// Open a key-value store.
-    pub async fn key_value_store(
-        &self,
-        runtime: &mut Runtime,
-        store_name: &str,
-    ) -> wasmtime::Result<KeyValueConfig> {
-        KeyValueConfig::open(self.clone(), runtime, store_name).await
+    pub async fn key_value_store(&mut self, store_name: &str) -> wasmtime::Result<KeyValueConfig> {
+        KeyValueConfig::open(self, store_name).await
     }
 
-    pub fn outbound_http_handler(&self) -> OutboundHttpHandler {
-        OutboundHttpHandler::new(self.clone())
+    pub fn outbound_http_handler(&mut self) -> OutboundHttpHandler {
+        OutboundHttpHandler::new(self)
     }
 }
 
 /// A handler for key-value store operations.
-pub struct KeyValueConfig {
-    config: Config,
+pub struct KeyValueConfig<'a> {
+    spin: &'a mut Spin,
     key_value: wasmtime::component::ResourceAny,
 }
 
-impl KeyValueConfig {
+impl<'a> KeyValueConfig<'a> {
     /// Open a key-value store.
-    pub async fn open(
-        config: Config,
-        runtime: &mut Runtime,
-        store_name: &str,
-    ) -> wasmtime::Result<Self> {
+    pub async fn open(spin: &'a mut Spin, store_name: &str) -> wasmtime::Result<Self> {
+        let config = bindings::Config::new(&mut spin.store, &spin.instance)?;
         let key_value = config
-            .inner
             .fermyon_spin_key_value()
             .store()
-            .call_open(&mut runtime.store, store_name)
+            .call_open(&mut spin.store, store_name)
             .await??;
-        Ok(Self { config, key_value })
+        Ok(Self { spin, key_value })
     }
 
     /// Set a key/value pair in the store.
-    pub async fn set(
-        &self,
-        runtime: &mut Runtime,
-        key: &str,
-        value: &[u8],
-    ) -> wasmtime::Result<()> {
-        self.config
-            .inner
+    pub async fn set(&mut self, key: &str, value: &[u8]) -> wasmtime::Result<()> {
+        let config = bindings::Config::new(&mut self.spin.store, &self.spin.instance)?;
+        config
             .fermyon_spin_key_value()
             .store()
-            .call_set(&mut runtime.store, self.key_value, key, value)
+            .call_set(&mut self.spin.store, self.key_value, key, value)
             .await??;
         Ok(())
     }
 }
 
 /// A handler for outbound HTTP requests.
-pub struct OutboundHttpHandler {
-    config: Config,
+pub struct OutboundHttpHandler<'a> {
+    spin: &'a mut Spin,
 }
 
-impl OutboundHttpHandler {
+impl<'a> OutboundHttpHandler<'a> {
     /// Create a new `OutboundHttpHandler`.
-    pub fn new(config: Config) -> Self {
-        Self { config }
+    pub fn new(spin: &'a mut Spin) -> Self {
+        Self { spin }
     }
 
     /// Set a response for a given URL.
     pub async fn set_response(
-        &self,
-        runtime: &mut Runtime,
+        &mut self,
         url: &str,
         response: http::Response<BoxBody<Bytes, ErrorCode>>,
     ) -> wasmtime::Result<()> {
-        let response = response_resource(response, runtime.store.data_mut());
-        self.config
-            .inner
+        let response = response_resource(response, self.spin.store.data_mut());
+        let config = bindings::Config::new(&mut self.spin.store, &self.spin.instance)?;
+        config
             .fermyon_spin_test_virt_http_handler()
-            .call_set_response(&mut runtime.store, url, response)
+            .call_set_response(&mut self.spin.store, url, response)
             .await
     }
 }
