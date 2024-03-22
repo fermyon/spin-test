@@ -41,7 +41,17 @@ mod tests {
         let body = body.collect().await.unwrap().to_bytes();
         let body = String::from_utf8_lossy(&body);
 
+        let mut key_value_config = spin.key_value_store("cache").await.unwrap();
+        let mut calls = key_value_config.calls();
+        let get_calls = calls.get_calls().await;
+        let set_calls = calls.set_calls().await;
+
         assert_eq!(status, http::StatusCode::OK, "Non-200 status code: {body}");
+        assert_eq!(
+            get_calls,
+            vec![spin_test_sdk::GetCall { key: "123".into() }],
+        );
+        assert!(set_calls.is_empty());
         assert_eq!(body, user);
     }
 }

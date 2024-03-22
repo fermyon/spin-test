@@ -8483,6 +8483,282 @@ pub mod exports {
                 #[doc(hidden)]
                 pub(crate) use __export_fermyon_spin_test_virt_http_handler_cabi;
             }
+
+            #[allow(clippy::all)]
+            pub mod key_value_calls {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+                use super::super::super::super::_rt;
+                #[derive(Clone)]
+                pub struct GetCall {
+                    pub key: _rt::String,
+                }
+                impl ::core::fmt::Debug for GetCall {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        f.debug_struct("GetCall").field("key", &self.key).finish()
+                    }
+                }
+                #[derive(Clone)]
+                pub struct SetCall {
+                    pub key: _rt::String,
+                    pub value: _rt::Vec<u8>,
+                }
+                impl ::core::fmt::Debug for SetCall {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        f.debug_struct("SetCall")
+                            .field("key", &self.key)
+                            .field("value", &self.value)
+                            .finish()
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_reset_cabi<T: Guest>() {
+                    T::reset();
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_get_cabi<T: Guest>() -> *mut u8 {
+                    let result0 = T::get();
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    let vec7 = result0;
+                    let len7 = vec7.len();
+                    let layout7 = _rt::alloc::Layout::from_size_align_unchecked(vec7.len() * 16, 4);
+                    let result7 = if layout7.size() != 0 {
+                        let ptr = _rt::alloc::alloc(layout7).cast::<u8>();
+                        if ptr.is_null() {
+                            _rt::alloc::handle_alloc_error(layout7);
+                        }
+                        ptr
+                    } else {
+                        {
+                            ::core::ptr::null_mut()
+                        }
+                    };
+                    for (i, e) in vec7.into_iter().enumerate() {
+                        let base = result7.add(i * 16);
+                        {
+                            let (t2_0, t2_1) = e;
+                            let vec3 = (t2_0.into_bytes()).into_boxed_slice();
+                            let ptr3 = vec3.as_ptr().cast::<u8>();
+                            let len3 = vec3.len();
+                            ::core::mem::forget(vec3);
+                            *base.add(4).cast::<usize>() = len3;
+                            *base.add(0).cast::<*mut u8>() = ptr3.cast_mut();
+                            let vec6 = t2_1;
+                            let len6 = vec6.len();
+                            let layout6 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec6.len() * 8, 4);
+                            let result6 = if layout6.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout6).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout6);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec6.into_iter().enumerate() {
+                                let base = result6.add(i * 8);
+                                {
+                                    let GetCall { key: key4 } = e;
+                                    let vec5 = (key4.into_bytes()).into_boxed_slice();
+                                    let ptr5 = vec5.as_ptr().cast::<u8>();
+                                    let len5 = vec5.len();
+                                    ::core::mem::forget(vec5);
+                                    *base.add(4).cast::<usize>() = len5;
+                                    *base.add(0).cast::<*mut u8>() = ptr5.cast_mut();
+                                }
+                            }
+                            *base.add(12).cast::<usize>() = len6;
+                            *base.add(8).cast::<*mut u8>() = result6;
+                        }
+                    }
+                    *ptr1.add(4).cast::<usize>() = len7;
+                    *ptr1.add(0).cast::<*mut u8>() = result7;
+                    ptr1
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_get<T: Guest>(arg0: *mut u8) {
+                    let l7 = *arg0.add(0).cast::<*mut u8>();
+                    let l8 = *arg0.add(4).cast::<usize>();
+                    let base9 = l7;
+                    let len9 = l8;
+                    for i in 0..len9 {
+                        let base = base9.add(i * 16);
+                        {
+                            let l0 = *base.add(0).cast::<*mut u8>();
+                            let l1 = *base.add(4).cast::<usize>();
+                            _rt::cabi_dealloc(l0, l1, 1);
+                            let l4 = *base.add(8).cast::<*mut u8>();
+                            let l5 = *base.add(12).cast::<usize>();
+                            let base6 = l4;
+                            let len6 = l5;
+                            for i in 0..len6 {
+                                let base = base6.add(i * 8);
+                                {
+                                    let l2 = *base.add(0).cast::<*mut u8>();
+                                    let l3 = *base.add(4).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                            }
+                            _rt::cabi_dealloc(base6, len6 * 8, 4);
+                        }
+                    }
+                    _rt::cabi_dealloc(base9, len9 * 16, 4);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_set_cabi<T: Guest>() -> *mut u8 {
+                    let result0 = T::set();
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    let vec8 = result0;
+                    let len8 = vec8.len();
+                    let layout8 = _rt::alloc::Layout::from_size_align_unchecked(vec8.len() * 16, 4);
+                    let result8 = if layout8.size() != 0 {
+                        let ptr = _rt::alloc::alloc(layout8).cast::<u8>();
+                        if ptr.is_null() {
+                            _rt::alloc::handle_alloc_error(layout8);
+                        }
+                        ptr
+                    } else {
+                        {
+                            ::core::ptr::null_mut()
+                        }
+                    };
+                    for (i, e) in vec8.into_iter().enumerate() {
+                        let base = result8.add(i * 16);
+                        {
+                            let (t2_0, t2_1) = e;
+                            let vec3 = (t2_0.into_bytes()).into_boxed_slice();
+                            let ptr3 = vec3.as_ptr().cast::<u8>();
+                            let len3 = vec3.len();
+                            ::core::mem::forget(vec3);
+                            *base.add(4).cast::<usize>() = len3;
+                            *base.add(0).cast::<*mut u8>() = ptr3.cast_mut();
+                            let vec7 = t2_1;
+                            let len7 = vec7.len();
+                            let layout7 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec7.len() * 16, 4);
+                            let result7 = if layout7.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout7).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout7);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec7.into_iter().enumerate() {
+                                let base = result7.add(i * 16);
+                                {
+                                    let SetCall {
+                                        key: key4,
+                                        value: value4,
+                                    } = e;
+                                    let vec5 = (key4.into_bytes()).into_boxed_slice();
+                                    let ptr5 = vec5.as_ptr().cast::<u8>();
+                                    let len5 = vec5.len();
+                                    ::core::mem::forget(vec5);
+                                    *base.add(4).cast::<usize>() = len5;
+                                    *base.add(0).cast::<*mut u8>() = ptr5.cast_mut();
+                                    let vec6 = (value4).into_boxed_slice();
+                                    let ptr6 = vec6.as_ptr().cast::<u8>();
+                                    let len6 = vec6.len();
+                                    ::core::mem::forget(vec6);
+                                    *base.add(12).cast::<usize>() = len6;
+                                    *base.add(8).cast::<*mut u8>() = ptr6.cast_mut();
+                                }
+                            }
+                            *base.add(12).cast::<usize>() = len7;
+                            *base.add(8).cast::<*mut u8>() = result7;
+                        }
+                    }
+                    *ptr1.add(4).cast::<usize>() = len8;
+                    *ptr1.add(0).cast::<*mut u8>() = result8;
+                    ptr1
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_set<T: Guest>(arg0: *mut u8) {
+                    let l10 = *arg0.add(0).cast::<*mut u8>();
+                    let l11 = *arg0.add(4).cast::<usize>();
+                    let base12 = l10;
+                    let len12 = l11;
+                    for i in 0..len12 {
+                        let base = base12.add(i * 16);
+                        {
+                            let l0 = *base.add(0).cast::<*mut u8>();
+                            let l1 = *base.add(4).cast::<usize>();
+                            _rt::cabi_dealloc(l0, l1, 1);
+                            let l7 = *base.add(8).cast::<*mut u8>();
+                            let l8 = *base.add(12).cast::<usize>();
+                            let base9 = l7;
+                            let len9 = l8;
+                            for i in 0..len9 {
+                                let base = base9.add(i * 16);
+                                {
+                                    let l2 = *base.add(0).cast::<*mut u8>();
+                                    let l3 = *base.add(4).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                    let l4 = *base.add(8).cast::<*mut u8>();
+                                    let l5 = *base.add(12).cast::<usize>();
+                                    let base6 = l4;
+                                    let len6 = l5;
+                                    _rt::cabi_dealloc(base6, len6 * 1, 1);
+                                }
+                            }
+                            _rt::cabi_dealloc(base9, len9 * 16, 4);
+                        }
+                    }
+                    _rt::cabi_dealloc(base12, len12 * 16, 4);
+                }
+                pub trait Guest {
+                    fn reset();
+                    fn get() -> _rt::Vec<(_rt::String, _rt::Vec<GetCall>)>;
+                    fn set() -> _rt::Vec<(_rt::String, _rt::Vec<SetCall>)>;
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_fermyon_spin_test_virt_key_value_calls_cabi{
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+    #[export_name = "fermyon:spin-test-virt/key-value-calls#reset"]
+    unsafe extern "C" fn export_reset() {
+      $($path_to_types)*::_export_reset_cabi::<$ty>()
+    }
+    #[export_name = "fermyon:spin-test-virt/key-value-calls#get"]
+    unsafe extern "C" fn export_get() -> *mut u8 {
+      $($path_to_types)*::_export_get_cabi::<$ty>()
+    }
+    #[export_name = "cabi_post_fermyon:spin-test-virt/key-value-calls#get"]
+    unsafe extern "C" fn _post_return_get(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_get::<$ty>(arg0)
+    }
+    #[export_name = "fermyon:spin-test-virt/key-value-calls#set"]
+    unsafe extern "C" fn export_set() -> *mut u8 {
+      $($path_to_types)*::_export_set_cabi::<$ty>()
+    }
+    #[export_name = "cabi_post_fermyon:spin-test-virt/key-value-calls#set"]
+    unsafe extern "C" fn _post_return_set(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_set::<$ty>(arg0)
+    }
+  };);
+}
+                #[doc(hidden)]
+                pub(crate) use __export_fermyon_spin_test_virt_key_value_calls_cabi;
+                #[repr(align(4))]
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+            }
         }
     }
     pub mod wasi {
@@ -9349,6 +9625,7 @@ macro_rules! __export_plug_impl {
                               $($path_to_types_root)*::exports::fermyon::spin::llm::__export_fermyon_spin_llm_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::llm);
                               $($path_to_types_root)*::exports::wasi::http::outgoing_handler::__export_wasi_http_outgoing_handler_0_2_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wasi::http::outgoing_handler);
                               $($path_to_types_root)*::exports::fermyon::spin_test_virt::http_handler::__export_fermyon_spin_test_virt_http_handler_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::http_handler);
+                              $($path_to_types_root)*::exports::fermyon::spin_test_virt::key_value_calls::__export_fermyon_spin_test_virt_key_value_calls_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::key_value_calls);
                               )
                             }
 #[doc(inline)]
@@ -9357,8 +9634,8 @@ pub(crate) use __export_plug_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.21.0:plug:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7516] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe19\x01A\x02\x01A\x1b\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7679] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x84;\x01A\x02\x01A\x1d\
 \x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[\
 method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollab\
 le.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\
@@ -9506,9 +9783,14 @@ ure-incoming-response\x03\0\x04\x02\x03\x02\x01\x0f\x04\0\x0aerror-code\x03\0\x0
 \x07options\x0a\0\x0c\x04\0\x06handle\x01\x0d\x04\x01\x20wasi:http/outgoing-hand\
 ler@0.2.0\x05\x10\x01B\x05\x02\x03\x02\x01\x0e\x04\0\x18future-incoming-response\
 \x03\0\0\x01i\x01\x01@\x02\x03urls\x08response\x02\x01\0\x04\0\x0cset-response\x01\
-\x03\x04\x01#fermyon:spin-test-virt/http-handler\x05\x11\x04\x01\x1bfermyon:spin\
--test-virt/plug\x04\0\x0b\x0a\x01\0\x04plug\x03\0\0\0G\x09producers\x01\x0cproce\
-ssed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x060.21.0";
+\x03\x04\x01#fermyon:spin-test-virt/http-handler\x05\x11\x01B\x11\x01r\x01\x03ke\
+ys\x04\0\x08get-call\x03\0\0\x01p}\x01r\x02\x03keys\x05value\x02\x04\0\x08set-ca\
+ll\x03\0\x03\x01@\0\x01\0\x04\0\x05reset\x01\x05\x01p\x01\x01o\x02s\x06\x01p\x07\
+\x01@\0\0\x08\x04\0\x03get\x01\x09\x01p\x04\x01o\x02s\x0a\x01p\x0b\x01@\0\0\x0c\x04\
+\0\x03set\x01\x0d\x04\x01&fermyon:spin-test-virt/key-value-calls\x05\x12\x04\x01\
+\x1bfermyon:spin-test-virt/plug\x04\0\x0b\x0a\x01\0\x04plug\x03\0\0\0G\x09produc\
+ers\x01\x0cprocessed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x060\
+.21.0";
 
 #[inline(never)]
 #[doc(hidden)]

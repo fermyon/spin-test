@@ -23,3 +23,4 @@ export guest.incoming-handler;
 // Also config so that the host can also control this
 export virt.key-value;
 export virt.http-handler;
+export virt.key-value-calls;

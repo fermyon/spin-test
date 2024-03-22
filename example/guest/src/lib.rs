@@ -6,7 +6,8 @@ use spin_sdk::{http_component, key_value};
 async fn handle_example(req: Request) -> anyhow::Result<impl IntoResponse> {
     let store = key_value::Store::open("cache".into())?;
     let query: Query = serde_qs::from_str(req.query())?;
-    let user: User = match store.get(&query.user_id.to_string())? {
+    let cache = store.get(&query.user_id.to_string())?;
+    let user: User = match cache {
         Some(hit) => serde_json::from_slice(&hit)?,
         None => {
             let req = Request::get(&format!("https://my.api.com?user_id={}", query.user_id));

@@ -3,13 +3,13 @@ mod bindings;
 
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, OnceLock, RwLock},
 };
 
 use bindings::exports::{
     fermyon::{
         spin::{key_value, llm},
-        spin_test_virt::http_handler,
+        spin_test_virt::{http_handler, key_value_calls},
     },
     wasi::http::outgoing_handler,
 };
@@ -21,9 +21,19 @@ impl key_value::Guest for Component {
     type Store = KeyValueStore;
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 struct KeyValueStore {
+    label: String,
     inner: Arc<RwLock<HashMap<String, Vec<u8>>>>,
+}
+
+impl KeyValueStore {
+    fn new(label: String) -> Self {
+        Self {
+            label,
+            inner: Default::default(),
+        }
+    }
 }
 
 impl key_value::GuestStore for KeyValueStore {
@@ -31,15 +41,34 @@ impl key_value::GuestStore for KeyValueStore {
         static STORES: std::sync::OnceLock<Mutex<HashMap<String, KeyValueStore>>> =
             std::sync::OnceLock::new();
         let mut stores = STORES.get_or_init(|| Default::default()).lock().unwrap();
-        let key_value = stores.entry(label).or_default();
+        let key_value = stores
+            .entry(label.clone())
+            .or_insert_with(|| KeyValueStore::new(label));
         Ok(key_value::Store::new(key_value.clone()))
     }
 
     fn get(&self, key: String) -> Result<Option<Vec<u8>>, key_value::Error> {
+        GET_CALLS
+            .get_or_init(|| Default::default())
+            .write()
+            .unwrap()
+            .entry(self.label.clone())
+            .or_default()
+            .push(key_value_calls::GetCall { key: key.clone() });
         Ok(self.inner.read().unwrap().get(&key).cloned())
     }
 
     fn set(&self, key: String, value: Vec<u8>) -> Result<(), key_value::Error> {
+        SET_CALLS
+            .get_or_init(|| Default::default())
+            .write()
+            .unwrap()
+            .entry(self.label.clone())
+            .or_default()
+            .push(key_value_calls::SetCall {
+                key: key.clone(),
+                value: value.clone(),
+            });
         self.inner.write().unwrap().insert(key, value);
         Ok(())
     }
@@ -131,6 +160,46 @@ impl http_handler::Guest for Component {
             .lock()
             .unwrap()
             .insert(url, response);
+    }
+}
+
+static GET_CALLS: OnceLock<RwLock<HashMap<String, Vec<key_value_calls::GetCall>>>> =
+    OnceLock::new();
+static SET_CALLS: OnceLock<RwLock<HashMap<String, Vec<key_value_calls::SetCall>>>> =
+    OnceLock::new();
+
+impl key_value_calls::Guest for Component {
+    fn get() -> Vec<(String, Vec<key_value_calls::GetCall>)> {
+        GET_CALLS
+            .get_or_init(Default::default)
+            .read()
+            .unwrap()
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    }
+
+    fn set() -> Vec<(String, Vec<key_value_calls::SetCall>)> {
+        SET_CALLS
+            .get_or_init(Default::default)
+            .read()
+            .unwrap()
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    }
+
+    fn reset() {
+        SET_CALLS
+            .get_or_init(Default::default)
+            .write()
+            .unwrap()
+            .clear();
+        GET_CALLS
+            .get_or_init(Default::default)
+            .write()
+            .unwrap()
+            .clear();
     }
 }
 

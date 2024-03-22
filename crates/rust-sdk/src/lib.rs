@@ -1,5 +1,6 @@
 use std::{path::Path, sync::Arc};
 
+use bindings::{exports::fermyon::spin_test_virt::key_value_calls, Config};
 use http_body_util::combinators::BoxBody;
 use hyper::body::Bytes;
 use wasmtime::component::{self, Instance, Resource};
@@ -52,6 +53,14 @@ impl Spin {
         &mut self,
         req: hyper::Request<BoxBody<Bytes, ErrorCode>>,
     ) -> Result<http::Response<BoxBody<Bytes, ErrorCode>>, ErrorCode> {
+        // Reset call tracking
+        let config = bindings::Config::new(&mut self.store, &self.instance).unwrap();
+        config
+            .fermyon_spin_test_virt_key_value_calls()
+            .call_reset(&mut self.store)
+            .await
+            .unwrap();
+
         let proxy = wasmtime_wasi_http::proxy::Proxy::new(&mut self.store, &self.instance).unwrap();
         let req = self.store.data_mut().new_incoming_request(req).unwrap();
         let (sender, receiver) = tokio::sync::oneshot::channel();
@@ -66,7 +75,10 @@ impl Spin {
     }
 
     /// Open a key-value store.
-    pub async fn key_value_store(&mut self, store_name: &str) -> wasmtime::Result<KeyValueConfig> {
+    pub async fn key_value_store<'a>(
+        &'a mut self,
+        store_name: &'a str,
+    ) -> wasmtime::Result<KeyValueConfig> {
         KeyValueConfig::open(self, store_name).await
     }
 
@@ -79,18 +91,34 @@ impl Spin {
 pub struct KeyValueConfig<'a> {
     spin: &'a mut Spin,
     key_value: wasmtime::component::ResourceAny,
+    store_name: &'a str,
 }
 
 impl<'a> KeyValueConfig<'a> {
     /// Open a key-value store.
-    pub async fn open(spin: &'a mut Spin, store_name: &str) -> wasmtime::Result<Self> {
+    pub async fn open(spin: &'a mut Spin, store_name: &'a str) -> wasmtime::Result<Self> {
         let config = bindings::Config::new(&mut spin.store, &spin.instance)?;
         let key_value = config
             .fermyon_spin_key_value()
             .store()
             .call_open(&mut spin.store, store_name)
             .await??;
-        Ok(Self { spin, key_value })
+        Ok(Self {
+            spin,
+            key_value,
+            store_name,
+        })
+    }
+
+    /// Set a key/value pair in the store.
+    pub async fn get(&mut self, key: &str) -> wasmtime::Result<Option<Vec<u8>>> {
+        let config = bindings::Config::new(&mut self.spin.store, &self.spin.instance)?;
+        let value = config
+            .fermyon_spin_key_value()
+            .store()
+            .call_get(&mut self.spin.store, self.key_value, key)
+            .await??;
+        Ok(value)
     }
 
     /// Set a key/value pair in the store.
@@ -102,6 +130,10 @@ impl<'a> KeyValueConfig<'a> {
             .call_set(&mut self.spin.store, self.key_value, key, value)
             .await??;
         Ok(())
+    }
+
+    pub fn calls(&mut self) -> KeyValueCalls {
+        KeyValueCalls::new(self.spin, self.store_name)
     }
 }
 
@@ -152,6 +184,65 @@ fn response_resource(
     Resource::new_own(response.rep())
 }
 
+pub use key_value_calls::GetCall;
+pub use key_value_calls::SetCall;
+
+impl PartialEq for GetCall {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key
+    }
+}
+
+impl PartialEq for SetCall {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key && self.value == other.value
+    }
+}
+
+/// A tracker of calls
+pub struct KeyValueCalls<'a> {
+    spin: &'a mut Spin,
+    config: Config,
+    store: &'a str,
+}
+
+impl<'a> KeyValueCalls<'a> {
+    /// Create a new `KeyValueCalls`.
+    pub fn new(spin: &'a mut Spin, store: &'a str) -> Self {
+        let config = bindings::Config::new(&mut spin.store, &spin.instance).unwrap();
+        Self {
+            spin,
+            config,
+            store,
+        }
+    }
+
+    /// Get the calls made to the key-value store.
+    pub async fn get_calls(&mut self) -> Vec<key_value_calls::GetCall> {
+        self.config
+            .fermyon_spin_test_virt_key_value_calls()
+            .call_get(&mut self.spin.store)
+            .await
+            .unwrap()
+            .iter()
+            .find(|(store, _)| store == self.store)
+            .map(|(_, calls)| calls.clone())
+            .unwrap_or_default()
+    }
+
+    pub async fn set_calls(&mut self) -> Vec<key_value_calls::SetCall> {
+        self.config
+            .fermyon_spin_test_virt_key_value_calls()
+            .call_set(&mut self.spin.store)
+            .await
+            .unwrap()
+            .iter()
+            .find(|(store, _)| store == self.store)
+            .map(|(_, calls)| calls.clone())
+            .unwrap_or_default()
+    }
+}
+
 struct Data {
     table: wasmtime::component::ResourceTable,
     ctx: WasiCtx,
@@ -162,7 +253,7 @@ impl Data {
     fn new() -> Self {
         Self {
             table: wasmtime::component::ResourceTable::default(),
-            ctx: WasiCtxBuilder::new().build(),
+            ctx: WasiCtxBuilder::new().inherit_stdout().build(),
             http_ctx: wasmtime_wasi_http::WasiHttpCtx,
         }
     }
