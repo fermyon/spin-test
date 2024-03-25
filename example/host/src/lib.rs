@@ -7,8 +7,7 @@ mod tests {
     #[tokio::test]
     async fn cache_hit_works() {
         // Create a runtime
-        let component_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../composition.wasm");
-        let mut spin = Spin::create(component_path).await.unwrap();
+        let mut spin = init_spin().await;
 
         // Configure the test
         let user = r#"{"id":123,"name":"Ryan"}"#;
@@ -37,8 +36,7 @@ mod tests {
     #[tokio::test]
     async fn cache_miss_works() {
         // Create a runtime
-        let component_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../composition.wasm");
-        let mut spin = Spin::create(component_path).await.unwrap();
+        let mut spin = init_spin().await;
 
         // Configure the test
         let user = r#"{"id":123,"name":"Ryan"}"#;
@@ -75,6 +73,12 @@ mod tests {
             }],
         );
         assert_eq!(body, user);
+    }
+
+    async fn init_spin() -> Spin {
+        let component_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../composition.wasm");
+        let manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../guest/spin.toml");
+        Spin::create(component_path, manifest_path).await.unwrap()
     }
 
     async fn make_request(spin: &mut Spin) -> (http::StatusCode, String) {

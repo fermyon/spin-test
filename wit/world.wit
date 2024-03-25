@@ -13,8 +13,8 @@ world plug {
 world config {
     export fermyon:spin/key-value@2.0.0;
     export http-handler;
-
     export key-value-calls;
+    import manifest: func() -> string;
 }
 
 interface http-handler {
