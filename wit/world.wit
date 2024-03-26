@@ -15,6 +15,7 @@ world config {
     export http-handler;
     export key-value-calls;
     import manifest: func() -> string;
+    import component-id: func() -> string;
 }
 
 interface http-handler {

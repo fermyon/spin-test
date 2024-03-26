@@ -7,11 +7,11 @@ edition = "2021"
 anyhow = "1.0"
 bitflags = "2.5.0"
 wit-bindgen-rt = "0.22.0"
-spin-expressions = { git = "https://github.com/fermyon/spin" }
-spin-manifest = { git = "https://github.com/fermyon/spin" }
-spin-outbound-networking = { git = "https://github.com/fermyon/spin" }
-spin-serde = { git = "https://github.com/fermyon/spin" }
-toml = { version = "0.8.0", features = ["preserve_order"] }
+spin-expressions = { workspace = true }
+spin-manifest = { workspace = true }
+spin-outbound-networking = { workspace = true }
+spin-serde = { workspace = true }
+toml = { workspace = true }
 
 
 [lib]
@@ -36,3 +36,10 @@ world = "plug"
 [workspace]
 members = ["example/host", "example/guest", "crates/*"]
 exclude = ["crates/spin-wasi-virt"]
+
+[workspace.dependencies]
+spin-expressions = { git = "https://github.com/fermyon/spin" }
+spin-manifest = { git = "https://github.com/fermyon/spin" }
+spin-outbound-networking = { git = "https://github.com/fermyon/spin" }
+spin-serde = { git = "https://github.com/fermyon/spin" }
+toml = { version = "0.8.0", features = ["preserve_order"] }

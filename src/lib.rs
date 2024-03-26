@@ -216,7 +216,7 @@ impl AppManifest {
     fn allows_url(url: &str) -> anyhow::Result<bool> {
         let mut manifest = Self::get()?;
         spin_manifest::normalize::normalize_manifest(&mut manifest);
-        let id: spin_serde::KebabId = "example"
+        let id: spin_serde::KebabId = bindings::component_id()
             .to_owned()
             .try_into()
             .map_err(|e| anyhow::anyhow!("{e}"))?;
