@@ -289,12 +289,8 @@ impl WasiHttpView for Data {
 
 #[async_trait::async_trait]
 impl bindings::ConfigImports for Data {
-    async fn manifest(&mut self) -> wasmtime::Result<String> {
+    async fn get_manifest(&mut self) -> wasmtime::Result<String> {
         Ok(self.manifest.clone())
-    }
-
-    async fn component_id(&mut self) -> wasmtime::Result<String> {
-        Ok("example".into())
     }
 }
 

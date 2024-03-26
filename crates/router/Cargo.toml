@@ -13,7 +13,7 @@ spin-manifest = { workspace = true }
 crate-type = ["cdylib"]
 
 [package.metadata.component]
-package = "component:router"
+package = "fermyon:router"
 
 [package.metadata.component.target.dependencies]
 "wasi:http" = { path = "../../wit/deps/http" }

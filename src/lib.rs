@@ -216,8 +216,10 @@ impl AppManifest {
     fn allows_url(url: &str) -> anyhow::Result<bool> {
         let mut manifest = Self::get()?;
         spin_manifest::normalize::normalize_manifest(&mut manifest);
-        let id: spin_serde::KebabId = bindings::component_id()
-            .to_owned()
+        let id: spin_serde::KebabId = COMPONENT_ID
+            .read()
+            .unwrap()
+            .clone()
             .try_into()
             .map_err(|e| anyhow::anyhow!("{e}"))?;
         let component = manifest
@@ -238,10 +240,17 @@ impl AppManifest {
         if let Some(m) = MANIFEST.get() {
             return Ok(m.clone());
         }
-        let Ok(deserialize) = toml::from_str(&bindings::manifest()) else {
+        let Ok(deserialize) = toml::from_str(&bindings::get_manifest()) else {
             anyhow::bail!("failed to deserialize manifest");
         };
         Ok(MANIFEST.get_or_init(|| deserialize).clone())
+    }
+}
+
+static COMPONENT_ID: RwLock<String> = RwLock::new(String::new());
+impl bindings::Guest for Component {
+    fn set_component_id(component_id: String) {
+        *COMPONENT_ID.write().unwrap() = component_id;
     }
 }
 

@@ -16,7 +16,7 @@ struct Component;
 impl Guest for Component {
     fn handle(request: IncomingRequest, response_out: ResponseOutparam) {
         let mut manifest: spin_manifest::schema::v2::AppManifest =
-            toml::from_str(&bindings::manifest()).unwrap();
+            toml::from_str(&bindings::get_manifest()).unwrap();
         spin_manifest::normalize::normalize_manifest(&mut manifest);
         let routes = manifest
             .triggers
@@ -46,12 +46,12 @@ impl Guest for Component {
             .split_once('?')
             .map(|(path, _)| path)
             .unwrap_or(&path_with_query);
-        let component = routes
+        let component_id = routes
             .iter()
             .find(|(route, _)| path.starts_with(route) || *route == "/...")
             .map(|(_, comp)| comp);
-        if let Some(component) = component {
-            println!("COMPONENT: {:#?}", component);
+        if let Some(component_id) = component_id {
+            bindings::set_component_id(component_id);
             downstream(request, response_out)
         } else {
             ResponseOutparam::set(response_out, Err(ErrorCode::InternalError(None)))

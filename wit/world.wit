@@ -6,6 +6,7 @@ world plug {
     export fermyon:spin/key-value@2.0.0;
     export fermyon:spin/llm@2.0.0;
     export wasi:http/outgoing-handler@0.2.0;
+    export set-component-id: func(component-id: string);
 
     include config;
 }
@@ -14,8 +15,7 @@ world config {
     export fermyon:spin/key-value@2.0.0;
     export http-handler;
     export key-value-calls;
-    import manifest: func() -> string;
-    import component-id: func() -> string;
+    import get-manifest: func() -> string;
 }
 
 interface http-handler {
