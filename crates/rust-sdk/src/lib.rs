@@ -78,7 +78,7 @@ impl Spin {
         Ok(receiver
             .await
             .context("issue with response channel")?
-            .context("failed to receive response from Spin")?)
+            .context("Spin returned an error instead of a response")?)
     }
 
     /// Open a key-value store.
@@ -289,7 +289,7 @@ impl WasiHttpView for Data {
 
 #[async_trait::async_trait]
 impl bindings::ConfigImports for Data {
-    async fn manifest(&mut self) -> wasmtime::Result<String> {
+    async fn get_manifest(&mut self) -> wasmtime::Result<String> {
         Ok(self.manifest.clone())
     }
 }

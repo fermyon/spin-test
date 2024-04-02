@@ -1336,6 +1336,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "router"
+version = "0.1.0"
+dependencies = [
+ "bitflags 2.5.0",
+ "spin-manifest",
+ "toml",
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"

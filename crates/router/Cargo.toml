@@ -1,0 +1,25 @@
+[package]
+name = "router"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bitflags = "2.5.0"
+wit-bindgen-rt = "0.22.0"
+toml = { workspace = true }
+spin-manifest = { workspace = true }
+
+[lib]
+crate-type = ["cdylib"]
+
+[package.metadata.component]
+package = "fermyon:router"
+
+[package.metadata.component.target.dependencies]
+"wasi:http" = { path = "../../wit/deps/http" }
+"wasi:random" = { path = "../../wit/deps/random" }
+"wasi:cli" = { path = "../../wit/deps/cli" }
+"wasi:io" = { path = "../../wit/deps/io" }
+"wasi:clocks" = { path = "../../wit/deps/clocks" }
+"wasi:filesystem" = { path = "../../wit/deps/filesystem" }
+"wasi:sockets" = { path = "../../wit/deps/sockets" }

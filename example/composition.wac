@@ -17,10 +17,14 @@ let guest = new example:guest {
   ...
 };
 
+// Send the guest incoming handler through the handler
+let router = new fermyon:router {
+  incoming-handler: guest.incoming-handler,
+  set-component-id: virt.set-component-id,
+  ...
+};
 
 // Export handler from the guest
-export guest.incoming-handler;
+export router.incoming-handler;
 // Also config so that the host can also control this
-export virt.key-value;
-export virt.http-handler;
-export virt.key-value-calls;
+export virt...;

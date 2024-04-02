@@ -1,0 +1,9 @@
+package fermyon:router;
+
+/// An example world for the component to target.
+world example {
+    export wasi:http/incoming-handler@0.2.0;
+    import wasi:http/incoming-handler@0.2.0;
+    import get-manifest: func() -> string;
+    import set-component-id: func(component-id: string);
+}
