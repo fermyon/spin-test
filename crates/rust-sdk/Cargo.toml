@@ -10,6 +10,6 @@ http = "1.0"
 http-body-util = "0.1.1"
 hyper = "1.0"
 tokio = { version = "1.0", features = ["rt", "sync"] }
-wasmtime = "19.0.0"
+wasmtime = "19.0.1"
 wasmtime-wasi-http = "19.0.0"
 wasmtime-wasi = "19.0.0"
