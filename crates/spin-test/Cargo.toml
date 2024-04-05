@@ -1,0 +1,8 @@
+[package]
+name = "spin-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wac-graph = { path = "../../../wac/crates/wac-graph" }
+env_logger = "0.11"

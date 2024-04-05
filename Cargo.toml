@@ -42,4 +42,7 @@ spin-expressions = { git = "https://github.com/fermyon/spin" }
 spin-manifest = { git = "https://github.com/fermyon/spin" }
 spin-outbound-networking = { git = "https://github.com/fermyon/spin" }
 spin-serde = { git = "https://github.com/fermyon/spin" }
-toml = { version = "0.8.0", features = ["preserve_order"] }
+toml = { version = "0.8", features = ["preserve_order"] }
+
+[patch.crates-io]
+wasmparser = { path = "../wasm-tools/crates/wasmparser" }
