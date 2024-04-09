@@ -16,7 +16,7 @@ use wasmtime_wasi_http::{
 mod bindings {
     wasmtime::component::bindgen!({
         world: "config",
-        path:  "../../wit",
+        path:  "../spin-test-virt/wit",
         async: true,
         with: {
             "wasi:http/types": wasmtime_wasi_http::bindings::wasi::http::types,

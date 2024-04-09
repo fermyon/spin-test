@@ -16,10 +16,10 @@ crate-type = ["cdylib"]
 package = "fermyon:router"
 
 [package.metadata.component.target.dependencies]
-"wasi:http" = { path = "../../wit/deps/http" }
-"wasi:random" = { path = "../../wit/deps/random" }
-"wasi:cli" = { path = "../../wit/deps/cli" }
-"wasi:io" = { path = "../../wit/deps/io" }
-"wasi:clocks" = { path = "../../wit/deps/clocks" }
-"wasi:filesystem" = { path = "../../wit/deps/filesystem" }
-"wasi:sockets" = { path = "../../wit/deps/sockets" }
+"wasi:http" = { path = "../spin-test-virt/wit/deps/http" }
+"wasi:random" = { path = "../spin-test-virt/wit/deps/random" }
+"wasi:cli" = { path = "../spin-test-virt/wit/deps/cli" }
+"wasi:io" = { path = "../spin-test-virt/wit/deps/io" }
+"wasi:clocks" = { path = "../spin-test-virt/wit/deps/clocks" }
+"wasi:filesystem" = { path = "../spin-test-virt/wit/deps/filesystem" }
+"wasi:sockets" = { path = "../spin-test-virt/wit/deps/sockets" }

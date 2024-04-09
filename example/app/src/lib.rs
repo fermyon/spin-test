@@ -20,6 +20,7 @@ async fn handle_example(req: Request) -> anyhow::Result<impl IntoResponse> {
     };
 
     let body = serde_json::to_string(&user)?;
+    println!("User: {}", body);
     Ok(Response::builder().status(200).body(body).build())
 }
 

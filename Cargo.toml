@@ -1,45 +1,28 @@
 [package]
-name = "spin-test-virt"
+name = "spin-test"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0"
-bitflags = "2.5.0"
-wit-bindgen-rt = "0.22.0"
-spin-expressions = { workspace = true }
-spin-manifest = { workspace = true }
-spin-outbound-networking = { workspace = true }
-spin-serde = { workspace = true }
-toml = { workspace = true }
-
-
-[lib]
-crate-type = ["cdylib"]
-
-[package.metadata.component]
-package = "component:spin-test-virt"
-
-[package.metadata.component.target]
-world = "plug"
-
-[package.metadata.component.target.dependencies]
-"fermyon:spin" = { path = "wit/deps/fermyon" }
-"wasi:http" = { path = "wit/deps/http" }
-"wasi:random" = { path = "wit/deps/random" }
-"wasi:cli" = { path = "wit/deps/cli" }
-"wasi:io" = { path = "wit/deps/io" }
-"wasi:clocks" = { path = "wit/deps/clocks" }
-"wasi:filesystem" = { path = "wit/deps/filesystem" }
-"wasi:sockets" = { path = "wit/deps/sockets" }
+env_logger = "0.11"
+http-body-util = "0.1.1"
+hyper = "1.0"
+tokio = "1.0"
+spin-common = { git = "https://github.com/fermyon/spin" }
+spin-componentize = { git = "https://github.com/fermyon/spin" }
+spin-manifest = { git = "https://github.com/fermyon/spin" }
+wac-graph = { git = "https://github.com/peterhuene/wac" }
+wasmtime = "19.0.1"
+wasmtime-wasi = "19.0.1"
+wasmtime-wasi-http = "19.0.1"
 
 [workspace]
-members = ["example/host", "example/guest", "crates/*"]
-exclude = ["crates/spin-wasi-virt"]
+members = ["crates/*", "example/*"]
+exclude = ["crates/spin-wasi-virt", "example/deps", "example/app"]
 
 [workspace.dependencies]
 spin-expressions = { git = "https://github.com/fermyon/spin" }
 spin-manifest = { git = "https://github.com/fermyon/spin" }
 spin-outbound-networking = { git = "https://github.com/fermyon/spin" }
 spin-serde = { git = "https://github.com/fermyon/spin" }
-toml = { version = "0.8.0", features = ["preserve_order"] }
+toml = { version = "0.8", features = ["preserve_order"] }

@@ -1,0 +1,39 @@
+package fermyon:spin-test-virt;
+
+/// The exports that can be composed with a Spin app creating
+/// a virtualized component.
+world plug {
+    export fermyon:spin/key-value@2.0.0;
+    export fermyon:spin/llm@2.0.0;
+    export wasi:http/outgoing-handler@0.2.0;
+    export set-component-id: func(component-id: string);
+
+    include config;
+}
+
+world config {
+    export fermyon:spin/key-value@2.0.0;
+    export http-handler;
+    export key-value-calls;
+    import get-manifest: func() -> string;
+}
+
+interface http-handler {
+    use wasi:http/types@0.2.0.{future-incoming-response};
+    set-response: func(url: string, response: future-incoming-response);
+}
+
+interface key-value-calls {
+    reset: func();
+    get: func() -> list<tuple<string, list<get-call>>>;
+    set: func() -> list<tuple<string, list<set-call>>>;
+
+    record get-call {
+        key: string
+    }
+
+    record set-call {
+        key: string,
+        value: list<u8>
+    }
+}
