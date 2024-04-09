@@ -138,46 +138,38 @@ fn main() {
     graph.export(run_export, "run").unwrap();
 
     let encoded = graph.encode(wac_graph::EncodeOptions::default()).unwrap();
-    let engine = wasmtime::Engine::default();
-    let mut store = wasmtime::Store::new(&engine, Data::new(raw_manifest));
-
-    let component = wasmtime::component::Component::new(&engine, encoded).unwrap();
-
-    let mut linker = wasmtime::component::Linker::new(&engine);
-    wasmtime_wasi::command::sync::add_to_linker(&mut linker).unwrap();
-    wasmtime_wasi_http::bindings::http::types::add_to_linker(&mut linker, |x| x).unwrap();
-    bindings::Runner::add_to_linker(&mut linker, |x| x).unwrap();
-
-    let (bar, _) = bindings::Runner::instantiate(&mut store, &component, &mut linker).unwrap();
-    bar.call_run(&mut store).unwrap();
+    let mut runtime = Runtime::new(raw_manifest, &encoded);
+    runtime.call_run().unwrap();
 }
 
-impl bindings::RunnerImports for Data {
-    fn get_manifest(&mut self) -> wasmtime::Result<String> {
-        Ok(self.manifest.clone())
+struct Runtime {
+    store: wasmtime::Store<Data>,
+    runner: bindings::Runner,
+}
+
+impl Runtime {
+    fn new(manifest: String, composed_component: &[u8]) -> Self {
+        let engine = wasmtime::Engine::default();
+        let mut store = wasmtime::Store::new(&engine, Data::new(manifest));
+
+        let component = wasmtime::component::Component::new(&engine, composed_component).unwrap();
+
+        let mut linker = wasmtime::component::Linker::new(&engine);
+        wasmtime_wasi::command::sync::add_to_linker(&mut linker).unwrap();
+        wasmtime_wasi_http::bindings::http::types::add_to_linker(&mut linker, |x| x).unwrap();
+        bindings::Runner::add_to_linker(&mut linker, |x| x).unwrap();
+
+        let (runner, _) =
+            bindings::Runner::instantiate(&mut store, &component, &mut linker).unwrap();
+        Self { store, runner }
+    }
+
+    fn call_run(&mut self) -> anyhow::Result<()> {
+        self.runner.call_run(&mut self.store)
     }
 }
 
-impl bindings::fermyon::spin_test::http_helper::Host for Data {
-    fn new_request(&mut self) -> wasmtime::Result<wasmtime::component::Resource<IncomingRequest>> {
-        let req = hyper::Request::builder()
-            .method("GET")
-            .uri("http://example.com?user_id=123")
-            .body(body::empty())
-            .unwrap();
-        self.new_incoming_request(req)
-    }
-
-    fn new_response(
-        &mut self,
-    ) -> wasmtime::Result<wasmtime::component::Resource<ResponseOutparam>> {
-        let (tx, rx) = tokio::sync::oneshot::channel();
-        // TODO
-        Box::leak(Box::new(rx));
-        self.new_response_outparam(tx)
-    }
-}
-
+/// Store specific data
 struct Data {
     table: wasmtime_wasi::ResourceTable,
     ctx: wasmtime_wasi::WasiCtx,
@@ -205,6 +197,32 @@ impl wasmtime_wasi_http::WasiHttpView for Data {
 
     fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
         &mut self.table
+    }
+}
+
+impl bindings::RunnerImports for Data {
+    fn get_manifest(&mut self) -> wasmtime::Result<String> {
+        Ok(self.manifest.clone())
+    }
+}
+
+impl bindings::fermyon::spin_test::http_helper::Host for Data {
+    fn new_request(&mut self) -> wasmtime::Result<wasmtime::component::Resource<IncomingRequest>> {
+        let req = hyper::Request::builder()
+            .method("GET")
+            .uri("http://example.com?user_id=123")
+            .body(body::empty())
+            .unwrap();
+        self.new_incoming_request(req)
+    }
+
+    fn new_response(
+        &mut self,
+    ) -> wasmtime::Result<wasmtime::component::Resource<ResponseOutparam>> {
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        // TODO
+        Box::leak(Box::new(rx));
+        self.new_response_outparam(tx)
     }
 }
 
