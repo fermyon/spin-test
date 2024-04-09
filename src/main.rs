@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 use wasmtime_wasi_http::{
     bindings::http::incoming_handler::{IncomingRequest, ResponseOutparam},
     WasiHttpView,
@@ -24,7 +24,7 @@ const ROUTER: &[u8] = include_bytes!("../example/deps/fermyon/router.wasm");
 
 fn main() {
     env_logger::init();
-    let test = std::env::args()
+    let test_path = std::env::args()
         .nth(1)
         .expect("second argument should be the path to the test wasm");
     let manifest_path =
@@ -39,107 +39,138 @@ fn main() {
         }
     };
 
+    let test = std::fs::read(test_path).unwrap();
     let app = std::fs::read(app_path).unwrap();
     let app = spin_componentize::componentize_if_necessary(&app)
         .unwrap()
         .into_owned();
-    let app = wac_graph::types::Package::from_bytes("app", None, app).unwrap();
-    let test = wac_graph::types::Package::from_file("test", None, test).unwrap();
-    let virt = wac_graph::types::Package::from_bytes(
-        "spin-test-virt",
-        None,
-        Arc::new(SPIN_TEST_VIRT.to_owned()),
-    )
-    .unwrap();
-    let wasi_virt =
-        wac_graph::types::Package::from_bytes("wasi-virt", None, Arc::new(WASI_VIRT.to_owned()))
-            .unwrap();
-    let router =
-        wac_graph::types::Package::from_bytes("router", None, Arc::new(ROUTER.to_owned())).unwrap();
 
-    let mut graph = wac_graph::CompositionGraph::new();
-    let app = graph.register_package(app).unwrap();
-    let test = graph.register_package(test).unwrap();
-    let virt = graph.register_package(virt).unwrap();
-    let wasi_virt = graph.register_package(wasi_virt).unwrap();
-    let router = graph.register_package(router).unwrap();
+    let encoded = encode_composition(app, test);
 
-    let virt = graph.instantiate(virt).unwrap();
-    let app = graph.instantiate(app).unwrap();
-    let wasi_virt = graph.instantiate(wasi_virt).unwrap();
-    let router = graph.instantiate(router).unwrap();
-    let test = graph.instantiate(test).unwrap();
-
-    let key_value = graph
-        .alias_instance_export(virt, "fermyon:spin/key-value@2.0.0")
-        .unwrap();
-    graph
-        .set_instantiation_argument(app, "fermyon:spin/key-value@2.0.0", key_value)
-        .unwrap();
-
-    let outgoing_handler = graph
-        .alias_instance_export(virt, "wasi:http/outgoing-handler@0.2.0")
-        .unwrap();
-    graph
-        .set_instantiation_argument(app, "wasi:http/outgoing-handler@0.2.0", outgoing_handler)
-        .unwrap();
-
-    let env = graph
-        .alias_instance_export(wasi_virt, "wasi:cli/environment@0.2.0")
-        .unwrap();
-    graph
-        .set_instantiation_argument(app, "wasi:cli/environment@0.2.0", env)
-        .unwrap();
-
-    let incoming_handler = graph
-        .alias_instance_export(app, "wasi:http/incoming-handler@0.2.0")
-        .unwrap();
-    graph
-        .set_instantiation_argument(router, "wasi:http/incoming-handler@0.2.0", incoming_handler)
-        .unwrap();
-
-    let set_component_id = graph
-        .alias_instance_export(virt, "set-component-id")
-        .unwrap();
-    graph
-        .set_instantiation_argument(router, "set-component-id", set_component_id)
-        .unwrap();
-
-    let incoming_handler_export = graph
-        .alias_instance_export(router, "wasi:http/incoming-handler@0.2.0")
-        .unwrap();
-    let key_value_export = graph
-        .alias_instance_export(virt, "fermyon:spin/key-value@2.0.0")
-        .unwrap();
-    let key_value_calls_export = graph
-        .alias_instance_export(virt, "fermyon:spin-test-virt/key-value-calls")
-        .unwrap();
-
-    graph
-        .set_instantiation_argument(test, "fermyon:spin/key-value@2.0.0", key_value_export)
-        .unwrap();
-    graph
-        .set_instantiation_argument(
-            test,
-            "wasi:http/incoming-handler@0.2.0",
-            incoming_handler_export,
-        )
-        .unwrap();
-    graph
-        .set_instantiation_argument(
-            test,
-            "fermyon:spin-test-virt/key-value-calls",
-            key_value_calls_export,
-        )
-        .unwrap();
-
-    let run_export = graph.alias_instance_export(test, "run").unwrap();
-
-    graph.export(run_export, "run").unwrap();
-
-    let encoded = graph.encode(wac_graph::EncodeOptions::default()).unwrap();
     let mut runtime = Runtime::new(raw_manifest, &encoded);
     runtime.call_run().unwrap();
+}
+
+fn encode_composition(app: Vec<u8>, test: Vec<u8>) -> Vec<u8> {
+    let composition = Composition::new();
+    let virt = composition
+        .instantiate("virt", SPIN_TEST_VIRT, Vec::new())
+        .unwrap();
+    let wasi_virt = composition
+        .instantiate("wasi_virt", WASI_VIRT, Vec::new())
+        .unwrap();
+
+    let app_args = vec![
+        (
+            "fermyon:spin/key-value@2.0.0",
+            virt.export("fermyon:spin/key-value@2.0.0").unwrap(),
+        ),
+        (
+            "wasi:http/outgoing-handler@0.2.0",
+            virt.export("wasi:http/outgoing-handler@0.2.0").unwrap(),
+        ),
+        (
+            "wasi:cli/environment@0.2.0",
+            wasi_virt.export("wasi:cli/environment@0.2.0").unwrap(),
+        ),
+    ];
+    let app = composition.instantiate("app", &app, app_args).unwrap();
+
+    let router_args = vec![
+        ("set-component-id", virt.export("set-component-id").unwrap()),
+        (
+            "wasi:http/incoming-handler@0.2.0",
+            app.export("wasi:http/incoming-handler@0.2.0").unwrap(),
+        ),
+    ];
+    let router = composition
+        .instantiate("router", ROUTER, router_args)
+        .unwrap();
+
+    let test_args = vec![
+        (
+            "wasi:http/incoming-handler@0.2.0",
+            router.export("wasi:http/incoming-handler@0.2.0").unwrap(),
+        ),
+        (
+            "fermyon:spin/key-value@2.0.0",
+            virt.export("fermyon:spin/key-value@2.0.0").unwrap(),
+        ),
+        (
+            "fermyon:spin-test-virt/key-value-calls",
+            virt.export("fermyon:spin-test-virt/key-value-calls")
+                .unwrap(),
+        ),
+    ];
+    let test = composition.instantiate("test", &test, test_args).unwrap();
+    let export = test.export("run").unwrap();
+
+    composition.export(export, "run").unwrap();
+    composition.encode().unwrap()
+}
+
+struct Composition {
+    graph: Rc<RefCell<wac_graph::CompositionGraph>>,
+}
+
+impl Composition {
+    fn new() -> Self {
+        Self {
+            graph: Rc::new(RefCell::new(wac_graph::CompositionGraph::new())),
+        }
+    }
+
+    pub fn instantiate(
+        &self,
+        name: &str,
+        bytes: &[u8],
+        arguments: Vec<(&str, Export)>,
+    ) -> anyhow::Result<Instance> {
+        let package =
+            wac_graph::types::Package::from_bytes(name, None, Arc::new(bytes.to_owned()))?;
+        let package = self.graph.borrow_mut().register_package(package)?;
+        let instance = self.graph.borrow_mut().instantiate(package)?;
+        for (arg_name, arg) in arguments {
+            self.graph
+                .borrow_mut()
+                .set_instantiation_argument(instance, arg_name, arg.node)?;
+        }
+        Ok(Instance {
+            graph: self.graph.clone(),
+            node: instance,
+        })
+    }
+
+    fn export(&self, export: Export, name: &str) -> anyhow::Result<()> {
+        Ok(self.graph.borrow_mut().export(export.node, name)?)
+    }
+
+    fn encode(&self) -> anyhow::Result<Vec<u8>> {
+        Ok(self
+            .graph
+            .borrow_mut()
+            .encode(wac_graph::EncodeOptions::default())?)
+    }
+}
+
+struct Instance {
+    graph: Rc<RefCell<wac_graph::CompositionGraph>>,
+    node: wac_graph::NodeId,
+}
+
+impl Instance {
+    fn export(&self, name: &str) -> anyhow::Result<Export> {
+        let node = self
+            .graph
+            .borrow_mut()
+            .alias_instance_export(self.node, name)?;
+
+        Ok(Export { node })
+    }
+}
+
+struct Export {
+    node: wac_graph::NodeId,
 }
 
 struct Runtime {
