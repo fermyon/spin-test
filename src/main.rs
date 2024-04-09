@@ -18,9 +18,9 @@ mod bindings {
     });
 }
 
-const SPIN_TEST_VIRT: &[u8] = include_bytes!("../../../example/deps/fermyon/spin-test-virt.wasm");
-const WASI_VIRT: &[u8] = include_bytes!("../../../example/deps/wasi/virt.wasm");
-const ROUTER: &[u8] = include_bytes!("../../../example/deps/fermyon/router.wasm");
+const SPIN_TEST_VIRT: &[u8] = include_bytes!("../example/deps/fermyon/spin-test-virt.wasm");
+const WASI_VIRT: &[u8] = include_bytes!("../example/deps/wasi/virt.wasm");
+const ROUTER: &[u8] = include_bytes!("../example/deps/fermyon/router.wasm");
 
 fn main() {
     env_logger::init();

@@ -1,6 +1,6 @@
 # `spin-test`
 
-A project for virtualizing Spin apps so that they can be run as components that only expose a `wasi:http/incoming-handler` export and exposing APIs for configuring those virtualizations.
+`spin-test` is a plugin for Spin that runs tests written in WebAssembly against a Spin application where all Spin and WASI APIs are configurable and assertable mocks.
 
 ## Example
 
