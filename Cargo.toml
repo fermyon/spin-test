@@ -34,8 +34,8 @@ world = "plug"
 "wasi:sockets" = { path = "wit/deps/sockets" }
 
 [workspace]
-members = ["example/host", "example/guest", "crates/*"]
-exclude = ["crates/spin-wasi-virt"]
+members = ["crates/*", "example/*"]
+exclude = ["crates/spin-wasi-virt", "example/deps", "example/app"]
 
 [workspace.dependencies]
 spin-expressions = { git = "https://github.com/fermyon/spin" }
@@ -43,6 +43,3 @@ spin-manifest = { git = "https://github.com/fermyon/spin" }
 spin-outbound-networking = { git = "https://github.com/fermyon/spin" }
 spin-serde = { git = "https://github.com/fermyon/spin" }
 toml = { version = "0.8", features = ["preserve_order"] }
-
-[patch.crates-io]
-wasmparser = { path = "../wasm-tools/crates/wasmparser" }
