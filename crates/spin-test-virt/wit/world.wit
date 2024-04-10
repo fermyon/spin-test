@@ -5,6 +5,12 @@ package fermyon:spin-test-virt;
 world plug {
     export fermyon:spin/key-value@2.0.0;
     export fermyon:spin/llm@2.0.0;
+    export fermyon:spin/redis@2.0.0;
+    export fermyon:spin/postgres@2.0.0;
+    export fermyon:spin/mqtt@2.0.0;
+    export fermyon:spin/mysql@2.0.0;
+    export fermyon:spin/sqlite@2.0.0;
+    export fermyon:spin/variables@2.0.0;
     export wasi:http/outgoing-handler@0.2.0;
     export set-component-id: func(component-id: string);
 

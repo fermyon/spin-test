@@ -52,6 +52,264 @@ macro_rules! __export_world_plug_cabi{
 #[doc(hidden)]
 pub(crate) use __export_world_plug_cabi;
 #[allow(dead_code)]
+pub mod fermyon {
+    #[allow(dead_code)]
+    pub mod spin {
+        #[allow(dead_code, clippy::all)]
+        pub mod rdbms_types {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            /// Errors related to interacting with a database.
+            #[derive(Clone)]
+            pub enum Error {
+                ConnectionFailed(_rt::String),
+                BadParameter(_rt::String),
+                QueryFailed(_rt::String),
+                ValueConversionFailed(_rt::String),
+                Other(_rt::String),
+            }
+            impl ::core::fmt::Debug for Error {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        Error::ConnectionFailed(e) => {
+                            f.debug_tuple("Error::ConnectionFailed").field(e).finish()
+                        }
+                        Error::BadParameter(e) => {
+                            f.debug_tuple("Error::BadParameter").field(e).finish()
+                        }
+                        Error::QueryFailed(e) => {
+                            f.debug_tuple("Error::QueryFailed").field(e).finish()
+                        }
+                        Error::ValueConversionFailed(e) => f
+                            .debug_tuple("Error::ValueConversionFailed")
+                            .field(e)
+                            .finish(),
+                        Error::Other(e) => f.debug_tuple("Error::Other").field(e).finish(),
+                    }
+                }
+            }
+            impl ::core::fmt::Display for Error {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    write!(f, "{:?}", self)
+                }
+            }
+
+            impl std::error::Error for Error {}
+            /// Data types for a database column
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum DbDataType {
+                Boolean,
+                Int8,
+                Int16,
+                Int32,
+                Int64,
+                Uint8,
+                Uint16,
+                Uint32,
+                Uint64,
+                Floating32,
+                Floating64,
+                Str,
+                Binary,
+                Other,
+            }
+            impl ::core::fmt::Debug for DbDataType {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        DbDataType::Boolean => f.debug_tuple("DbDataType::Boolean").finish(),
+                        DbDataType::Int8 => f.debug_tuple("DbDataType::Int8").finish(),
+                        DbDataType::Int16 => f.debug_tuple("DbDataType::Int16").finish(),
+                        DbDataType::Int32 => f.debug_tuple("DbDataType::Int32").finish(),
+                        DbDataType::Int64 => f.debug_tuple("DbDataType::Int64").finish(),
+                        DbDataType::Uint8 => f.debug_tuple("DbDataType::Uint8").finish(),
+                        DbDataType::Uint16 => f.debug_tuple("DbDataType::Uint16").finish(),
+                        DbDataType::Uint32 => f.debug_tuple("DbDataType::Uint32").finish(),
+                        DbDataType::Uint64 => f.debug_tuple("DbDataType::Uint64").finish(),
+                        DbDataType::Floating32 => f.debug_tuple("DbDataType::Floating32").finish(),
+                        DbDataType::Floating64 => f.debug_tuple("DbDataType::Floating64").finish(),
+                        DbDataType::Str => f.debug_tuple("DbDataType::Str").finish(),
+                        DbDataType::Binary => f.debug_tuple("DbDataType::Binary").finish(),
+                        DbDataType::Other => f.debug_tuple("DbDataType::Other").finish(),
+                    }
+                }
+            }
+
+            impl DbDataType {
+                pub(crate) unsafe fn _lift(val: u8) -> DbDataType {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => DbDataType::Boolean,
+                        1 => DbDataType::Int8,
+                        2 => DbDataType::Int16,
+                        3 => DbDataType::Int32,
+                        4 => DbDataType::Int64,
+                        5 => DbDataType::Uint8,
+                        6 => DbDataType::Uint16,
+                        7 => DbDataType::Uint32,
+                        8 => DbDataType::Uint64,
+                        9 => DbDataType::Floating32,
+                        10 => DbDataType::Floating64,
+                        11 => DbDataType::Str,
+                        12 => DbDataType::Binary,
+                        13 => DbDataType::Other,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            /// Database values
+            #[derive(Clone)]
+            pub enum DbValue {
+                Boolean(bool),
+                Int8(i8),
+                Int16(i16),
+                Int32(i32),
+                Int64(i64),
+                Uint8(u8),
+                Uint16(u16),
+                Uint32(u32),
+                Uint64(u64),
+                Floating32(f32),
+                Floating64(f64),
+                Str(_rt::String),
+                Binary(_rt::Vec<u8>),
+                DbNull,
+                Unsupported,
+            }
+            impl ::core::fmt::Debug for DbValue {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        DbValue::Boolean(e) => f.debug_tuple("DbValue::Boolean").field(e).finish(),
+                        DbValue::Int8(e) => f.debug_tuple("DbValue::Int8").field(e).finish(),
+                        DbValue::Int16(e) => f.debug_tuple("DbValue::Int16").field(e).finish(),
+                        DbValue::Int32(e) => f.debug_tuple("DbValue::Int32").field(e).finish(),
+                        DbValue::Int64(e) => f.debug_tuple("DbValue::Int64").field(e).finish(),
+                        DbValue::Uint8(e) => f.debug_tuple("DbValue::Uint8").field(e).finish(),
+                        DbValue::Uint16(e) => f.debug_tuple("DbValue::Uint16").field(e).finish(),
+                        DbValue::Uint32(e) => f.debug_tuple("DbValue::Uint32").field(e).finish(),
+                        DbValue::Uint64(e) => f.debug_tuple("DbValue::Uint64").field(e).finish(),
+                        DbValue::Floating32(e) => {
+                            f.debug_tuple("DbValue::Floating32").field(e).finish()
+                        }
+                        DbValue::Floating64(e) => {
+                            f.debug_tuple("DbValue::Floating64").field(e).finish()
+                        }
+                        DbValue::Str(e) => f.debug_tuple("DbValue::Str").field(e).finish(),
+                        DbValue::Binary(e) => f.debug_tuple("DbValue::Binary").field(e).finish(),
+                        DbValue::DbNull => f.debug_tuple("DbValue::DbNull").finish(),
+                        DbValue::Unsupported => f.debug_tuple("DbValue::Unsupported").finish(),
+                    }
+                }
+            }
+            /// Values used in parameterized queries
+            #[derive(Clone)]
+            pub enum ParameterValue {
+                Boolean(bool),
+                Int8(i8),
+                Int16(i16),
+                Int32(i32),
+                Int64(i64),
+                Uint8(u8),
+                Uint16(u16),
+                Uint32(u32),
+                Uint64(u64),
+                Floating32(f32),
+                Floating64(f64),
+                Str(_rt::String),
+                Binary(_rt::Vec<u8>),
+                DbNull,
+            }
+            impl ::core::fmt::Debug for ParameterValue {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        ParameterValue::Boolean(e) => {
+                            f.debug_tuple("ParameterValue::Boolean").field(e).finish()
+                        }
+                        ParameterValue::Int8(e) => {
+                            f.debug_tuple("ParameterValue::Int8").field(e).finish()
+                        }
+                        ParameterValue::Int16(e) => {
+                            f.debug_tuple("ParameterValue::Int16").field(e).finish()
+                        }
+                        ParameterValue::Int32(e) => {
+                            f.debug_tuple("ParameterValue::Int32").field(e).finish()
+                        }
+                        ParameterValue::Int64(e) => {
+                            f.debug_tuple("ParameterValue::Int64").field(e).finish()
+                        }
+                        ParameterValue::Uint8(e) => {
+                            f.debug_tuple("ParameterValue::Uint8").field(e).finish()
+                        }
+                        ParameterValue::Uint16(e) => {
+                            f.debug_tuple("ParameterValue::Uint16").field(e).finish()
+                        }
+                        ParameterValue::Uint32(e) => {
+                            f.debug_tuple("ParameterValue::Uint32").field(e).finish()
+                        }
+                        ParameterValue::Uint64(e) => {
+                            f.debug_tuple("ParameterValue::Uint64").field(e).finish()
+                        }
+                        ParameterValue::Floating32(e) => f
+                            .debug_tuple("ParameterValue::Floating32")
+                            .field(e)
+                            .finish(),
+                        ParameterValue::Floating64(e) => f
+                            .debug_tuple("ParameterValue::Floating64")
+                            .field(e)
+                            .finish(),
+                        ParameterValue::Str(e) => {
+                            f.debug_tuple("ParameterValue::Str").field(e).finish()
+                        }
+                        ParameterValue::Binary(e) => {
+                            f.debug_tuple("ParameterValue::Binary").field(e).finish()
+                        }
+                        ParameterValue::DbNull => f.debug_tuple("ParameterValue::DbNull").finish(),
+                    }
+                }
+            }
+            /// A database column
+            #[derive(Clone)]
+            pub struct Column {
+                pub name: _rt::String,
+                pub data_type: DbDataType,
+            }
+            impl ::core::fmt::Debug for Column {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Column")
+                        .field("name", &self.name)
+                        .field("data-type", &self.data_type)
+                        .finish()
+                }
+            }
+            /// A database row
+            pub type Row = _rt::Vec<DbValue>;
+            /// A set of database rows
+            #[derive(Clone)]
+            pub struct RowSet {
+                pub columns: _rt::Vec<Column>,
+                pub rows: _rt::Vec<Row>,
+            }
+            impl ::core::fmt::Debug for RowSet {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("RowSet")
+                        .field("columns", &self.columns)
+                        .field("rows", &self.rows)
+                        .finish()
+                }
+            }
+        }
+    }
+}
+#[allow(dead_code)]
 pub mod wasi {
     #[allow(dead_code)]
     pub mod clocks {
@@ -8541,6 +8799,4923 @@ pub mod exports {
                 struct _RetArea([::core::mem::MaybeUninit<u8>; 20]);
                 static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 20]);
             }
+
+            #[allow(dead_code, clippy::all)]
+            pub mod redis {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+                use super::super::super::super::_rt;
+                /// Errors related to interacting with Redis
+                #[derive(Clone)]
+                pub enum Error {
+                    /// An invalid address string
+                    InvalidAddress,
+                    /// There are too many open connections
+                    TooManyConnections,
+                    /// A retrieved value was not of the correct type
+                    TypeError,
+                    /// Some other error occurred
+                    Other(_rt::String),
+                }
+                impl ::core::fmt::Debug for Error {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            Error::InvalidAddress => {
+                                f.debug_tuple("Error::InvalidAddress").finish()
+                            }
+                            Error::TooManyConnections => {
+                                f.debug_tuple("Error::TooManyConnections").finish()
+                            }
+                            Error::TypeError => f.debug_tuple("Error::TypeError").finish(),
+                            Error::Other(e) => f.debug_tuple("Error::Other").field(e).finish(),
+                        }
+                    }
+                }
+                impl ::core::fmt::Display for Error {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        write!(f, "{:?}", self)
+                    }
+                }
+
+                impl std::error::Error for Error {}
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Connection {
+                    handle: _rt::Resource<Connection>,
+                }
+
+                type _ConnectionRep<T> = Option<T>;
+
+                impl Connection {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Connection`.
+                    pub fn new<T: GuestConnection>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _ConnectionRep<T> = Some(val);
+                        let ptr: *mut _ConnectionRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestConnection>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestConnection>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestConnection` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _ConnectionRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestConnection>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Connection`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct ConnectionBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Connection>,
+                }
+
+                impl<'a> ConnectionBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Connection {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/redis@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]connection"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
+                /// The message payload.
+                pub type Payload = _rt::Vec<u8>;
+                /// A parameter type for the general-purpose `execute` function.
+                #[derive(Clone)]
+                pub enum RedisParameter {
+                    Int64(i64),
+                    Binary(Payload),
+                }
+                impl ::core::fmt::Debug for RedisParameter {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            RedisParameter::Int64(e) => {
+                                f.debug_tuple("RedisParameter::Int64").field(e).finish()
+                            }
+                            RedisParameter::Binary(e) => {
+                                f.debug_tuple("RedisParameter::Binary").field(e).finish()
+                            }
+                        }
+                    }
+                }
+                /// A return type for the general-purpose `execute` function.
+                #[derive(Clone)]
+                pub enum RedisResult {
+                    Nil,
+                    Status(_rt::String),
+                    Int64(i64),
+                    Binary(Payload),
+                }
+                impl ::core::fmt::Debug for RedisResult {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            RedisResult::Nil => f.debug_tuple("RedisResult::Nil").finish(),
+                            RedisResult::Status(e) => {
+                                f.debug_tuple("RedisResult::Status").field(e).finish()
+                            }
+                            RedisResult::Int64(e) => {
+                                f.debug_tuple("RedisResult::Int64").field(e).finish()
+                            }
+                            RedisResult::Binary(e) => {
+                                f.debug_tuple("RedisResult::Binary").field(e).finish()
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_static_connection_open_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    let result1 = T::open(_rt::string_lift(bytes0));
+                    let ptr2 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result1 {
+                        Ok(e) => {
+                            *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+                            *ptr2.add(4).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                        Err(e) => {
+                            *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr2.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr2.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::TypeError => {
+                                    *ptr2.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::Other(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec3 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr3 = vec3.as_ptr().cast::<u8>();
+                                    let len3 = vec3.len();
+                                    ::core::mem::forget(vec3);
+                                    *ptr2.add(12).cast::<usize>() = len3;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr3.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr2
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_static_connection_open<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                _ => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_publish_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let len1 = arg4;
+                    let result2 = T::publish(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        _rt::Vec::from_raw_parts(arg3.cast(), len1, len1),
+                    );
+                    let ptr3 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result2 {
+                        Ok(_) => {
+                            *ptr3.add(0).cast::<u8>() = (0i32) as u8;
+                        }
+                        Err(e) => {
+                            *ptr3.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr3.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr3.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::TypeError => {
+                                    *ptr3.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::Other(e) => {
+                                    *ptr3.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec4 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr4 = vec4.as_ptr().cast::<u8>();
+                                    let len4 = vec4.len();
+                                    ::core::mem::forget(vec4);
+                                    *ptr3.add(12).cast::<usize>() = len4;
+                                    *ptr3.add(8).cast::<*mut u8>() = ptr4.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr3
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_publish<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                _ => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_get_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let result1 = T::get(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                    );
+                    let ptr2 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result1 {
+                        Ok(e) => {
+                            *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+                            match e {
+                                Some(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (1i32) as u8;
+                                    let vec3 = (e).into_boxed_slice();
+                                    let ptr3 = vec3.as_ptr().cast::<u8>();
+                                    let len3 = vec3.len();
+                                    ::core::mem::forget(vec3);
+                                    *ptr2.add(12).cast::<usize>() = len3;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr3.cast_mut();
+                                }
+                                None => {
+                                    *ptr2.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                            };
+                        }
+                        Err(e) => {
+                            *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr2.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr2.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::TypeError => {
+                                    *ptr2.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::Other(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec4 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr4 = vec4.as_ptr().cast::<u8>();
+                                    let len4 = vec4.len();
+                                    ::core::mem::forget(vec4);
+                                    *ptr2.add(12).cast::<usize>() = len4;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr4.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr2
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_get<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                _ => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    let base4 = l2;
+                                    let len4 = l3;
+                                    _rt::cabi_dealloc(base4, len4 * 1, 1);
+                                }
+                            }
+                        }
+                        _ => {
+                            let l5 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l5 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                _ => {
+                                    let l6 = *arg0.add(8).cast::<*mut u8>();
+                                    let l7 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l6, l7, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_set_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let len1 = arg4;
+                    let result2 = T::set(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        _rt::Vec::from_raw_parts(arg3.cast(), len1, len1),
+                    );
+                    let ptr3 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result2 {
+                        Ok(_) => {
+                            *ptr3.add(0).cast::<u8>() = (0i32) as u8;
+                        }
+                        Err(e) => {
+                            *ptr3.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr3.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr3.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::TypeError => {
+                                    *ptr3.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::Other(e) => {
+                                    *ptr3.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec4 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr4 = vec4.as_ptr().cast::<u8>();
+                                    let len4 = vec4.len();
+                                    ::core::mem::forget(vec4);
+                                    *ptr3.add(12).cast::<usize>() = len4;
+                                    *ptr3.add(8).cast::<*mut u8>() = ptr4.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr3
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_set<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                _ => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_incr_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let result1 = T::incr(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                    );
+                    let ptr2 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result1 {
+                        Ok(e) => {
+                            *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+                            *ptr2.add(8).cast::<i64>() = _rt::as_i64(e);
+                        }
+                        Err(e) => {
+                            *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr2.add(8).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr2.add(8).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::TypeError => {
+                                    *ptr2.add(8).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::Other(e) => {
+                                    *ptr2.add(8).cast::<u8>() = (3i32) as u8;
+                                    let vec3 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr3 = vec3.as_ptr().cast::<u8>();
+                                    let len3 = vec3.len();
+                                    ::core::mem::forget(vec3);
+                                    *ptr2.add(16).cast::<usize>() = len3;
+                                    *ptr2.add(12).cast::<*mut u8>() = ptr3.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr2
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_incr<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(8).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                _ => {
+                                    let l2 = *arg0.add(12).cast::<*mut u8>();
+                                    let l3 = *arg0.add(16).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_del_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let base3 = arg1;
+                    let len3 = arg2;
+                    let mut result3 = _rt::Vec::with_capacity(len3);
+                    for i in 0..len3 {
+                        let base = base3.add(i * 8);
+                        let e3 = {
+                            let l0 = *base.add(0).cast::<*mut u8>();
+                            let l1 = *base.add(4).cast::<usize>();
+                            let len2 = l1;
+                            let bytes2 = _rt::Vec::from_raw_parts(l0.cast(), len2, len2);
+
+                            _rt::string_lift(bytes2)
+                        };
+                        result3.push(e3);
+                    }
+                    _rt::cabi_dealloc(base3, len3 * 8, 4);
+                    let result4 =
+                        T::del(ConnectionBorrow::lift(arg0 as u32 as usize).get(), result3);
+                    let ptr5 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result4 {
+                        Ok(e) => {
+                            *ptr5.add(0).cast::<u8>() = (0i32) as u8;
+                            *ptr5.add(4).cast::<i32>() = _rt::as_i32(e);
+                        }
+                        Err(e) => {
+                            *ptr5.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr5.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr5.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::TypeError => {
+                                    *ptr5.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::Other(e) => {
+                                    *ptr5.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec6 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr6 = vec6.as_ptr().cast::<u8>();
+                                    let len6 = vec6.len();
+                                    ::core::mem::forget(vec6);
+                                    *ptr5.add(12).cast::<usize>() = len6;
+                                    *ptr5.add(8).cast::<*mut u8>() = ptr6.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr5
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_del<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                _ => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_sadd_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let base4 = arg3;
+                    let len4 = arg4;
+                    let mut result4 = _rt::Vec::with_capacity(len4);
+                    for i in 0..len4 {
+                        let base = base4.add(i * 8);
+                        let e4 = {
+                            let l1 = *base.add(0).cast::<*mut u8>();
+                            let l2 = *base.add(4).cast::<usize>();
+                            let len3 = l2;
+                            let bytes3 = _rt::Vec::from_raw_parts(l1.cast(), len3, len3);
+
+                            _rt::string_lift(bytes3)
+                        };
+                        result4.push(e4);
+                    }
+                    _rt::cabi_dealloc(base4, len4 * 8, 4);
+                    let result5 = T::sadd(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        result4,
+                    );
+                    let ptr6 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result5 {
+                        Ok(e) => {
+                            *ptr6.add(0).cast::<u8>() = (0i32) as u8;
+                            *ptr6.add(4).cast::<i32>() = _rt::as_i32(e);
+                        }
+                        Err(e) => {
+                            *ptr6.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr6.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr6.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::TypeError => {
+                                    *ptr6.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::Other(e) => {
+                                    *ptr6.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec7 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr7 = vec7.as_ptr().cast::<u8>();
+                                    let len7 = vec7.len();
+                                    ::core::mem::forget(vec7);
+                                    *ptr6.add(12).cast::<usize>() = len7;
+                                    *ptr6.add(8).cast::<*mut u8>() = ptr7.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr6
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_sadd<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                _ => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_smembers_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let result1 = T::smembers(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                    );
+                    let ptr2 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result1 {
+                        Ok(e) => {
+                            *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+                            let vec4 = e;
+                            let len4 = vec4.len();
+                            let layout4 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec4.len() * 8, 4);
+                            let result4 = if layout4.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout4).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout4);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec4.into_iter().enumerate() {
+                                let base = result4.add(i * 8);
+                                {
+                                    let vec3 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr3 = vec3.as_ptr().cast::<u8>();
+                                    let len3 = vec3.len();
+                                    ::core::mem::forget(vec3);
+                                    *base.add(4).cast::<usize>() = len3;
+                                    *base.add(0).cast::<*mut u8>() = ptr3.cast_mut();
+                                }
+                            }
+                            *ptr2.add(8).cast::<usize>() = len4;
+                            *ptr2.add(4).cast::<*mut u8>() = result4;
+                        }
+                        Err(e) => {
+                            *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr2.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr2.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::TypeError => {
+                                    *ptr2.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::Other(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec5 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr5 = vec5.as_ptr().cast::<u8>();
+                                    let len5 = vec5.len();
+                                    ::core::mem::forget(vec5);
+                                    *ptr2.add(12).cast::<usize>() = len5;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr5.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr2
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_smembers<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => {
+                            let l3 = *arg0.add(4).cast::<*mut u8>();
+                            let l4 = *arg0.add(8).cast::<usize>();
+                            let base5 = l3;
+                            let len5 = l4;
+                            for i in 0..len5 {
+                                let base = base5.add(i * 8);
+                                {
+                                    let l1 = *base.add(0).cast::<*mut u8>();
+                                    let l2 = *base.add(4).cast::<usize>();
+                                    _rt::cabi_dealloc(l1, l2, 1);
+                                }
+                            }
+                            _rt::cabi_dealloc(base5, len5 * 8, 4);
+                        }
+                        _ => {
+                            let l6 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l6 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                _ => {
+                                    let l7 = *arg0.add(8).cast::<*mut u8>();
+                                    let l8 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l7, l8, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_srem_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let base4 = arg3;
+                    let len4 = arg4;
+                    let mut result4 = _rt::Vec::with_capacity(len4);
+                    for i in 0..len4 {
+                        let base = base4.add(i * 8);
+                        let e4 = {
+                            let l1 = *base.add(0).cast::<*mut u8>();
+                            let l2 = *base.add(4).cast::<usize>();
+                            let len3 = l2;
+                            let bytes3 = _rt::Vec::from_raw_parts(l1.cast(), len3, len3);
+
+                            _rt::string_lift(bytes3)
+                        };
+                        result4.push(e4);
+                    }
+                    _rt::cabi_dealloc(base4, len4 * 8, 4);
+                    let result5 = T::srem(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        result4,
+                    );
+                    let ptr6 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result5 {
+                        Ok(e) => {
+                            *ptr6.add(0).cast::<u8>() = (0i32) as u8;
+                            *ptr6.add(4).cast::<i32>() = _rt::as_i32(e);
+                        }
+                        Err(e) => {
+                            *ptr6.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr6.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr6.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::TypeError => {
+                                    *ptr6.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::Other(e) => {
+                                    *ptr6.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec7 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr7 = vec7.as_ptr().cast::<u8>();
+                                    let len7 = vec7.len();
+                                    ::core::mem::forget(vec7);
+                                    *ptr6.add(12).cast::<usize>() = len7;
+                                    *ptr6.add(8).cast::<*mut u8>() = ptr7.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr6
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_srem<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                _ => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_execute_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let base7 = arg3;
+                    let len7 = arg4;
+                    let mut result7 = _rt::Vec::with_capacity(len7);
+                    for i in 0..len7 {
+                        let base = base7.add(i * 16);
+                        let e7 = {
+                            let l1 = i32::from(*base.add(0).cast::<u8>());
+                            let v6 = match l1 {
+                                0 => {
+                                    let e6 = {
+                                        let l2 = *base.add(8).cast::<i64>();
+
+                                        l2
+                                    };
+                                    RedisParameter::Int64(e6)
+                                }
+                                n => {
+                                    debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                    let e6 = {
+                                        let l3 = *base.add(8).cast::<*mut u8>();
+                                        let l4 = *base.add(12).cast::<usize>();
+                                        let len5 = l4;
+
+                                        _rt::Vec::from_raw_parts(l3.cast(), len5, len5)
+                                    };
+                                    RedisParameter::Binary(e6)
+                                }
+                            };
+
+                            v6
+                        };
+                        result7.push(e7);
+                    }
+                    _rt::cabi_dealloc(base7, len7 * 16, 8);
+                    let result8 = T::execute(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        result7,
+                    );
+                    let ptr9 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result8 {
+                        Ok(e) => {
+                            *ptr9.add(0).cast::<u8>() = (0i32) as u8;
+                            let vec12 = e;
+                            let len12 = vec12.len();
+                            let layout12 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec12.len() * 16, 8);
+                            let result12 = if layout12.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout12).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout12);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec12.into_iter().enumerate() {
+                                let base = result12.add(i * 16);
+                                {
+                                    match e {
+                                        RedisResult::Nil => {
+                                            *base.add(0).cast::<u8>() = (0i32) as u8;
+                                        }
+                                        RedisResult::Status(e) => {
+                                            *base.add(0).cast::<u8>() = (1i32) as u8;
+                                            let vec10 = (e.into_bytes()).into_boxed_slice();
+                                            let ptr10 = vec10.as_ptr().cast::<u8>();
+                                            let len10 = vec10.len();
+                                            ::core::mem::forget(vec10);
+                                            *base.add(12).cast::<usize>() = len10;
+                                            *base.add(8).cast::<*mut u8>() = ptr10.cast_mut();
+                                        }
+                                        RedisResult::Int64(e) => {
+                                            *base.add(0).cast::<u8>() = (2i32) as u8;
+                                            *base.add(8).cast::<i64>() = _rt::as_i64(e);
+                                        }
+                                        RedisResult::Binary(e) => {
+                                            *base.add(0).cast::<u8>() = (3i32) as u8;
+                                            let vec11 = (e).into_boxed_slice();
+                                            let ptr11 = vec11.as_ptr().cast::<u8>();
+                                            let len11 = vec11.len();
+                                            ::core::mem::forget(vec11);
+                                            *base.add(12).cast::<usize>() = len11;
+                                            *base.add(8).cast::<*mut u8>() = ptr11.cast_mut();
+                                        }
+                                    }
+                                }
+                            }
+                            *ptr9.add(8).cast::<usize>() = len12;
+                            *ptr9.add(4).cast::<*mut u8>() = result12;
+                        }
+                        Err(e) => {
+                            *ptr9.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr9.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr9.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::TypeError => {
+                                    *ptr9.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::Other(e) => {
+                                    *ptr9.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec13 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr13 = vec13.as_ptr().cast::<u8>();
+                                    let len13 = vec13.len();
+                                    ::core::mem::forget(vec13);
+                                    *ptr9.add(12).cast::<usize>() = len13;
+                                    *ptr9.add(8).cast::<*mut u8>() = ptr13.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr9
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_execute<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => {
+                            let l7 = *arg0.add(4).cast::<*mut u8>();
+                            let l8 = *arg0.add(8).cast::<usize>();
+                            let base9 = l7;
+                            let len9 = l8;
+                            for i in 0..len9 {
+                                let base = base9.add(i * 16);
+                                {
+                                    let l1 = i32::from(*base.add(0).cast::<u8>());
+                                    match l1 {
+                                        0 => (),
+                                        1 => {
+                                            let l2 = *base.add(8).cast::<*mut u8>();
+                                            let l3 = *base.add(12).cast::<usize>();
+                                            _rt::cabi_dealloc(l2, l3, 1);
+                                        }
+                                        2 => (),
+                                        _ => {
+                                            let l4 = *base.add(8).cast::<*mut u8>();
+                                            let l5 = *base.add(12).cast::<usize>();
+                                            let base6 = l4;
+                                            let len6 = l5;
+                                            _rt::cabi_dealloc(base6, len6 * 1, 1);
+                                        }
+                                    }
+                                }
+                            }
+                            _rt::cabi_dealloc(base9, len9 * 16, 8);
+                        }
+                        _ => {
+                            let l10 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l10 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                _ => {
+                                    let l11 = *arg0.add(8).cast::<*mut u8>();
+                                    let l12 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l11, l12, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                pub trait Guest {
+                    type Connection: GuestConnection;
+                }
+                pub trait GuestConnection: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/redis@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-new]connection"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/redis@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]connection"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    /// Open a connection to the Redis instance at `address`.
+                    fn open(address: _rt::String) -> Result<Connection, Error>;
+                    /// Publish a Redis message to the specified channel.
+                    fn publish(&self, channel: _rt::String, payload: Payload) -> Result<(), Error>;
+                    /// Get the value of a key.
+                    fn get(&self, key: _rt::String) -> Result<Option<Payload>, Error>;
+                    /// Set key to value.
+                    ///
+                    /// If key already holds a value, it is overwritten.
+                    fn set(&self, key: _rt::String, value: Payload) -> Result<(), Error>;
+                    /// Increments the number stored at key by one.
+                    ///
+                    /// If the key does not exist, it is set to 0 before performing the operation.
+                    /// An `error::type-error` is returned if the key contains a value of the wrong type
+                    /// or contains a string that can not be represented as integer.
+                    fn incr(&self, key: _rt::String) -> Result<i64, Error>;
+                    /// Removes the specified keys.
+                    ///
+                    /// A key is ignored if it does not exist. Returns the number of keys deleted.
+                    fn del(&self, keys: _rt::Vec<_rt::String>) -> Result<u32, Error>;
+                    /// Add the specified `values` to the set named `key`, returning the number of newly-added values.
+                    fn sadd(
+                        &self,
+                        key: _rt::String,
+                        values: _rt::Vec<_rt::String>,
+                    ) -> Result<u32, Error>;
+                    /// Retrieve the contents of the set named `key`.
+                    fn smembers(&self, key: _rt::String) -> Result<_rt::Vec<_rt::String>, Error>;
+                    /// Remove the specified `values` from the set named `key`, returning the number of newly-removed values.
+                    fn srem(
+                        &self,
+                        key: _rt::String,
+                        values: _rt::Vec<_rt::String>,
+                    ) -> Result<u32, Error>;
+                    /// Execute an arbitrary Redis command and receive the result.
+                    fn execute(
+                        &self,
+                        command: _rt::String,
+                        arguments: _rt::Vec<RedisParameter>,
+                    ) -> Result<_rt::Vec<RedisResult>, Error>;
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_fermyon_spin_redis_2_0_0_cabi{
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+    #[export_name = "fermyon:spin/redis@2.0.0#[static]connection.open"]
+    unsafe extern "C" fn export_static_connection_open(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_static_connection_open_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1)
+    }
+    #[export_name = "cabi_post_fermyon:spin/redis@2.0.0#[static]connection.open"]
+    unsafe extern "C" fn _post_return_static_connection_open(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_static_connection_open::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/redis@2.0.0#[method]connection.publish"]
+    unsafe extern "C" fn export_method_connection_publish(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_publish_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_fermyon:spin/redis@2.0.0#[method]connection.publish"]
+    unsafe extern "C" fn _post_return_method_connection_publish(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_publish::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/redis@2.0.0#[method]connection.get"]
+    unsafe extern "C" fn export_method_connection_get(arg0: *mut u8,arg1: *mut u8,arg2: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_get_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2)
+    }
+    #[export_name = "cabi_post_fermyon:spin/redis@2.0.0#[method]connection.get"]
+    unsafe extern "C" fn _post_return_method_connection_get(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_get::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/redis@2.0.0#[method]connection.set"]
+    unsafe extern "C" fn export_method_connection_set(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_set_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_fermyon:spin/redis@2.0.0#[method]connection.set"]
+    unsafe extern "C" fn _post_return_method_connection_set(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_set::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/redis@2.0.0#[method]connection.incr"]
+    unsafe extern "C" fn export_method_connection_incr(arg0: *mut u8,arg1: *mut u8,arg2: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_incr_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2)
+    }
+    #[export_name = "cabi_post_fermyon:spin/redis@2.0.0#[method]connection.incr"]
+    unsafe extern "C" fn _post_return_method_connection_incr(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_incr::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/redis@2.0.0#[method]connection.del"]
+    unsafe extern "C" fn export_method_connection_del(arg0: *mut u8,arg1: *mut u8,arg2: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_del_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2)
+    }
+    #[export_name = "cabi_post_fermyon:spin/redis@2.0.0#[method]connection.del"]
+    unsafe extern "C" fn _post_return_method_connection_del(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_del::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/redis@2.0.0#[method]connection.sadd"]
+    unsafe extern "C" fn export_method_connection_sadd(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_sadd_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_fermyon:spin/redis@2.0.0#[method]connection.sadd"]
+    unsafe extern "C" fn _post_return_method_connection_sadd(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_sadd::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/redis@2.0.0#[method]connection.smembers"]
+    unsafe extern "C" fn export_method_connection_smembers(arg0: *mut u8,arg1: *mut u8,arg2: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_smembers_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2)
+    }
+    #[export_name = "cabi_post_fermyon:spin/redis@2.0.0#[method]connection.smembers"]
+    unsafe extern "C" fn _post_return_method_connection_smembers(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_smembers::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/redis@2.0.0#[method]connection.srem"]
+    unsafe extern "C" fn export_method_connection_srem(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_srem_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_fermyon:spin/redis@2.0.0#[method]connection.srem"]
+    unsafe extern "C" fn _post_return_method_connection_srem(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_srem::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/redis@2.0.0#[method]connection.execute"]
+    unsafe extern "C" fn export_method_connection_execute(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_execute_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_fermyon:spin/redis@2.0.0#[method]connection.execute"]
+    unsafe extern "C" fn _post_return_method_connection_execute(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_execute::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "fermyon:spin/redis@2.0.0#[dtor]connection"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Connection::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Connection
+        >(rep)
+      }
+    };
+
+  };);
+}
+                #[doc(hidden)]
+                pub(crate) use __export_fermyon_spin_redis_2_0_0_cabi;
+                #[repr(align(8))]
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 24]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 24]);
+            }
+
+            #[allow(dead_code, clippy::all)]
+            pub mod postgres {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+                use super::super::super::super::_rt;
+                pub type ParameterValue =
+                    super::super::super::super::fermyon::spin::rdbms_types::ParameterValue;
+                pub type RowSet = super::super::super::super::fermyon::spin::rdbms_types::RowSet;
+                pub type Error = super::super::super::super::fermyon::spin::rdbms_types::Error;
+                /// A connection to a postgres database.
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Connection {
+                    handle: _rt::Resource<Connection>,
+                }
+
+                type _ConnectionRep<T> = Option<T>;
+
+                impl Connection {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Connection`.
+                    pub fn new<T: GuestConnection>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _ConnectionRep<T> = Some(val);
+                        let ptr: *mut _ConnectionRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestConnection>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestConnection>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestConnection` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _ConnectionRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestConnection>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Connection`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct ConnectionBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Connection>,
+                }
+
+                impl<'a> ConnectionBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Connection {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/postgres@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]connection"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_static_connection_open_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    let result1 = T::open(_rt::string_lift(bytes0));
+                    let ptr2 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result1 {
+                        Ok(e) => {
+                            *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+                            *ptr2.add(4).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                        Err(e) => {
+                            *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V8;
+                            match e {
+                                V8::ConnectionFailed(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (0i32) as u8;
+                                    let vec3 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr3 = vec3.as_ptr().cast::<u8>();
+                                    let len3 = vec3.len();
+                                    ::core::mem::forget(vec3);
+                                    *ptr2.add(12).cast::<usize>() = len3;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr3.cast_mut();
+                                }
+                                V8::BadParameter(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (1i32) as u8;
+                                    let vec4 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr4 = vec4.as_ptr().cast::<u8>();
+                                    let len4 = vec4.len();
+                                    ::core::mem::forget(vec4);
+                                    *ptr2.add(12).cast::<usize>() = len4;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr4.cast_mut();
+                                }
+                                V8::QueryFailed(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (2i32) as u8;
+                                    let vec5 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr5 = vec5.as_ptr().cast::<u8>();
+                                    let len5 = vec5.len();
+                                    ::core::mem::forget(vec5);
+                                    *ptr2.add(12).cast::<usize>() = len5;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr5.cast_mut();
+                                }
+                                V8::ValueConversionFailed(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec6 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr6 = vec6.as_ptr().cast::<u8>();
+                                    let len6 = vec6.len();
+                                    ::core::mem::forget(vec6);
+                                    *ptr2.add(12).cast::<usize>() = len6;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr6.cast_mut();
+                                }
+                                V8::Other(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (4i32) as u8;
+                                    let vec7 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr7 = vec7.as_ptr().cast::<u8>();
+                                    let len7 = vec7.len();
+                                    ::core::mem::forget(vec7);
+                                    *ptr2.add(12).cast::<usize>() = len7;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr7.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr2
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_static_connection_open<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                                1 => {
+                                    let l4 = *arg0.add(8).cast::<*mut u8>();
+                                    let l5 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l4, l5, 1);
+                                }
+                                2 => {
+                                    let l6 = *arg0.add(8).cast::<*mut u8>();
+                                    let l7 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l6, l7, 1);
+                                }
+                                3 => {
+                                    let l8 = *arg0.add(8).cast::<*mut u8>();
+                                    let l9 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l8, l9, 1);
+                                }
+                                _ => {
+                                    let l10 = *arg0.add(8).cast::<*mut u8>();
+                                    let l11 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l10, l11, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_query_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let base20 = arg3;
+                    let len20 = arg4;
+                    let mut result20 = _rt::Vec::with_capacity(len20);
+                    for i in 0..len20 {
+                        let base = base20.add(i * 16);
+                        let e20 = {
+                            let l1 = i32::from(*base.add(0).cast::<u8>());
+                            use super::super::super::super::fermyon::spin::rdbms_types::ParameterValue as V19;
+                            let v19 = match l1 {
+                                0 => {
+                                    let e19 = {
+                                        let l2 = i32::from(*base.add(8).cast::<u8>());
+
+                                        _rt::bool_lift(l2 as u8)
+                                    };
+                                    V19::Boolean(e19)
+                                }
+                                1 => {
+                                    let e19 = {
+                                        let l3 = i32::from(*base.add(8).cast::<i8>());
+
+                                        l3 as i8
+                                    };
+                                    V19::Int8(e19)
+                                }
+                                2 => {
+                                    let e19 = {
+                                        let l4 = i32::from(*base.add(8).cast::<i16>());
+
+                                        l4 as i16
+                                    };
+                                    V19::Int16(e19)
+                                }
+                                3 => {
+                                    let e19 = {
+                                        let l5 = *base.add(8).cast::<i32>();
+
+                                        l5
+                                    };
+                                    V19::Int32(e19)
+                                }
+                                4 => {
+                                    let e19 = {
+                                        let l6 = *base.add(8).cast::<i64>();
+
+                                        l6
+                                    };
+                                    V19::Int64(e19)
+                                }
+                                5 => {
+                                    let e19 = {
+                                        let l7 = i32::from(*base.add(8).cast::<u8>());
+
+                                        l7 as u8
+                                    };
+                                    V19::Uint8(e19)
+                                }
+                                6 => {
+                                    let e19 = {
+                                        let l8 = i32::from(*base.add(8).cast::<u16>());
+
+                                        l8 as u16
+                                    };
+                                    V19::Uint16(e19)
+                                }
+                                7 => {
+                                    let e19 = {
+                                        let l9 = *base.add(8).cast::<i32>();
+
+                                        l9 as u32
+                                    };
+                                    V19::Uint32(e19)
+                                }
+                                8 => {
+                                    let e19 = {
+                                        let l10 = *base.add(8).cast::<i64>();
+
+                                        l10 as u64
+                                    };
+                                    V19::Uint64(e19)
+                                }
+                                9 => {
+                                    let e19 = {
+                                        let l11 = *base.add(8).cast::<f32>();
+
+                                        l11
+                                    };
+                                    V19::Floating32(e19)
+                                }
+                                10 => {
+                                    let e19 = {
+                                        let l12 = *base.add(8).cast::<f64>();
+
+                                        l12
+                                    };
+                                    V19::Floating64(e19)
+                                }
+                                11 => {
+                                    let e19 = {
+                                        let l13 = *base.add(8).cast::<*mut u8>();
+                                        let l14 = *base.add(12).cast::<usize>();
+                                        let len15 = l14;
+                                        let bytes15 =
+                                            _rt::Vec::from_raw_parts(l13.cast(), len15, len15);
+
+                                        _rt::string_lift(bytes15)
+                                    };
+                                    V19::Str(e19)
+                                }
+                                12 => {
+                                    let e19 = {
+                                        let l16 = *base.add(8).cast::<*mut u8>();
+                                        let l17 = *base.add(12).cast::<usize>();
+                                        let len18 = l17;
+
+                                        _rt::Vec::from_raw_parts(l16.cast(), len18, len18)
+                                    };
+                                    V19::Binary(e19)
+                                }
+                                n => {
+                                    debug_assert_eq!(n, 13, "invalid enum discriminant");
+                                    V19::DbNull
+                                }
+                            };
+
+                            v19
+                        };
+                        result20.push(e20);
+                    }
+                    _rt::cabi_dealloc(base20, len20 * 16, 8);
+                    let result21 = T::query(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        result20,
+                    );
+                    let ptr22 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result21 {
+                        Ok(e) => {
+                            *ptr22.add(0).cast::<u8>() = (0i32) as u8;
+                            let super::super::super::super::fermyon::spin::rdbms_types::RowSet {
+                                columns: columns23,
+                                rows: rows23,
+                            } = e;
+                            let vec26 = columns23;
+                            let len26 = vec26.len();
+                            let layout26 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec26.len() * 12, 4);
+                            let result26 = if layout26.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout26).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout26);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec26.into_iter().enumerate() {
+                                let base = result26.add(i * 12);
+                                {
+                                    let super::super::super::super::fermyon::spin::rdbms_types::Column{ name:name24, data_type:data_type24, } = e;
+                                    let vec25 = (name24.into_bytes()).into_boxed_slice();
+                                    let ptr25 = vec25.as_ptr().cast::<u8>();
+                                    let len25 = vec25.len();
+                                    ::core::mem::forget(vec25);
+                                    *base.add(4).cast::<usize>() = len25;
+                                    *base.add(0).cast::<*mut u8>() = ptr25.cast_mut();
+                                    *base.add(8).cast::<u8>() = (data_type24.clone() as i32) as u8;
+                                }
+                            }
+                            *ptr22.add(8).cast::<usize>() = len26;
+                            *ptr22.add(4).cast::<*mut u8>() = result26;
+                            let vec31 = rows23;
+                            let len31 = vec31.len();
+                            let layout31 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec31.len() * 8, 4);
+                            let result31 = if layout31.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout31).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout31);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec31.into_iter().enumerate() {
+                                let base = result31.add(i * 8);
+                                {
+                                    let vec30 = e;
+                                    let len30 = vec30.len();
+                                    let layout30 = _rt::alloc::Layout::from_size_align_unchecked(
+                                        vec30.len() * 16,
+                                        8,
+                                    );
+                                    let result30 = if layout30.size() != 0 {
+                                        let ptr = _rt::alloc::alloc(layout30).cast::<u8>();
+                                        if ptr.is_null() {
+                                            _rt::alloc::handle_alloc_error(layout30);
+                                        }
+                                        ptr
+                                    } else {
+                                        {
+                                            ::core::ptr::null_mut()
+                                        }
+                                    };
+                                    for (i, e) in vec30.into_iter().enumerate() {
+                                        let base = result30.add(i * 16);
+                                        {
+                                            use super::super::super::super::fermyon::spin::rdbms_types::DbValue as V29;
+                                            match e {
+                                                V29::Boolean(e) => {
+                                                    *base.add(0).cast::<u8>() = (0i32) as u8;
+                                                    *base.add(8).cast::<u8>() = (match e {
+                                                        true => 1,
+                                                        false => 0,
+                                                    })
+                                                        as u8;
+                                                }
+                                                V29::Int8(e) => {
+                                                    *base.add(0).cast::<u8>() = (1i32) as u8;
+                                                    *base.add(8).cast::<u8>() =
+                                                        (_rt::as_i32(e)) as u8;
+                                                }
+                                                V29::Int16(e) => {
+                                                    *base.add(0).cast::<u8>() = (2i32) as u8;
+                                                    *base.add(8).cast::<u16>() =
+                                                        (_rt::as_i32(e)) as u16;
+                                                }
+                                                V29::Int32(e) => {
+                                                    *base.add(0).cast::<u8>() = (3i32) as u8;
+                                                    *base.add(8).cast::<i32>() = _rt::as_i32(e);
+                                                }
+                                                V29::Int64(e) => {
+                                                    *base.add(0).cast::<u8>() = (4i32) as u8;
+                                                    *base.add(8).cast::<i64>() = _rt::as_i64(e);
+                                                }
+                                                V29::Uint8(e) => {
+                                                    *base.add(0).cast::<u8>() = (5i32) as u8;
+                                                    *base.add(8).cast::<u8>() =
+                                                        (_rt::as_i32(e)) as u8;
+                                                }
+                                                V29::Uint16(e) => {
+                                                    *base.add(0).cast::<u8>() = (6i32) as u8;
+                                                    *base.add(8).cast::<u16>() =
+                                                        (_rt::as_i32(e)) as u16;
+                                                }
+                                                V29::Uint32(e) => {
+                                                    *base.add(0).cast::<u8>() = (7i32) as u8;
+                                                    *base.add(8).cast::<i32>() = _rt::as_i32(e);
+                                                }
+                                                V29::Uint64(e) => {
+                                                    *base.add(0).cast::<u8>() = (8i32) as u8;
+                                                    *base.add(8).cast::<i64>() = _rt::as_i64(e);
+                                                }
+                                                V29::Floating32(e) => {
+                                                    *base.add(0).cast::<u8>() = (9i32) as u8;
+                                                    *base.add(8).cast::<f32>() = _rt::as_f32(e);
+                                                }
+                                                V29::Floating64(e) => {
+                                                    *base.add(0).cast::<u8>() = (10i32) as u8;
+                                                    *base.add(8).cast::<f64>() = _rt::as_f64(e);
+                                                }
+                                                V29::Str(e) => {
+                                                    *base.add(0).cast::<u8>() = (11i32) as u8;
+                                                    let vec27 = (e.into_bytes()).into_boxed_slice();
+                                                    let ptr27 = vec27.as_ptr().cast::<u8>();
+                                                    let len27 = vec27.len();
+                                                    ::core::mem::forget(vec27);
+                                                    *base.add(12).cast::<usize>() = len27;
+                                                    *base.add(8).cast::<*mut u8>() =
+                                                        ptr27.cast_mut();
+                                                }
+                                                V29::Binary(e) => {
+                                                    *base.add(0).cast::<u8>() = (12i32) as u8;
+                                                    let vec28 = (e).into_boxed_slice();
+                                                    let ptr28 = vec28.as_ptr().cast::<u8>();
+                                                    let len28 = vec28.len();
+                                                    ::core::mem::forget(vec28);
+                                                    *base.add(12).cast::<usize>() = len28;
+                                                    *base.add(8).cast::<*mut u8>() =
+                                                        ptr28.cast_mut();
+                                                }
+                                                V29::DbNull => {
+                                                    *base.add(0).cast::<u8>() = (13i32) as u8;
+                                                }
+                                                V29::Unsupported => {
+                                                    *base.add(0).cast::<u8>() = (14i32) as u8;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    *base.add(4).cast::<usize>() = len30;
+                                    *base.add(0).cast::<*mut u8>() = result30;
+                                }
+                            }
+                            *ptr22.add(16).cast::<usize>() = len31;
+                            *ptr22.add(12).cast::<*mut u8>() = result31;
+                        }
+                        Err(e) => {
+                            *ptr22.add(0).cast::<u8>() = (1i32) as u8;
+                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V37;
+                            match e {
+                                V37::ConnectionFailed(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (0i32) as u8;
+                                    let vec32 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr32 = vec32.as_ptr().cast::<u8>();
+                                    let len32 = vec32.len();
+                                    ::core::mem::forget(vec32);
+                                    *ptr22.add(12).cast::<usize>() = len32;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr32.cast_mut();
+                                }
+                                V37::BadParameter(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (1i32) as u8;
+                                    let vec33 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr33 = vec33.as_ptr().cast::<u8>();
+                                    let len33 = vec33.len();
+                                    ::core::mem::forget(vec33);
+                                    *ptr22.add(12).cast::<usize>() = len33;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr33.cast_mut();
+                                }
+                                V37::QueryFailed(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (2i32) as u8;
+                                    let vec34 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr34 = vec34.as_ptr().cast::<u8>();
+                                    let len34 = vec34.len();
+                                    ::core::mem::forget(vec34);
+                                    *ptr22.add(12).cast::<usize>() = len34;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr34.cast_mut();
+                                }
+                                V37::ValueConversionFailed(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec35 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr35 = vec35.as_ptr().cast::<u8>();
+                                    let len35 = vec35.len();
+                                    ::core::mem::forget(vec35);
+                                    *ptr22.add(12).cast::<usize>() = len35;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr35.cast_mut();
+                                }
+                                V37::Other(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (4i32) as u8;
+                                    let vec36 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr36 = vec36.as_ptr().cast::<u8>();
+                                    let len36 = vec36.len();
+                                    ::core::mem::forget(vec36);
+                                    *ptr22.add(12).cast::<usize>() = len36;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr36.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr22
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_query<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => {
+                            let l3 = *arg0.add(4).cast::<*mut u8>();
+                            let l4 = *arg0.add(8).cast::<usize>();
+                            let base5 = l3;
+                            let len5 = l4;
+                            for i in 0..len5 {
+                                let base = base5.add(i * 12);
+                                {
+                                    let l1 = *base.add(0).cast::<*mut u8>();
+                                    let l2 = *base.add(4).cast::<usize>();
+                                    _rt::cabi_dealloc(l1, l2, 1);
+                                }
+                            }
+                            _rt::cabi_dealloc(base5, len5 * 12, 4);
+                            let l15 = *arg0.add(12).cast::<*mut u8>();
+                            let l16 = *arg0.add(16).cast::<usize>();
+                            let base17 = l15;
+                            let len17 = l16;
+                            for i in 0..len17 {
+                                let base = base17.add(i * 8);
+                                {
+                                    let l12 = *base.add(0).cast::<*mut u8>();
+                                    let l13 = *base.add(4).cast::<usize>();
+                                    let base14 = l12;
+                                    let len14 = l13;
+                                    for i in 0..len14 {
+                                        let base = base14.add(i * 16);
+                                        {
+                                            let l6 = i32::from(*base.add(0).cast::<u8>());
+                                            match l6 {
+                                                0 => (),
+                                                1 => (),
+                                                2 => (),
+                                                3 => (),
+                                                4 => (),
+                                                5 => (),
+                                                6 => (),
+                                                7 => (),
+                                                8 => (),
+                                                9 => (),
+                                                10 => (),
+                                                11 => {
+                                                    let l7 = *base.add(8).cast::<*mut u8>();
+                                                    let l8 = *base.add(12).cast::<usize>();
+                                                    _rt::cabi_dealloc(l7, l8, 1);
+                                                }
+                                                12 => {
+                                                    let l9 = *base.add(8).cast::<*mut u8>();
+                                                    let l10 = *base.add(12).cast::<usize>();
+                                                    let base11 = l9;
+                                                    let len11 = l10;
+                                                    _rt::cabi_dealloc(base11, len11 * 1, 1);
+                                                }
+                                                13 => (),
+                                                _ => (),
+                                            }
+                                        }
+                                    }
+                                    _rt::cabi_dealloc(base14, len14 * 16, 8);
+                                }
+                            }
+                            _rt::cabi_dealloc(base17, len17 * 8, 4);
+                        }
+                        _ => {
+                            let l18 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l18 {
+                                0 => {
+                                    let l19 = *arg0.add(8).cast::<*mut u8>();
+                                    let l20 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l19, l20, 1);
+                                }
+                                1 => {
+                                    let l21 = *arg0.add(8).cast::<*mut u8>();
+                                    let l22 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l21, l22, 1);
+                                }
+                                2 => {
+                                    let l23 = *arg0.add(8).cast::<*mut u8>();
+                                    let l24 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l23, l24, 1);
+                                }
+                                3 => {
+                                    let l25 = *arg0.add(8).cast::<*mut u8>();
+                                    let l26 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l25, l26, 1);
+                                }
+                                _ => {
+                                    let l27 = *arg0.add(8).cast::<*mut u8>();
+                                    let l28 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l27, l28, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_execute_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let base20 = arg3;
+                    let len20 = arg4;
+                    let mut result20 = _rt::Vec::with_capacity(len20);
+                    for i in 0..len20 {
+                        let base = base20.add(i * 16);
+                        let e20 = {
+                            let l1 = i32::from(*base.add(0).cast::<u8>());
+                            use super::super::super::super::fermyon::spin::rdbms_types::ParameterValue as V19;
+                            let v19 = match l1 {
+                                0 => {
+                                    let e19 = {
+                                        let l2 = i32::from(*base.add(8).cast::<u8>());
+
+                                        _rt::bool_lift(l2 as u8)
+                                    };
+                                    V19::Boolean(e19)
+                                }
+                                1 => {
+                                    let e19 = {
+                                        let l3 = i32::from(*base.add(8).cast::<i8>());
+
+                                        l3 as i8
+                                    };
+                                    V19::Int8(e19)
+                                }
+                                2 => {
+                                    let e19 = {
+                                        let l4 = i32::from(*base.add(8).cast::<i16>());
+
+                                        l4 as i16
+                                    };
+                                    V19::Int16(e19)
+                                }
+                                3 => {
+                                    let e19 = {
+                                        let l5 = *base.add(8).cast::<i32>();
+
+                                        l5
+                                    };
+                                    V19::Int32(e19)
+                                }
+                                4 => {
+                                    let e19 = {
+                                        let l6 = *base.add(8).cast::<i64>();
+
+                                        l6
+                                    };
+                                    V19::Int64(e19)
+                                }
+                                5 => {
+                                    let e19 = {
+                                        let l7 = i32::from(*base.add(8).cast::<u8>());
+
+                                        l7 as u8
+                                    };
+                                    V19::Uint8(e19)
+                                }
+                                6 => {
+                                    let e19 = {
+                                        let l8 = i32::from(*base.add(8).cast::<u16>());
+
+                                        l8 as u16
+                                    };
+                                    V19::Uint16(e19)
+                                }
+                                7 => {
+                                    let e19 = {
+                                        let l9 = *base.add(8).cast::<i32>();
+
+                                        l9 as u32
+                                    };
+                                    V19::Uint32(e19)
+                                }
+                                8 => {
+                                    let e19 = {
+                                        let l10 = *base.add(8).cast::<i64>();
+
+                                        l10 as u64
+                                    };
+                                    V19::Uint64(e19)
+                                }
+                                9 => {
+                                    let e19 = {
+                                        let l11 = *base.add(8).cast::<f32>();
+
+                                        l11
+                                    };
+                                    V19::Floating32(e19)
+                                }
+                                10 => {
+                                    let e19 = {
+                                        let l12 = *base.add(8).cast::<f64>();
+
+                                        l12
+                                    };
+                                    V19::Floating64(e19)
+                                }
+                                11 => {
+                                    let e19 = {
+                                        let l13 = *base.add(8).cast::<*mut u8>();
+                                        let l14 = *base.add(12).cast::<usize>();
+                                        let len15 = l14;
+                                        let bytes15 =
+                                            _rt::Vec::from_raw_parts(l13.cast(), len15, len15);
+
+                                        _rt::string_lift(bytes15)
+                                    };
+                                    V19::Str(e19)
+                                }
+                                12 => {
+                                    let e19 = {
+                                        let l16 = *base.add(8).cast::<*mut u8>();
+                                        let l17 = *base.add(12).cast::<usize>();
+                                        let len18 = l17;
+
+                                        _rt::Vec::from_raw_parts(l16.cast(), len18, len18)
+                                    };
+                                    V19::Binary(e19)
+                                }
+                                n => {
+                                    debug_assert_eq!(n, 13, "invalid enum discriminant");
+                                    V19::DbNull
+                                }
+                            };
+
+                            v19
+                        };
+                        result20.push(e20);
+                    }
+                    _rt::cabi_dealloc(base20, len20 * 16, 8);
+                    let result21 = T::execute(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        result20,
+                    );
+                    let ptr22 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result21 {
+                        Ok(e) => {
+                            *ptr22.add(0).cast::<u8>() = (0i32) as u8;
+                            *ptr22.add(8).cast::<i64>() = _rt::as_i64(e);
+                        }
+                        Err(e) => {
+                            *ptr22.add(0).cast::<u8>() = (1i32) as u8;
+                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V28;
+                            match e {
+                                V28::ConnectionFailed(e) => {
+                                    *ptr22.add(8).cast::<u8>() = (0i32) as u8;
+                                    let vec23 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr23 = vec23.as_ptr().cast::<u8>();
+                                    let len23 = vec23.len();
+                                    ::core::mem::forget(vec23);
+                                    *ptr22.add(16).cast::<usize>() = len23;
+                                    *ptr22.add(12).cast::<*mut u8>() = ptr23.cast_mut();
+                                }
+                                V28::BadParameter(e) => {
+                                    *ptr22.add(8).cast::<u8>() = (1i32) as u8;
+                                    let vec24 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr24 = vec24.as_ptr().cast::<u8>();
+                                    let len24 = vec24.len();
+                                    ::core::mem::forget(vec24);
+                                    *ptr22.add(16).cast::<usize>() = len24;
+                                    *ptr22.add(12).cast::<*mut u8>() = ptr24.cast_mut();
+                                }
+                                V28::QueryFailed(e) => {
+                                    *ptr22.add(8).cast::<u8>() = (2i32) as u8;
+                                    let vec25 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr25 = vec25.as_ptr().cast::<u8>();
+                                    let len25 = vec25.len();
+                                    ::core::mem::forget(vec25);
+                                    *ptr22.add(16).cast::<usize>() = len25;
+                                    *ptr22.add(12).cast::<*mut u8>() = ptr25.cast_mut();
+                                }
+                                V28::ValueConversionFailed(e) => {
+                                    *ptr22.add(8).cast::<u8>() = (3i32) as u8;
+                                    let vec26 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr26 = vec26.as_ptr().cast::<u8>();
+                                    let len26 = vec26.len();
+                                    ::core::mem::forget(vec26);
+                                    *ptr22.add(16).cast::<usize>() = len26;
+                                    *ptr22.add(12).cast::<*mut u8>() = ptr26.cast_mut();
+                                }
+                                V28::Other(e) => {
+                                    *ptr22.add(8).cast::<u8>() = (4i32) as u8;
+                                    let vec27 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr27 = vec27.as_ptr().cast::<u8>();
+                                    let len27 = vec27.len();
+                                    ::core::mem::forget(vec27);
+                                    *ptr22.add(16).cast::<usize>() = len27;
+                                    *ptr22.add(12).cast::<*mut u8>() = ptr27.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr22
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_execute<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(8).cast::<u8>());
+                            match l1 {
+                                0 => {
+                                    let l2 = *arg0.add(12).cast::<*mut u8>();
+                                    let l3 = *arg0.add(16).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                                1 => {
+                                    let l4 = *arg0.add(12).cast::<*mut u8>();
+                                    let l5 = *arg0.add(16).cast::<usize>();
+                                    _rt::cabi_dealloc(l4, l5, 1);
+                                }
+                                2 => {
+                                    let l6 = *arg0.add(12).cast::<*mut u8>();
+                                    let l7 = *arg0.add(16).cast::<usize>();
+                                    _rt::cabi_dealloc(l6, l7, 1);
+                                }
+                                3 => {
+                                    let l8 = *arg0.add(12).cast::<*mut u8>();
+                                    let l9 = *arg0.add(16).cast::<usize>();
+                                    _rt::cabi_dealloc(l8, l9, 1);
+                                }
+                                _ => {
+                                    let l10 = *arg0.add(12).cast::<*mut u8>();
+                                    let l11 = *arg0.add(16).cast::<usize>();
+                                    _rt::cabi_dealloc(l10, l11, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                pub trait Guest {
+                    type Connection: GuestConnection;
+                }
+                pub trait GuestConnection: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/postgres@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-new]connection"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/postgres@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]connection"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    /// Open a connection to the Postgres instance at `address`.
+                    fn open(address: _rt::String) -> Result<Connection, Error>;
+                    /// Query the database.
+                    fn query(
+                        &self,
+                        statement: _rt::String,
+                        params: _rt::Vec<ParameterValue>,
+                    ) -> Result<RowSet, Error>;
+                    /// Execute command to the database.
+                    fn execute(
+                        &self,
+                        statement: _rt::String,
+                        params: _rt::Vec<ParameterValue>,
+                    ) -> Result<u64, Error>;
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_fermyon_spin_postgres_2_0_0_cabi{
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+    #[export_name = "fermyon:spin/postgres@2.0.0#[static]connection.open"]
+    unsafe extern "C" fn export_static_connection_open(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_static_connection_open_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1)
+    }
+    #[export_name = "cabi_post_fermyon:spin/postgres@2.0.0#[static]connection.open"]
+    unsafe extern "C" fn _post_return_static_connection_open(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_static_connection_open::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/postgres@2.0.0#[method]connection.query"]
+    unsafe extern "C" fn export_method_connection_query(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_query_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_fermyon:spin/postgres@2.0.0#[method]connection.query"]
+    unsafe extern "C" fn _post_return_method_connection_query(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_query::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/postgres@2.0.0#[method]connection.execute"]
+    unsafe extern "C" fn export_method_connection_execute(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_execute_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_fermyon:spin/postgres@2.0.0#[method]connection.execute"]
+    unsafe extern "C" fn _post_return_method_connection_execute(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_execute::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "fermyon:spin/postgres@2.0.0#[dtor]connection"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Connection::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Connection
+        >(rep)
+      }
+    };
+
+  };);
+}
+                #[doc(hidden)]
+                pub(crate) use __export_fermyon_spin_postgres_2_0_0_cabi;
+                #[repr(align(8))]
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 24]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 24]);
+            }
+
+            #[allow(dead_code, clippy::all)]
+            pub mod mqtt {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+                use super::super::super::super::_rt;
+                /// Errors related to interacting with Mqtt
+                #[derive(Clone)]
+                pub enum Error {
+                    /// An invalid address string
+                    InvalidAddress,
+                    /// There are too many open connections
+                    TooManyConnections,
+                    /// Connection failure e.g. address not allowed.
+                    ConnectionFailed(_rt::String),
+                    /// Some other error occurred
+                    Other(_rt::String),
+                }
+                impl ::core::fmt::Debug for Error {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            Error::InvalidAddress => {
+                                f.debug_tuple("Error::InvalidAddress").finish()
+                            }
+                            Error::TooManyConnections => {
+                                f.debug_tuple("Error::TooManyConnections").finish()
+                            }
+                            Error::ConnectionFailed(e) => {
+                                f.debug_tuple("Error::ConnectionFailed").field(e).finish()
+                            }
+                            Error::Other(e) => f.debug_tuple("Error::Other").field(e).finish(),
+                        }
+                    }
+                }
+                impl ::core::fmt::Display for Error {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        write!(f, "{:?}", self)
+                    }
+                }
+
+                impl std::error::Error for Error {}
+                /// QoS for publishing Mqtt messages
+                #[repr(u8)]
+                #[derive(Clone, Copy, Eq, PartialEq)]
+                pub enum Qos {
+                    AtMostOnce,
+                    AtLeastOnce,
+                    ExactlyOnce,
+                }
+                impl ::core::fmt::Debug for Qos {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            Qos::AtMostOnce => f.debug_tuple("Qos::AtMostOnce").finish(),
+                            Qos::AtLeastOnce => f.debug_tuple("Qos::AtLeastOnce").finish(),
+                            Qos::ExactlyOnce => f.debug_tuple("Qos::ExactlyOnce").finish(),
+                        }
+                    }
+                }
+
+                impl Qos {
+                    pub(crate) unsafe fn _lift(val: u8) -> Qos {
+                        if !cfg!(debug_assertions) {
+                            return ::core::mem::transmute(val);
+                        }
+
+                        match val {
+                            0 => Qos::AtMostOnce,
+                            1 => Qos::AtLeastOnce,
+                            2 => Qos::ExactlyOnce,
+
+                            _ => panic!("invalid enum discriminant"),
+                        }
+                    }
+                }
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Connection {
+                    handle: _rt::Resource<Connection>,
+                }
+
+                type _ConnectionRep<T> = Option<T>;
+
+                impl Connection {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Connection`.
+                    pub fn new<T: GuestConnection>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _ConnectionRep<T> = Some(val);
+                        let ptr: *mut _ConnectionRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestConnection>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestConnection>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestConnection` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _ConnectionRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestConnection>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Connection`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct ConnectionBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Connection>,
+                }
+
+                impl<'a> ConnectionBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Connection {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/mqtt@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]connection"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
+                /// The message payload.
+                pub type Payload = _rt::Vec<u8>;
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_static_connection_open_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                    arg2: *mut u8,
+                    arg3: usize,
+                    arg4: *mut u8,
+                    arg5: usize,
+                    arg6: i64,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    let len1 = arg3;
+                    let bytes1 = _rt::Vec::from_raw_parts(arg2.cast(), len1, len1);
+                    let len2 = arg5;
+                    let bytes2 = _rt::Vec::from_raw_parts(arg4.cast(), len2, len2);
+                    let result3 = T::open(
+                        _rt::string_lift(bytes0),
+                        _rt::string_lift(bytes1),
+                        _rt::string_lift(bytes2),
+                        arg6 as u64,
+                    );
+                    let ptr4 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result3 {
+                        Ok(e) => {
+                            *ptr4.add(0).cast::<u8>() = (0i32) as u8;
+                            *ptr4.add(4).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                        Err(e) => {
+                            *ptr4.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr4.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr4.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::ConnectionFailed(e) => {
+                                    *ptr4.add(4).cast::<u8>() = (2i32) as u8;
+                                    let vec5 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr5 = vec5.as_ptr().cast::<u8>();
+                                    let len5 = vec5.len();
+                                    ::core::mem::forget(vec5);
+                                    *ptr4.add(12).cast::<usize>() = len5;
+                                    *ptr4.add(8).cast::<*mut u8>() = ptr5.cast_mut();
+                                }
+                                Error::Other(e) => {
+                                    *ptr4.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec6 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr6 = vec6.as_ptr().cast::<u8>();
+                                    let len6 = vec6.len();
+                                    ::core::mem::forget(vec6);
+                                    *ptr4.add(12).cast::<usize>() = len6;
+                                    *ptr4.add(8).cast::<*mut u8>() = ptr6.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr4
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_static_connection_open<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                1 => (),
+                                2 => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                                _ => {
+                                    let l4 = *arg0.add(8).cast::<*mut u8>();
+                                    let l5 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l4, l5, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_publish_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                    arg5: i32,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let len1 = arg4;
+                    let result2 = T::publish(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        _rt::Vec::from_raw_parts(arg3.cast(), len1, len1),
+                        Qos::_lift(arg5 as u8),
+                    );
+                    let ptr3 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result2 {
+                        Ok(_) => {
+                            *ptr3.add(0).cast::<u8>() = (0i32) as u8;
+                        }
+                        Err(e) => {
+                            *ptr3.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidAddress => {
+                                    *ptr3.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::TooManyConnections => {
+                                    *ptr3.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::ConnectionFailed(e) => {
+                                    *ptr3.add(4).cast::<u8>() = (2i32) as u8;
+                                    let vec4 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr4 = vec4.as_ptr().cast::<u8>();
+                                    let len4 = vec4.len();
+                                    ::core::mem::forget(vec4);
+                                    *ptr3.add(12).cast::<usize>() = len4;
+                                    *ptr3.add(8).cast::<*mut u8>() = ptr4.cast_mut();
+                                }
+                                Error::Other(e) => {
+                                    *ptr3.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec5 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr5 = vec5.as_ptr().cast::<u8>();
+                                    let len5 = vec5.len();
+                                    ::core::mem::forget(vec5);
+                                    *ptr3.add(12).cast::<usize>() = len5;
+                                    *ptr3.add(8).cast::<*mut u8>() = ptr5.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr3
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_publish<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                1 => (),
+                                2 => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                                _ => {
+                                    let l4 = *arg0.add(8).cast::<*mut u8>();
+                                    let l5 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l4, l5, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                pub trait Guest {
+                    type Connection: GuestConnection;
+                }
+                pub trait GuestConnection: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/mqtt@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-new]connection"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/mqtt@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]connection"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    /// Open a connection to the Mqtt instance at `address`.
+                    fn open(
+                        address: _rt::String,
+                        username: _rt::String,
+                        password: _rt::String,
+                        keep_alive_interval_in_secs: u64,
+                    ) -> Result<Connection, Error>;
+                    /// Publish an Mqtt message to the specified `topic`.
+                    fn publish(
+                        &self,
+                        topic: _rt::String,
+                        payload: Payload,
+                        qos: Qos,
+                    ) -> Result<(), Error>;
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_fermyon_spin_mqtt_2_0_0_cabi{
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+    #[export_name = "fermyon:spin/mqtt@2.0.0#[static]connection.open"]
+    unsafe extern "C" fn export_static_connection_open(arg0: *mut u8,arg1: usize,arg2: *mut u8,arg3: usize,arg4: *mut u8,arg5: usize,arg6: i64,) -> *mut u8 {
+      $($path_to_types)*::_export_static_connection_open_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+    }
+    #[export_name = "cabi_post_fermyon:spin/mqtt@2.0.0#[static]connection.open"]
+    unsafe extern "C" fn _post_return_static_connection_open(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_static_connection_open::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/mqtt@2.0.0#[method]connection.publish"]
+    unsafe extern "C" fn export_method_connection_publish(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,arg5: i32,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_publish_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4, arg5)
+    }
+    #[export_name = "cabi_post_fermyon:spin/mqtt@2.0.0#[method]connection.publish"]
+    unsafe extern "C" fn _post_return_method_connection_publish(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_publish::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "fermyon:spin/mqtt@2.0.0#[dtor]connection"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Connection::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Connection
+        >(rep)
+      }
+    };
+
+  };);
+}
+                #[doc(hidden)]
+                pub(crate) use __export_fermyon_spin_mqtt_2_0_0_cabi;
+                #[repr(align(4))]
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+            }
+
+            #[allow(dead_code, clippy::all)]
+            pub mod mysql {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+                use super::super::super::super::_rt;
+                pub type ParameterValue =
+                    super::super::super::super::fermyon::spin::rdbms_types::ParameterValue;
+                pub type RowSet = super::super::super::super::fermyon::spin::rdbms_types::RowSet;
+                pub type Error = super::super::super::super::fermyon::spin::rdbms_types::Error;
+                /// A connection to a MySQL database.
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Connection {
+                    handle: _rt::Resource<Connection>,
+                }
+
+                type _ConnectionRep<T> = Option<T>;
+
+                impl Connection {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Connection`.
+                    pub fn new<T: GuestConnection>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _ConnectionRep<T> = Some(val);
+                        let ptr: *mut _ConnectionRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestConnection>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestConnection>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestConnection` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _ConnectionRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestConnection>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Connection`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct ConnectionBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Connection>,
+                }
+
+                impl<'a> ConnectionBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Connection {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/mysql@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]connection"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_static_connection_open_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    let result1 = T::open(_rt::string_lift(bytes0));
+                    let ptr2 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result1 {
+                        Ok(e) => {
+                            *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+                            *ptr2.add(4).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                        Err(e) => {
+                            *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V8;
+                            match e {
+                                V8::ConnectionFailed(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (0i32) as u8;
+                                    let vec3 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr3 = vec3.as_ptr().cast::<u8>();
+                                    let len3 = vec3.len();
+                                    ::core::mem::forget(vec3);
+                                    *ptr2.add(12).cast::<usize>() = len3;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr3.cast_mut();
+                                }
+                                V8::BadParameter(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (1i32) as u8;
+                                    let vec4 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr4 = vec4.as_ptr().cast::<u8>();
+                                    let len4 = vec4.len();
+                                    ::core::mem::forget(vec4);
+                                    *ptr2.add(12).cast::<usize>() = len4;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr4.cast_mut();
+                                }
+                                V8::QueryFailed(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (2i32) as u8;
+                                    let vec5 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr5 = vec5.as_ptr().cast::<u8>();
+                                    let len5 = vec5.len();
+                                    ::core::mem::forget(vec5);
+                                    *ptr2.add(12).cast::<usize>() = len5;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr5.cast_mut();
+                                }
+                                V8::ValueConversionFailed(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec6 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr6 = vec6.as_ptr().cast::<u8>();
+                                    let len6 = vec6.len();
+                                    ::core::mem::forget(vec6);
+                                    *ptr2.add(12).cast::<usize>() = len6;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr6.cast_mut();
+                                }
+                                V8::Other(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (4i32) as u8;
+                                    let vec7 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr7 = vec7.as_ptr().cast::<u8>();
+                                    let len7 = vec7.len();
+                                    ::core::mem::forget(vec7);
+                                    *ptr2.add(12).cast::<usize>() = len7;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr7.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr2
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_static_connection_open<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                                1 => {
+                                    let l4 = *arg0.add(8).cast::<*mut u8>();
+                                    let l5 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l4, l5, 1);
+                                }
+                                2 => {
+                                    let l6 = *arg0.add(8).cast::<*mut u8>();
+                                    let l7 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l6, l7, 1);
+                                }
+                                3 => {
+                                    let l8 = *arg0.add(8).cast::<*mut u8>();
+                                    let l9 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l8, l9, 1);
+                                }
+                                _ => {
+                                    let l10 = *arg0.add(8).cast::<*mut u8>();
+                                    let l11 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l10, l11, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_query_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let base20 = arg3;
+                    let len20 = arg4;
+                    let mut result20 = _rt::Vec::with_capacity(len20);
+                    for i in 0..len20 {
+                        let base = base20.add(i * 16);
+                        let e20 = {
+                            let l1 = i32::from(*base.add(0).cast::<u8>());
+                            use super::super::super::super::fermyon::spin::rdbms_types::ParameterValue as V19;
+                            let v19 = match l1 {
+                                0 => {
+                                    let e19 = {
+                                        let l2 = i32::from(*base.add(8).cast::<u8>());
+
+                                        _rt::bool_lift(l2 as u8)
+                                    };
+                                    V19::Boolean(e19)
+                                }
+                                1 => {
+                                    let e19 = {
+                                        let l3 = i32::from(*base.add(8).cast::<i8>());
+
+                                        l3 as i8
+                                    };
+                                    V19::Int8(e19)
+                                }
+                                2 => {
+                                    let e19 = {
+                                        let l4 = i32::from(*base.add(8).cast::<i16>());
+
+                                        l4 as i16
+                                    };
+                                    V19::Int16(e19)
+                                }
+                                3 => {
+                                    let e19 = {
+                                        let l5 = *base.add(8).cast::<i32>();
+
+                                        l5
+                                    };
+                                    V19::Int32(e19)
+                                }
+                                4 => {
+                                    let e19 = {
+                                        let l6 = *base.add(8).cast::<i64>();
+
+                                        l6
+                                    };
+                                    V19::Int64(e19)
+                                }
+                                5 => {
+                                    let e19 = {
+                                        let l7 = i32::from(*base.add(8).cast::<u8>());
+
+                                        l7 as u8
+                                    };
+                                    V19::Uint8(e19)
+                                }
+                                6 => {
+                                    let e19 = {
+                                        let l8 = i32::from(*base.add(8).cast::<u16>());
+
+                                        l8 as u16
+                                    };
+                                    V19::Uint16(e19)
+                                }
+                                7 => {
+                                    let e19 = {
+                                        let l9 = *base.add(8).cast::<i32>();
+
+                                        l9 as u32
+                                    };
+                                    V19::Uint32(e19)
+                                }
+                                8 => {
+                                    let e19 = {
+                                        let l10 = *base.add(8).cast::<i64>();
+
+                                        l10 as u64
+                                    };
+                                    V19::Uint64(e19)
+                                }
+                                9 => {
+                                    let e19 = {
+                                        let l11 = *base.add(8).cast::<f32>();
+
+                                        l11
+                                    };
+                                    V19::Floating32(e19)
+                                }
+                                10 => {
+                                    let e19 = {
+                                        let l12 = *base.add(8).cast::<f64>();
+
+                                        l12
+                                    };
+                                    V19::Floating64(e19)
+                                }
+                                11 => {
+                                    let e19 = {
+                                        let l13 = *base.add(8).cast::<*mut u8>();
+                                        let l14 = *base.add(12).cast::<usize>();
+                                        let len15 = l14;
+                                        let bytes15 =
+                                            _rt::Vec::from_raw_parts(l13.cast(), len15, len15);
+
+                                        _rt::string_lift(bytes15)
+                                    };
+                                    V19::Str(e19)
+                                }
+                                12 => {
+                                    let e19 = {
+                                        let l16 = *base.add(8).cast::<*mut u8>();
+                                        let l17 = *base.add(12).cast::<usize>();
+                                        let len18 = l17;
+
+                                        _rt::Vec::from_raw_parts(l16.cast(), len18, len18)
+                                    };
+                                    V19::Binary(e19)
+                                }
+                                n => {
+                                    debug_assert_eq!(n, 13, "invalid enum discriminant");
+                                    V19::DbNull
+                                }
+                            };
+
+                            v19
+                        };
+                        result20.push(e20);
+                    }
+                    _rt::cabi_dealloc(base20, len20 * 16, 8);
+                    let result21 = T::query(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        result20,
+                    );
+                    let ptr22 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result21 {
+                        Ok(e) => {
+                            *ptr22.add(0).cast::<u8>() = (0i32) as u8;
+                            let super::super::super::super::fermyon::spin::rdbms_types::RowSet {
+                                columns: columns23,
+                                rows: rows23,
+                            } = e;
+                            let vec26 = columns23;
+                            let len26 = vec26.len();
+                            let layout26 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec26.len() * 12, 4);
+                            let result26 = if layout26.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout26).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout26);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec26.into_iter().enumerate() {
+                                let base = result26.add(i * 12);
+                                {
+                                    let super::super::super::super::fermyon::spin::rdbms_types::Column{ name:name24, data_type:data_type24, } = e;
+                                    let vec25 = (name24.into_bytes()).into_boxed_slice();
+                                    let ptr25 = vec25.as_ptr().cast::<u8>();
+                                    let len25 = vec25.len();
+                                    ::core::mem::forget(vec25);
+                                    *base.add(4).cast::<usize>() = len25;
+                                    *base.add(0).cast::<*mut u8>() = ptr25.cast_mut();
+                                    *base.add(8).cast::<u8>() = (data_type24.clone() as i32) as u8;
+                                }
+                            }
+                            *ptr22.add(8).cast::<usize>() = len26;
+                            *ptr22.add(4).cast::<*mut u8>() = result26;
+                            let vec31 = rows23;
+                            let len31 = vec31.len();
+                            let layout31 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec31.len() * 8, 4);
+                            let result31 = if layout31.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout31).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout31);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec31.into_iter().enumerate() {
+                                let base = result31.add(i * 8);
+                                {
+                                    let vec30 = e;
+                                    let len30 = vec30.len();
+                                    let layout30 = _rt::alloc::Layout::from_size_align_unchecked(
+                                        vec30.len() * 16,
+                                        8,
+                                    );
+                                    let result30 = if layout30.size() != 0 {
+                                        let ptr = _rt::alloc::alloc(layout30).cast::<u8>();
+                                        if ptr.is_null() {
+                                            _rt::alloc::handle_alloc_error(layout30);
+                                        }
+                                        ptr
+                                    } else {
+                                        {
+                                            ::core::ptr::null_mut()
+                                        }
+                                    };
+                                    for (i, e) in vec30.into_iter().enumerate() {
+                                        let base = result30.add(i * 16);
+                                        {
+                                            use super::super::super::super::fermyon::spin::rdbms_types::DbValue as V29;
+                                            match e {
+                                                V29::Boolean(e) => {
+                                                    *base.add(0).cast::<u8>() = (0i32) as u8;
+                                                    *base.add(8).cast::<u8>() = (match e {
+                                                        true => 1,
+                                                        false => 0,
+                                                    })
+                                                        as u8;
+                                                }
+                                                V29::Int8(e) => {
+                                                    *base.add(0).cast::<u8>() = (1i32) as u8;
+                                                    *base.add(8).cast::<u8>() =
+                                                        (_rt::as_i32(e)) as u8;
+                                                }
+                                                V29::Int16(e) => {
+                                                    *base.add(0).cast::<u8>() = (2i32) as u8;
+                                                    *base.add(8).cast::<u16>() =
+                                                        (_rt::as_i32(e)) as u16;
+                                                }
+                                                V29::Int32(e) => {
+                                                    *base.add(0).cast::<u8>() = (3i32) as u8;
+                                                    *base.add(8).cast::<i32>() = _rt::as_i32(e);
+                                                }
+                                                V29::Int64(e) => {
+                                                    *base.add(0).cast::<u8>() = (4i32) as u8;
+                                                    *base.add(8).cast::<i64>() = _rt::as_i64(e);
+                                                }
+                                                V29::Uint8(e) => {
+                                                    *base.add(0).cast::<u8>() = (5i32) as u8;
+                                                    *base.add(8).cast::<u8>() =
+                                                        (_rt::as_i32(e)) as u8;
+                                                }
+                                                V29::Uint16(e) => {
+                                                    *base.add(0).cast::<u8>() = (6i32) as u8;
+                                                    *base.add(8).cast::<u16>() =
+                                                        (_rt::as_i32(e)) as u16;
+                                                }
+                                                V29::Uint32(e) => {
+                                                    *base.add(0).cast::<u8>() = (7i32) as u8;
+                                                    *base.add(8).cast::<i32>() = _rt::as_i32(e);
+                                                }
+                                                V29::Uint64(e) => {
+                                                    *base.add(0).cast::<u8>() = (8i32) as u8;
+                                                    *base.add(8).cast::<i64>() = _rt::as_i64(e);
+                                                }
+                                                V29::Floating32(e) => {
+                                                    *base.add(0).cast::<u8>() = (9i32) as u8;
+                                                    *base.add(8).cast::<f32>() = _rt::as_f32(e);
+                                                }
+                                                V29::Floating64(e) => {
+                                                    *base.add(0).cast::<u8>() = (10i32) as u8;
+                                                    *base.add(8).cast::<f64>() = _rt::as_f64(e);
+                                                }
+                                                V29::Str(e) => {
+                                                    *base.add(0).cast::<u8>() = (11i32) as u8;
+                                                    let vec27 = (e.into_bytes()).into_boxed_slice();
+                                                    let ptr27 = vec27.as_ptr().cast::<u8>();
+                                                    let len27 = vec27.len();
+                                                    ::core::mem::forget(vec27);
+                                                    *base.add(12).cast::<usize>() = len27;
+                                                    *base.add(8).cast::<*mut u8>() =
+                                                        ptr27.cast_mut();
+                                                }
+                                                V29::Binary(e) => {
+                                                    *base.add(0).cast::<u8>() = (12i32) as u8;
+                                                    let vec28 = (e).into_boxed_slice();
+                                                    let ptr28 = vec28.as_ptr().cast::<u8>();
+                                                    let len28 = vec28.len();
+                                                    ::core::mem::forget(vec28);
+                                                    *base.add(12).cast::<usize>() = len28;
+                                                    *base.add(8).cast::<*mut u8>() =
+                                                        ptr28.cast_mut();
+                                                }
+                                                V29::DbNull => {
+                                                    *base.add(0).cast::<u8>() = (13i32) as u8;
+                                                }
+                                                V29::Unsupported => {
+                                                    *base.add(0).cast::<u8>() = (14i32) as u8;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    *base.add(4).cast::<usize>() = len30;
+                                    *base.add(0).cast::<*mut u8>() = result30;
+                                }
+                            }
+                            *ptr22.add(16).cast::<usize>() = len31;
+                            *ptr22.add(12).cast::<*mut u8>() = result31;
+                        }
+                        Err(e) => {
+                            *ptr22.add(0).cast::<u8>() = (1i32) as u8;
+                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V37;
+                            match e {
+                                V37::ConnectionFailed(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (0i32) as u8;
+                                    let vec32 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr32 = vec32.as_ptr().cast::<u8>();
+                                    let len32 = vec32.len();
+                                    ::core::mem::forget(vec32);
+                                    *ptr22.add(12).cast::<usize>() = len32;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr32.cast_mut();
+                                }
+                                V37::BadParameter(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (1i32) as u8;
+                                    let vec33 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr33 = vec33.as_ptr().cast::<u8>();
+                                    let len33 = vec33.len();
+                                    ::core::mem::forget(vec33);
+                                    *ptr22.add(12).cast::<usize>() = len33;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr33.cast_mut();
+                                }
+                                V37::QueryFailed(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (2i32) as u8;
+                                    let vec34 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr34 = vec34.as_ptr().cast::<u8>();
+                                    let len34 = vec34.len();
+                                    ::core::mem::forget(vec34);
+                                    *ptr22.add(12).cast::<usize>() = len34;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr34.cast_mut();
+                                }
+                                V37::ValueConversionFailed(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec35 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr35 = vec35.as_ptr().cast::<u8>();
+                                    let len35 = vec35.len();
+                                    ::core::mem::forget(vec35);
+                                    *ptr22.add(12).cast::<usize>() = len35;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr35.cast_mut();
+                                }
+                                V37::Other(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (4i32) as u8;
+                                    let vec36 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr36 = vec36.as_ptr().cast::<u8>();
+                                    let len36 = vec36.len();
+                                    ::core::mem::forget(vec36);
+                                    *ptr22.add(12).cast::<usize>() = len36;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr36.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr22
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_query<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => {
+                            let l3 = *arg0.add(4).cast::<*mut u8>();
+                            let l4 = *arg0.add(8).cast::<usize>();
+                            let base5 = l3;
+                            let len5 = l4;
+                            for i in 0..len5 {
+                                let base = base5.add(i * 12);
+                                {
+                                    let l1 = *base.add(0).cast::<*mut u8>();
+                                    let l2 = *base.add(4).cast::<usize>();
+                                    _rt::cabi_dealloc(l1, l2, 1);
+                                }
+                            }
+                            _rt::cabi_dealloc(base5, len5 * 12, 4);
+                            let l15 = *arg0.add(12).cast::<*mut u8>();
+                            let l16 = *arg0.add(16).cast::<usize>();
+                            let base17 = l15;
+                            let len17 = l16;
+                            for i in 0..len17 {
+                                let base = base17.add(i * 8);
+                                {
+                                    let l12 = *base.add(0).cast::<*mut u8>();
+                                    let l13 = *base.add(4).cast::<usize>();
+                                    let base14 = l12;
+                                    let len14 = l13;
+                                    for i in 0..len14 {
+                                        let base = base14.add(i * 16);
+                                        {
+                                            let l6 = i32::from(*base.add(0).cast::<u8>());
+                                            match l6 {
+                                                0 => (),
+                                                1 => (),
+                                                2 => (),
+                                                3 => (),
+                                                4 => (),
+                                                5 => (),
+                                                6 => (),
+                                                7 => (),
+                                                8 => (),
+                                                9 => (),
+                                                10 => (),
+                                                11 => {
+                                                    let l7 = *base.add(8).cast::<*mut u8>();
+                                                    let l8 = *base.add(12).cast::<usize>();
+                                                    _rt::cabi_dealloc(l7, l8, 1);
+                                                }
+                                                12 => {
+                                                    let l9 = *base.add(8).cast::<*mut u8>();
+                                                    let l10 = *base.add(12).cast::<usize>();
+                                                    let base11 = l9;
+                                                    let len11 = l10;
+                                                    _rt::cabi_dealloc(base11, len11 * 1, 1);
+                                                }
+                                                13 => (),
+                                                _ => (),
+                                            }
+                                        }
+                                    }
+                                    _rt::cabi_dealloc(base14, len14 * 16, 8);
+                                }
+                            }
+                            _rt::cabi_dealloc(base17, len17 * 8, 4);
+                        }
+                        _ => {
+                            let l18 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l18 {
+                                0 => {
+                                    let l19 = *arg0.add(8).cast::<*mut u8>();
+                                    let l20 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l19, l20, 1);
+                                }
+                                1 => {
+                                    let l21 = *arg0.add(8).cast::<*mut u8>();
+                                    let l22 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l21, l22, 1);
+                                }
+                                2 => {
+                                    let l23 = *arg0.add(8).cast::<*mut u8>();
+                                    let l24 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l23, l24, 1);
+                                }
+                                3 => {
+                                    let l25 = *arg0.add(8).cast::<*mut u8>();
+                                    let l26 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l25, l26, 1);
+                                }
+                                _ => {
+                                    let l27 = *arg0.add(8).cast::<*mut u8>();
+                                    let l28 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l27, l28, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_execute_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let base20 = arg3;
+                    let len20 = arg4;
+                    let mut result20 = _rt::Vec::with_capacity(len20);
+                    for i in 0..len20 {
+                        let base = base20.add(i * 16);
+                        let e20 = {
+                            let l1 = i32::from(*base.add(0).cast::<u8>());
+                            use super::super::super::super::fermyon::spin::rdbms_types::ParameterValue as V19;
+                            let v19 = match l1 {
+                                0 => {
+                                    let e19 = {
+                                        let l2 = i32::from(*base.add(8).cast::<u8>());
+
+                                        _rt::bool_lift(l2 as u8)
+                                    };
+                                    V19::Boolean(e19)
+                                }
+                                1 => {
+                                    let e19 = {
+                                        let l3 = i32::from(*base.add(8).cast::<i8>());
+
+                                        l3 as i8
+                                    };
+                                    V19::Int8(e19)
+                                }
+                                2 => {
+                                    let e19 = {
+                                        let l4 = i32::from(*base.add(8).cast::<i16>());
+
+                                        l4 as i16
+                                    };
+                                    V19::Int16(e19)
+                                }
+                                3 => {
+                                    let e19 = {
+                                        let l5 = *base.add(8).cast::<i32>();
+
+                                        l5
+                                    };
+                                    V19::Int32(e19)
+                                }
+                                4 => {
+                                    let e19 = {
+                                        let l6 = *base.add(8).cast::<i64>();
+
+                                        l6
+                                    };
+                                    V19::Int64(e19)
+                                }
+                                5 => {
+                                    let e19 = {
+                                        let l7 = i32::from(*base.add(8).cast::<u8>());
+
+                                        l7 as u8
+                                    };
+                                    V19::Uint8(e19)
+                                }
+                                6 => {
+                                    let e19 = {
+                                        let l8 = i32::from(*base.add(8).cast::<u16>());
+
+                                        l8 as u16
+                                    };
+                                    V19::Uint16(e19)
+                                }
+                                7 => {
+                                    let e19 = {
+                                        let l9 = *base.add(8).cast::<i32>();
+
+                                        l9 as u32
+                                    };
+                                    V19::Uint32(e19)
+                                }
+                                8 => {
+                                    let e19 = {
+                                        let l10 = *base.add(8).cast::<i64>();
+
+                                        l10 as u64
+                                    };
+                                    V19::Uint64(e19)
+                                }
+                                9 => {
+                                    let e19 = {
+                                        let l11 = *base.add(8).cast::<f32>();
+
+                                        l11
+                                    };
+                                    V19::Floating32(e19)
+                                }
+                                10 => {
+                                    let e19 = {
+                                        let l12 = *base.add(8).cast::<f64>();
+
+                                        l12
+                                    };
+                                    V19::Floating64(e19)
+                                }
+                                11 => {
+                                    let e19 = {
+                                        let l13 = *base.add(8).cast::<*mut u8>();
+                                        let l14 = *base.add(12).cast::<usize>();
+                                        let len15 = l14;
+                                        let bytes15 =
+                                            _rt::Vec::from_raw_parts(l13.cast(), len15, len15);
+
+                                        _rt::string_lift(bytes15)
+                                    };
+                                    V19::Str(e19)
+                                }
+                                12 => {
+                                    let e19 = {
+                                        let l16 = *base.add(8).cast::<*mut u8>();
+                                        let l17 = *base.add(12).cast::<usize>();
+                                        let len18 = l17;
+
+                                        _rt::Vec::from_raw_parts(l16.cast(), len18, len18)
+                                    };
+                                    V19::Binary(e19)
+                                }
+                                n => {
+                                    debug_assert_eq!(n, 13, "invalid enum discriminant");
+                                    V19::DbNull
+                                }
+                            };
+
+                            v19
+                        };
+                        result20.push(e20);
+                    }
+                    _rt::cabi_dealloc(base20, len20 * 16, 8);
+                    let result21 = T::execute(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        result20,
+                    );
+                    let ptr22 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result21 {
+                        Ok(_) => {
+                            *ptr22.add(0).cast::<u8>() = (0i32) as u8;
+                        }
+                        Err(e) => {
+                            *ptr22.add(0).cast::<u8>() = (1i32) as u8;
+                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V28;
+                            match e {
+                                V28::ConnectionFailed(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (0i32) as u8;
+                                    let vec23 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr23 = vec23.as_ptr().cast::<u8>();
+                                    let len23 = vec23.len();
+                                    ::core::mem::forget(vec23);
+                                    *ptr22.add(12).cast::<usize>() = len23;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr23.cast_mut();
+                                }
+                                V28::BadParameter(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (1i32) as u8;
+                                    let vec24 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr24 = vec24.as_ptr().cast::<u8>();
+                                    let len24 = vec24.len();
+                                    ::core::mem::forget(vec24);
+                                    *ptr22.add(12).cast::<usize>() = len24;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr24.cast_mut();
+                                }
+                                V28::QueryFailed(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (2i32) as u8;
+                                    let vec25 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr25 = vec25.as_ptr().cast::<u8>();
+                                    let len25 = vec25.len();
+                                    ::core::mem::forget(vec25);
+                                    *ptr22.add(12).cast::<usize>() = len25;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr25.cast_mut();
+                                }
+                                V28::ValueConversionFailed(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec26 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr26 = vec26.as_ptr().cast::<u8>();
+                                    let len26 = vec26.len();
+                                    ::core::mem::forget(vec26);
+                                    *ptr22.add(12).cast::<usize>() = len26;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr26.cast_mut();
+                                }
+                                V28::Other(e) => {
+                                    *ptr22.add(4).cast::<u8>() = (4i32) as u8;
+                                    let vec27 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr27 = vec27.as_ptr().cast::<u8>();
+                                    let len27 = vec27.len();
+                                    ::core::mem::forget(vec27);
+                                    *ptr22.add(12).cast::<usize>() = len27;
+                                    *ptr22.add(8).cast::<*mut u8>() = ptr27.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr22
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_execute<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                                1 => {
+                                    let l4 = *arg0.add(8).cast::<*mut u8>();
+                                    let l5 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l4, l5, 1);
+                                }
+                                2 => {
+                                    let l6 = *arg0.add(8).cast::<*mut u8>();
+                                    let l7 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l6, l7, 1);
+                                }
+                                3 => {
+                                    let l8 = *arg0.add(8).cast::<*mut u8>();
+                                    let l9 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l8, l9, 1);
+                                }
+                                _ => {
+                                    let l10 = *arg0.add(8).cast::<*mut u8>();
+                                    let l11 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l10, l11, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                pub trait Guest {
+                    type Connection: GuestConnection;
+                }
+                pub trait GuestConnection: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/mysql@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-new]connection"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/mysql@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]connection"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    /// Open a connection to the MySQL instance at `address`.
+                    fn open(address: _rt::String) -> Result<Connection, Error>;
+                    /// query the database: select
+                    fn query(
+                        &self,
+                        statement: _rt::String,
+                        params: _rt::Vec<ParameterValue>,
+                    ) -> Result<RowSet, Error>;
+                    /// execute command to the database: insert, update, delete
+                    fn execute(
+                        &self,
+                        statement: _rt::String,
+                        params: _rt::Vec<ParameterValue>,
+                    ) -> Result<(), Error>;
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_fermyon_spin_mysql_2_0_0_cabi{
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+    #[export_name = "fermyon:spin/mysql@2.0.0#[static]connection.open"]
+    unsafe extern "C" fn export_static_connection_open(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_static_connection_open_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1)
+    }
+    #[export_name = "cabi_post_fermyon:spin/mysql@2.0.0#[static]connection.open"]
+    unsafe extern "C" fn _post_return_static_connection_open(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_static_connection_open::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/mysql@2.0.0#[method]connection.query"]
+    unsafe extern "C" fn export_method_connection_query(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_query_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_fermyon:spin/mysql@2.0.0#[method]connection.query"]
+    unsafe extern "C" fn _post_return_method_connection_query(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_query::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/mysql@2.0.0#[method]connection.execute"]
+    unsafe extern "C" fn export_method_connection_execute(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_execute_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_fermyon:spin/mysql@2.0.0#[method]connection.execute"]
+    unsafe extern "C" fn _post_return_method_connection_execute(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_execute::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "fermyon:spin/mysql@2.0.0#[dtor]connection"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Connection::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Connection
+        >(rep)
+      }
+    };
+
+  };);
+}
+                #[doc(hidden)]
+                pub(crate) use __export_fermyon_spin_mysql_2_0_0_cabi;
+                #[repr(align(4))]
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 20]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 20]);
+            }
+
+            #[allow(dead_code, clippy::all)]
+            pub mod sqlite {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+                use super::super::super::super::_rt;
+                /// A handle to an open sqlite instance
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Connection {
+                    handle: _rt::Resource<Connection>,
+                }
+
+                type _ConnectionRep<T> = Option<T>;
+
+                impl Connection {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Connection`.
+                    pub fn new<T: GuestConnection>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _ConnectionRep<T> = Some(val);
+                        let ptr: *mut _ConnectionRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestConnection>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestConnection>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestConnection` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _ConnectionRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestConnection>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Connection`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct ConnectionBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Connection>,
+                }
+
+                impl<'a> ConnectionBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Connection {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/sqlite@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]connection"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
+                /// The set of errors which may be raised by functions in this interface
+                #[derive(Clone)]
+                pub enum Error {
+                    /// The host does not recognize the database name requested.
+                    NoSuchDatabase,
+                    /// The requesting component does not have access to the specified database (which may or may not exist).
+                    AccessDenied,
+                    /// The provided connection is not valid
+                    InvalidConnection,
+                    /// The database has reached its capacity
+                    DatabaseFull,
+                    /// Some implementation-specific error has occurred (e.g. I/O)
+                    Io(_rt::String),
+                }
+                impl ::core::fmt::Debug for Error {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            Error::NoSuchDatabase => {
+                                f.debug_tuple("Error::NoSuchDatabase").finish()
+                            }
+                            Error::AccessDenied => f.debug_tuple("Error::AccessDenied").finish(),
+                            Error::InvalidConnection => {
+                                f.debug_tuple("Error::InvalidConnection").finish()
+                            }
+                            Error::DatabaseFull => f.debug_tuple("Error::DatabaseFull").finish(),
+                            Error::Io(e) => f.debug_tuple("Error::Io").field(e).finish(),
+                        }
+                    }
+                }
+                impl ::core::fmt::Display for Error {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        write!(f, "{:?}", self)
+                    }
+                }
+
+                impl std::error::Error for Error {}
+                /// A single column's result from a database query
+                #[derive(Clone)]
+                pub enum Value {
+                    Integer(i64),
+                    Real(f64),
+                    Text(_rt::String),
+                    Blob(_rt::Vec<u8>),
+                    Null,
+                }
+                impl ::core::fmt::Debug for Value {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            Value::Integer(e) => f.debug_tuple("Value::Integer").field(e).finish(),
+                            Value::Real(e) => f.debug_tuple("Value::Real").field(e).finish(),
+                            Value::Text(e) => f.debug_tuple("Value::Text").field(e).finish(),
+                            Value::Blob(e) => f.debug_tuple("Value::Blob").field(e).finish(),
+                            Value::Null => f.debug_tuple("Value::Null").finish(),
+                        }
+                    }
+                }
+                /// A set of values for each of the columns in a query-result
+                #[derive(Clone)]
+                pub struct RowResult {
+                    pub values: _rt::Vec<Value>,
+                }
+                impl ::core::fmt::Debug for RowResult {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        f.debug_struct("RowResult")
+                            .field("values", &self.values)
+                            .finish()
+                    }
+                }
+                /// A result of a query
+                #[derive(Clone)]
+                pub struct QueryResult {
+                    /// The names of the columns retrieved in the query
+                    pub columns: _rt::Vec<_rt::String>,
+                    /// the row results each containing the values for all the columns for a given row
+                    pub rows: _rt::Vec<RowResult>,
+                }
+                impl ::core::fmt::Debug for QueryResult {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        f.debug_struct("QueryResult")
+                            .field("columns", &self.columns)
+                            .field("rows", &self.rows)
+                            .finish()
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_static_connection_open_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    let result1 = T::open(_rt::string_lift(bytes0));
+                    let ptr2 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result1 {
+                        Ok(e) => {
+                            *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+                            *ptr2.add(4).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                        Err(e) => {
+                            *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::NoSuchDatabase => {
+                                    *ptr2.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::AccessDenied => {
+                                    *ptr2.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::InvalidConnection => {
+                                    *ptr2.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::DatabaseFull => {
+                                    *ptr2.add(4).cast::<u8>() = (3i32) as u8;
+                                }
+                                Error::Io(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (4i32) as u8;
+                                    let vec3 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr3 = vec3.as_ptr().cast::<u8>();
+                                    let len3 = vec3.len();
+                                    ::core::mem::forget(vec3);
+                                    *ptr2.add(12).cast::<usize>() = len3;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr3.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr2
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_static_connection_open<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                3 => (),
+                                _ => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_execute_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let base11 = arg3;
+                    let len11 = arg4;
+                    let mut result11 = _rt::Vec::with_capacity(len11);
+                    for i in 0..len11 {
+                        let base = base11.add(i * 16);
+                        let e11 = {
+                            let l1 = i32::from(*base.add(0).cast::<u8>());
+                            let v10 = match l1 {
+                                0 => {
+                                    let e10 = {
+                                        let l2 = *base.add(8).cast::<i64>();
+
+                                        l2
+                                    };
+                                    Value::Integer(e10)
+                                }
+                                1 => {
+                                    let e10 = {
+                                        let l3 = *base.add(8).cast::<f64>();
+
+                                        l3
+                                    };
+                                    Value::Real(e10)
+                                }
+                                2 => {
+                                    let e10 = {
+                                        let l4 = *base.add(8).cast::<*mut u8>();
+                                        let l5 = *base.add(12).cast::<usize>();
+                                        let len6 = l5;
+                                        let bytes6 =
+                                            _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
+
+                                        _rt::string_lift(bytes6)
+                                    };
+                                    Value::Text(e10)
+                                }
+                                3 => {
+                                    let e10 = {
+                                        let l7 = *base.add(8).cast::<*mut u8>();
+                                        let l8 = *base.add(12).cast::<usize>();
+                                        let len9 = l8;
+
+                                        _rt::Vec::from_raw_parts(l7.cast(), len9, len9)
+                                    };
+                                    Value::Blob(e10)
+                                }
+                                n => {
+                                    debug_assert_eq!(n, 4, "invalid enum discriminant");
+                                    Value::Null
+                                }
+                            };
+
+                            v10
+                        };
+                        result11.push(e11);
+                    }
+                    _rt::cabi_dealloc(base11, len11 * 16, 8);
+                    let result12 = T::execute(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        result11,
+                    );
+                    let ptr13 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result12 {
+                        Ok(e) => {
+                            *ptr13.add(0).cast::<u8>() = (0i32) as u8;
+                            let QueryResult {
+                                columns: columns14,
+                                rows: rows14,
+                            } = e;
+                            let vec16 = columns14;
+                            let len16 = vec16.len();
+                            let layout16 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec16.len() * 8, 4);
+                            let result16 = if layout16.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout16).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout16);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec16.into_iter().enumerate() {
+                                let base = result16.add(i * 8);
+                                {
+                                    let vec15 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr15 = vec15.as_ptr().cast::<u8>();
+                                    let len15 = vec15.len();
+                                    ::core::mem::forget(vec15);
+                                    *base.add(4).cast::<usize>() = len15;
+                                    *base.add(0).cast::<*mut u8>() = ptr15.cast_mut();
+                                }
+                            }
+                            *ptr13.add(8).cast::<usize>() = len16;
+                            *ptr13.add(4).cast::<*mut u8>() = result16;
+                            let vec21 = rows14;
+                            let len21 = vec21.len();
+                            let layout21 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec21.len() * 8, 4);
+                            let result21 = if layout21.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout21).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout21);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec21.into_iter().enumerate() {
+                                let base = result21.add(i * 8);
+                                {
+                                    let RowResult { values: values17 } = e;
+                                    let vec20 = values17;
+                                    let len20 = vec20.len();
+                                    let layout20 = _rt::alloc::Layout::from_size_align_unchecked(
+                                        vec20.len() * 16,
+                                        8,
+                                    );
+                                    let result20 = if layout20.size() != 0 {
+                                        let ptr = _rt::alloc::alloc(layout20).cast::<u8>();
+                                        if ptr.is_null() {
+                                            _rt::alloc::handle_alloc_error(layout20);
+                                        }
+                                        ptr
+                                    } else {
+                                        {
+                                            ::core::ptr::null_mut()
+                                        }
+                                    };
+                                    for (i, e) in vec20.into_iter().enumerate() {
+                                        let base = result20.add(i * 16);
+                                        {
+                                            match e {
+                                                Value::Integer(e) => {
+                                                    *base.add(0).cast::<u8>() = (0i32) as u8;
+                                                    *base.add(8).cast::<i64>() = _rt::as_i64(e);
+                                                }
+                                                Value::Real(e) => {
+                                                    *base.add(0).cast::<u8>() = (1i32) as u8;
+                                                    *base.add(8).cast::<f64>() = _rt::as_f64(e);
+                                                }
+                                                Value::Text(e) => {
+                                                    *base.add(0).cast::<u8>() = (2i32) as u8;
+                                                    let vec18 = (e.into_bytes()).into_boxed_slice();
+                                                    let ptr18 = vec18.as_ptr().cast::<u8>();
+                                                    let len18 = vec18.len();
+                                                    ::core::mem::forget(vec18);
+                                                    *base.add(12).cast::<usize>() = len18;
+                                                    *base.add(8).cast::<*mut u8>() =
+                                                        ptr18.cast_mut();
+                                                }
+                                                Value::Blob(e) => {
+                                                    *base.add(0).cast::<u8>() = (3i32) as u8;
+                                                    let vec19 = (e).into_boxed_slice();
+                                                    let ptr19 = vec19.as_ptr().cast::<u8>();
+                                                    let len19 = vec19.len();
+                                                    ::core::mem::forget(vec19);
+                                                    *base.add(12).cast::<usize>() = len19;
+                                                    *base.add(8).cast::<*mut u8>() =
+                                                        ptr19.cast_mut();
+                                                }
+                                                Value::Null => {
+                                                    *base.add(0).cast::<u8>() = (4i32) as u8;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    *base.add(4).cast::<usize>() = len20;
+                                    *base.add(0).cast::<*mut u8>() = result20;
+                                }
+                            }
+                            *ptr13.add(16).cast::<usize>() = len21;
+                            *ptr13.add(12).cast::<*mut u8>() = result21;
+                        }
+                        Err(e) => {
+                            *ptr13.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::NoSuchDatabase => {
+                                    *ptr13.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                Error::AccessDenied => {
+                                    *ptr13.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                Error::InvalidConnection => {
+                                    *ptr13.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                Error::DatabaseFull => {
+                                    *ptr13.add(4).cast::<u8>() = (3i32) as u8;
+                                }
+                                Error::Io(e) => {
+                                    *ptr13.add(4).cast::<u8>() = (4i32) as u8;
+                                    let vec22 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr22 = vec22.as_ptr().cast::<u8>();
+                                    let len22 = vec22.len();
+                                    ::core::mem::forget(vec22);
+                                    *ptr13.add(12).cast::<usize>() = len22;
+                                    *ptr13.add(8).cast::<*mut u8>() = ptr22.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr13
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_execute<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => {
+                            let l3 = *arg0.add(4).cast::<*mut u8>();
+                            let l4 = *arg0.add(8).cast::<usize>();
+                            let base5 = l3;
+                            let len5 = l4;
+                            for i in 0..len5 {
+                                let base = base5.add(i * 8);
+                                {
+                                    let l1 = *base.add(0).cast::<*mut u8>();
+                                    let l2 = *base.add(4).cast::<usize>();
+                                    _rt::cabi_dealloc(l1, l2, 1);
+                                }
+                            }
+                            _rt::cabi_dealloc(base5, len5 * 8, 4);
+                            let l15 = *arg0.add(12).cast::<*mut u8>();
+                            let l16 = *arg0.add(16).cast::<usize>();
+                            let base17 = l15;
+                            let len17 = l16;
+                            for i in 0..len17 {
+                                let base = base17.add(i * 8);
+                                {
+                                    let l12 = *base.add(0).cast::<*mut u8>();
+                                    let l13 = *base.add(4).cast::<usize>();
+                                    let base14 = l12;
+                                    let len14 = l13;
+                                    for i in 0..len14 {
+                                        let base = base14.add(i * 16);
+                                        {
+                                            let l6 = i32::from(*base.add(0).cast::<u8>());
+                                            match l6 {
+                                                0 => (),
+                                                1 => (),
+                                                2 => {
+                                                    let l7 = *base.add(8).cast::<*mut u8>();
+                                                    let l8 = *base.add(12).cast::<usize>();
+                                                    _rt::cabi_dealloc(l7, l8, 1);
+                                                }
+                                                3 => {
+                                                    let l9 = *base.add(8).cast::<*mut u8>();
+                                                    let l10 = *base.add(12).cast::<usize>();
+                                                    let base11 = l9;
+                                                    let len11 = l10;
+                                                    _rt::cabi_dealloc(base11, len11 * 1, 1);
+                                                }
+                                                _ => (),
+                                            }
+                                        }
+                                    }
+                                    _rt::cabi_dealloc(base14, len14 * 16, 8);
+                                }
+                            }
+                            _rt::cabi_dealloc(base17, len17 * 8, 4);
+                        }
+                        _ => {
+                            let l18 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l18 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                3 => (),
+                                _ => {
+                                    let l19 = *arg0.add(8).cast::<*mut u8>();
+                                    let l20 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l19, l20, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                pub trait Guest {
+                    type Connection: GuestConnection;
+                }
+                pub trait GuestConnection: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/sqlite@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-new]connection"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin/sqlite@2.0.0")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]connection"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    /// Open a connection to a named database instance.
+                    ///
+                    /// If `database` is "default", the default instance is opened.
+                    ///
+                    /// `error::no-such-database` will be raised if the `name` is not recognized.
+                    fn open(database: _rt::String) -> Result<Connection, Error>;
+                    /// Execute a statement returning back data if there is any
+                    fn execute(
+                        &self,
+                        statement: _rt::String,
+                        parameters: _rt::Vec<Value>,
+                    ) -> Result<QueryResult, Error>;
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_fermyon_spin_sqlite_2_0_0_cabi{
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+    #[export_name = "fermyon:spin/sqlite@2.0.0#[static]connection.open"]
+    unsafe extern "C" fn export_static_connection_open(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_static_connection_open_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1)
+    }
+    #[export_name = "cabi_post_fermyon:spin/sqlite@2.0.0#[static]connection.open"]
+    unsafe extern "C" fn _post_return_static_connection_open(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_static_connection_open::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin/sqlite@2.0.0#[method]connection.execute"]
+    unsafe extern "C" fn export_method_connection_execute(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_execute_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_fermyon:spin/sqlite@2.0.0#[method]connection.execute"]
+    unsafe extern "C" fn _post_return_method_connection_execute(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_execute::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "fermyon:spin/sqlite@2.0.0#[dtor]connection"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Connection::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Connection
+        >(rep)
+      }
+    };
+
+  };);
+}
+                #[doc(hidden)]
+                pub(crate) use __export_fermyon_spin_sqlite_2_0_0_cabi;
+                #[repr(align(4))]
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 20]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 20]);
+            }
+
+            #[allow(dead_code, clippy::all)]
+            pub mod variables {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+                use super::super::super::super::_rt;
+                /// The set of errors which may be raised by functions in this interface.
+                #[derive(Clone)]
+                pub enum Error {
+                    /// The provided variable name is invalid.
+                    InvalidName(_rt::String),
+                    /// The provided variable is undefined.
+                    Undefined(_rt::String),
+                    /// A variables provider specific error has occurred.
+                    Provider(_rt::String),
+                    /// Some implementation-specific error has occurred.
+                    Other(_rt::String),
+                }
+                impl ::core::fmt::Debug for Error {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            Error::InvalidName(e) => {
+                                f.debug_tuple("Error::InvalidName").field(e).finish()
+                            }
+                            Error::Undefined(e) => {
+                                f.debug_tuple("Error::Undefined").field(e).finish()
+                            }
+                            Error::Provider(e) => {
+                                f.debug_tuple("Error::Provider").field(e).finish()
+                            }
+                            Error::Other(e) => f.debug_tuple("Error::Other").field(e).finish(),
+                        }
+                    }
+                }
+                impl ::core::fmt::Display for Error {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        write!(f, "{:?}", self)
+                    }
+                }
+
+                impl std::error::Error for Error {}
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_get_cabi<T: Guest>(arg0: *mut u8, arg1: usize) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    let result1 = T::get(_rt::string_lift(bytes0));
+                    let ptr2 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result1 {
+                        Ok(e) => {
+                            *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+                            let vec3 = (e.into_bytes()).into_boxed_slice();
+                            let ptr3 = vec3.as_ptr().cast::<u8>();
+                            let len3 = vec3.len();
+                            ::core::mem::forget(vec3);
+                            *ptr2.add(8).cast::<usize>() = len3;
+                            *ptr2.add(4).cast::<*mut u8>() = ptr3.cast_mut();
+                        }
+                        Err(e) => {
+                            *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                Error::InvalidName(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (0i32) as u8;
+                                    let vec4 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr4 = vec4.as_ptr().cast::<u8>();
+                                    let len4 = vec4.len();
+                                    ::core::mem::forget(vec4);
+                                    *ptr2.add(12).cast::<usize>() = len4;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr4.cast_mut();
+                                }
+                                Error::Undefined(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (1i32) as u8;
+                                    let vec5 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr5 = vec5.as_ptr().cast::<u8>();
+                                    let len5 = vec5.len();
+                                    ::core::mem::forget(vec5);
+                                    *ptr2.add(12).cast::<usize>() = len5;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr5.cast_mut();
+                                }
+                                Error::Provider(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (2i32) as u8;
+                                    let vec6 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr6 = vec6.as_ptr().cast::<u8>();
+                                    let len6 = vec6.len();
+                                    ::core::mem::forget(vec6);
+                                    *ptr2.add(12).cast::<usize>() = len6;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr6.cast_mut();
+                                }
+                                Error::Other(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec7 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr7 = vec7.as_ptr().cast::<u8>();
+                                    let len7 = vec7.len();
+                                    ::core::mem::forget(vec7);
+                                    *ptr2.add(12).cast::<usize>() = len7;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr7.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr2
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_get<T: Guest>(arg0: *mut u8) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => {
+                            let l1 = *arg0.add(4).cast::<*mut u8>();
+                            let l2 = *arg0.add(8).cast::<usize>();
+                            _rt::cabi_dealloc(l1, l2, 1);
+                        }
+                        _ => {
+                            let l3 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l3 {
+                                0 => {
+                                    let l4 = *arg0.add(8).cast::<*mut u8>();
+                                    let l5 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l4, l5, 1);
+                                }
+                                1 => {
+                                    let l6 = *arg0.add(8).cast::<*mut u8>();
+                                    let l7 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l6, l7, 1);
+                                }
+                                2 => {
+                                    let l8 = *arg0.add(8).cast::<*mut u8>();
+                                    let l9 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l8, l9, 1);
+                                }
+                                _ => {
+                                    let l10 = *arg0.add(8).cast::<*mut u8>();
+                                    let l11 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l10, l11, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                pub trait Guest {
+                    /// Get an application variable value for the current component.
+                    ///
+                    /// The name must match one defined in in the component manifest.
+                    fn get(name: _rt::String) -> Result<_rt::String, Error>;
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_fermyon_spin_variables_2_0_0_cabi{
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+    #[export_name = "fermyon:spin/variables@2.0.0#get"]
+    unsafe extern "C" fn export_get(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_get_cabi::<$ty>(arg0, arg1)
+    }
+    #[export_name = "cabi_post_fermyon:spin/variables@2.0.0#get"]
+    unsafe extern "C" fn _post_return_get(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_get::<$ty>(arg0)
+    }
+  };);
+}
+                #[doc(hidden)]
+                pub(crate) use __export_fermyon_spin_variables_2_0_0_cabi;
+                #[repr(align(4))]
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+            }
         }
         #[allow(dead_code)]
         pub mod spin_test_virt {
@@ -9479,6 +14654,8 @@ pub mod exports {
     }
 }
 mod _rt {
+    pub use alloc_crate::string::String;
+    pub use alloc_crate::vec::Vec;
 
     use core::fmt;
     use core::marker;
@@ -9585,7 +14762,6 @@ mod _rt {
         }
     }
     pub use alloc_crate::alloc;
-    pub use alloc_crate::vec::Vec;
 
     pub fn as_i64<T: AsI64>(t: T) -> i64 {
         t.as_i64()
@@ -9614,7 +14790,6 @@ mod _rt {
             self as i64
         }
     }
-    pub use alloc_crate::string::String;
     pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
         if cfg!(debug_assertions) {
             String::from_utf8(bytes).unwrap()
@@ -9712,6 +14887,48 @@ mod _rt {
         wit_bindgen_rt::run_ctors_once();
     }
     pub use alloc_crate::boxed::Box;
+
+    pub fn as_f32<T: AsF32>(t: T) -> f32 {
+        t.as_f32()
+    }
+
+    pub trait AsF32 {
+        fn as_f32(self) -> f32;
+    }
+
+    impl<'a, T: Copy + AsF32> AsF32 for &'a T {
+        fn as_f32(self) -> f32 {
+            (*self).as_f32()
+        }
+    }
+
+    impl AsF32 for f32 {
+        #[inline]
+        fn as_f32(self) -> f32 {
+            self as f32
+        }
+    }
+
+    pub fn as_f64<T: AsF64>(t: T) -> f64 {
+        t.as_f64()
+    }
+
+    pub trait AsF64 {
+        fn as_f64(self) -> f64;
+    }
+
+    impl<'a, T: Copy + AsF64> AsF64 for &'a T {
+        fn as_f64(self) -> f64 {
+            (*self).as_f64()
+        }
+    }
+
+    impl AsF64 for f64 {
+        #[inline]
+        fn as_f64(self) -> f64 {
+            self as f64
+        }
+    }
     extern crate alloc as alloc_crate;
 }
 
@@ -9740,6 +14957,12 @@ macro_rules! __export_plug_impl {
                               $($path_to_types_root)*::__export_world_plug_cabi!($ty with_types_in $($path_to_types_root)*);
                               $($path_to_types_root)*::exports::fermyon::spin::key_value::__export_fermyon_spin_key_value_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::key_value);
                               $($path_to_types_root)*::exports::fermyon::spin::llm::__export_fermyon_spin_llm_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::llm);
+                              $($path_to_types_root)*::exports::fermyon::spin::redis::__export_fermyon_spin_redis_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::redis);
+                              $($path_to_types_root)*::exports::fermyon::spin::postgres::__export_fermyon_spin_postgres_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::postgres);
+                              $($path_to_types_root)*::exports::fermyon::spin::mqtt::__export_fermyon_spin_mqtt_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::mqtt);
+                              $($path_to_types_root)*::exports::fermyon::spin::mysql::__export_fermyon_spin_mysql_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::mysql);
+                              $($path_to_types_root)*::exports::fermyon::spin::sqlite::__export_fermyon_spin_sqlite_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::sqlite);
+                              $($path_to_types_root)*::exports::fermyon::spin::variables::__export_fermyon_spin_variables_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::variables);
                               $($path_to_types_root)*::exports::wasi::http::outgoing_handler::__export_wasi_http_outgoing_handler_0_2_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wasi::http::outgoing_handler);
                               $($path_to_types_root)*::exports::fermyon::spin_test_virt::http_handler::__export_fermyon_spin_test_virt_http_handler_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::http_handler);
                               $($path_to_types_root)*::exports::fermyon::spin_test_virt::key_value_calls::__export_fermyon_spin_test_virt_key_value_calls_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::key_value_calls);
@@ -9751,87 +14974,101 @@ pub(crate) use __export_plug_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.23.0:plug:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7741] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc2;\x01A\x02\x01A!\x01\
-B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[meth\
-od]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollable.b\
-lock\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\x01\
-\x12wasi:io/poll@0.2.0\x05\0\x02\x03\0\0\x08pollable\x01B\x0f\x02\x03\x02\x01\x01\
-\x04\0\x08pollable\x03\0\0\x01w\x04\0\x07instant\x03\0\x02\x01w\x04\0\x08duratio\
-n\x03\0\x04\x01@\0\0\x03\x04\0\x03now\x01\x06\x01@\0\0\x05\x04\0\x0aresolution\x01\
-\x07\x01i\x01\x01@\x01\x04when\x03\0\x08\x04\0\x11subscribe-instant\x01\x09\x01@\
-\x01\x04when\x05\0\x08\x04\0\x12subscribe-duration\x01\x0a\x03\x01!wasi:clocks/m\
-onotonic-clock@0.2.0\x05\x02\x01B\x04\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04\
-self\x01\0s\x04\0\x1d[method]error.to-debug-string\x01\x02\x03\x01\x13wasi:io/er\
-ror@0.2.0\x05\x03\x02\x03\0\x02\x05error\x01B(\x02\x03\x02\x01\x04\x04\0\x05erro\
-r\x03\0\0\x02\x03\x02\x01\x01\x04\0\x08pollable\x03\0\x02\x01i\x01\x01q\x02\x15l\
-ast-operation-failed\x01\x04\0\x06closed\0\0\x04\0\x0cstream-error\x03\0\x05\x04\
-\0\x0cinput-stream\x03\x01\x04\0\x0doutput-stream\x03\x01\x01h\x07\x01p}\x01j\x01\
-\x0a\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19[method]input-stream.re\
-ad\x01\x0c\x04\0\"[method]input-stream.blocking-read\x01\x0c\x01j\x01w\x01\x06\x01\
-@\x02\x04self\x09\x03lenw\0\x0d\x04\0\x19[method]input-stream.skip\x01\x0e\x04\0\
-\"[method]input-stream.blocking-skip\x01\x0e\x01i\x03\x01@\x01\x04self\x09\0\x0f\
-\x04\0\x1e[method]input-stream.subscribe\x01\x10\x01h\x08\x01@\x01\x04self\x11\0\
-\x0d\x04\0![method]output-stream.check-write\x01\x12\x01j\0\x01\x06\x01@\x02\x04\
-self\x11\x08contents\x0a\0\x13\x04\0\x1b[method]output-stream.write\x01\x14\x04\0\
-.[method]output-stream.blocking-write-and-flush\x01\x14\x01@\x01\x04self\x11\0\x13\
-\x04\0\x1b[method]output-stream.flush\x01\x15\x04\0$[method]output-stream.blocki\
-ng-flush\x01\x15\x01@\x01\x04self\x11\0\x0f\x04\0\x1f[method]output-stream.subsc\
-ribe\x01\x16\x01@\x02\x04self\x11\x03lenw\0\x13\x04\0\"[method]output-stream.wri\
-te-zeroes\x01\x17\x04\05[method]output-stream.blocking-write-zeroes-and-flush\x01\
-\x17\x01@\x03\x04self\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[method]output-strea\
-m.splice\x01\x18\x04\0%[method]output-stream.blocking-splice\x01\x18\x03\x01\x15\
-wasi:io/streams@0.2.0\x05\x05\x02\x03\0\x01\x08duration\x02\x03\0\x03\x0cinput-s\
-tream\x02\x03\0\x03\x0doutput-stream\x01B\xc0\x01\x02\x03\x02\x01\x06\x04\0\x08d\
-uration\x03\0\0\x02\x03\x02\x01\x07\x04\0\x0cinput-stream\x03\0\x02\x02\x03\x02\x01\
-\x08\x04\0\x0doutput-stream\x03\0\x04\x02\x03\x02\x01\x04\x04\0\x08io-error\x03\0\
-\x06\x02\x03\x02\x01\x01\x04\0\x08pollable\x03\0\x08\x01q\x0a\x03get\0\0\x04head\
-\0\0\x04post\0\0\x03put\0\0\x06delete\0\0\x07connect\0\0\x07options\0\0\x05trace\
-\0\0\x05patch\0\0\x05other\x01s\0\x04\0\x06method\x03\0\x0a\x01q\x03\x04HTTP\0\0\
-\x05HTTPS\0\0\x05other\x01s\0\x04\0\x06scheme\x03\0\x0c\x01ks\x01k{\x01r\x02\x05\
-rcode\x0e\x09info-code\x0f\x04\0\x11DNS-error-payload\x03\0\x10\x01k}\x01r\x02\x08\
-alert-id\x12\x0dalert-message\x0e\x04\0\x1aTLS-alert-received-payload\x03\0\x13\x01\
-ky\x01r\x02\x0afield-name\x0e\x0afield-size\x15\x04\0\x12field-size-payload\x03\0\
-\x16\x01kw\x01k\x17\x01q'\x0bDNS-timeout\0\0\x09DNS-error\x01\x11\0\x15destinati\
-on-not-found\0\0\x17destination-unavailable\0\0\x19destination-IP-prohibited\0\0\
-\x19destination-IP-unroutable\0\0\x12connection-refused\0\0\x15connection-termin\
-ated\0\0\x12connection-timeout\0\0\x17connection-read-timeout\0\0\x18connection-\
-write-timeout\0\0\x18connection-limit-reached\0\0\x12TLS-protocol-error\0\0\x15T\
-LS-certificate-error\0\0\x12TLS-alert-received\x01\x14\0\x13HTTP-request-denied\0\
-\0\x1cHTTP-request-length-required\0\0\x16HTTP-request-body-size\x01\x18\0\x1bHT\
-TP-request-method-invalid\0\0\x18HTTP-request-URI-invalid\0\0\x19HTTP-request-UR\
-I-too-long\0\0\x20HTTP-request-header-section-size\x01\x15\0\x18HTTP-request-hea\
-der-size\x01\x19\0!HTTP-request-trailer-section-size\x01\x15\0\x19HTTP-request-t\
-railer-size\x01\x17\0\x18HTTP-response-incomplete\0\0!HTTP-response-header-secti\
-on-size\x01\x15\0\x19HTTP-response-header-size\x01\x17\0\x17HTTP-response-body-s\
-ize\x01\x18\0\"HTTP-response-trailer-section-size\x01\x15\0\x1aHTTP-response-tra\
-iler-size\x01\x17\0\x1dHTTP-response-transfer-coding\x01\x0e\0\x1cHTTP-response-\
-content-coding\x01\x0e\0\x15HTTP-response-timeout\0\0\x13HTTP-upgrade-failed\0\0\
-\x13HTTP-protocol-error\0\0\x0dloop-detected\0\0\x13configuration-error\0\0\x0ei\
-nternal-error\x01\x0e\0\x04\0\x0aerror-code\x03\0\x1a\x01q\x03\x0einvalid-syntax\
-\0\0\x09forbidden\0\0\x09immutable\0\0\x04\0\x0cheader-error\x03\0\x1c\x01s\x04\0\
-\x09field-key\x03\0\x1e\x01p}\x04\0\x0bfield-value\x03\0\x20\x04\0\x06fields\x03\
-\x01\x04\0\x07headers\x03\0\"\x04\0\x08trailers\x03\0\"\x04\0\x10incoming-reques\
-t\x03\x01\x04\0\x10outgoing-request\x03\x01\x04\0\x0frequest-options\x03\x01\x04\
-\0\x11response-outparam\x03\x01\x01{\x04\0\x0bstatus-code\x03\0)\x04\0\x11incomi\
-ng-response\x03\x01\x04\0\x0dincoming-body\x03\x01\x04\0\x0ffuture-trailers\x03\x01\
-\x04\0\x11outgoing-response\x03\x01\x04\0\x0doutgoing-body\x03\x01\x04\0\x18futu\
-re-incoming-response\x03\x01\x01i\"\x01@\0\01\x04\0\x13[constructor]fields\x012\x01\
-o\x02\x1f!\x01p3\x01j\x011\x01\x1d\x01@\x01\x07entries4\05\x04\0\x18[static]fiel\
-ds.from-list\x016\x01h\"\x01p!\x01@\x02\x04self7\x04name\x1f\08\x04\0\x12[method\
-]fields.get\x019\x01@\x02\x04self7\x04name\x1f\0\x7f\x04\0\x12[method]fields.has\
-\x01:\x01j\0\x01\x1d\x01@\x03\x04self7\x04name\x1f\x05value8\0;\x04\0\x12[method\
-]fields.set\x01<\x01@\x02\x04self7\x04name\x1f\0;\x04\0\x15[method]fields.delete\
-\x01=\x01@\x03\x04self7\x04name\x1f\x05value!\0;\x04\0\x15[method]fields.append\x01\
->\x01@\x01\x04self7\04\x04\0\x16[method]fields.entries\x01?\x01@\x01\x04self7\01\
-\x04\0\x14[method]fields.clone\x01@\x01h%\x01@\x01\x04self\xc1\0\0\x0b\x04\0\x1f\
-[method]incoming-request.method\x01B\x01@\x01\x04self\xc1\0\0\x0e\x04\0([method]\
-incoming-request.path-with-query\x01C\x01k\x0d\x01@\x01\x04self\xc1\0\0\xc4\0\x04\
-\0\x1f[method]incoming-request.scheme\x01E\x04\0\"[method]incoming-request.autho\
-rity\x01C\x01i#\x01@\x01\x04self\xc1\0\0\xc6\0\x04\0\x20[method]incoming-request\
-.headers\x01G\x01i,\x01j\x01\xc8\0\0\x01@\x01\x04self\xc1\0\0\xc9\0\x04\0\x20[me\
-thod]incoming-request.consume\x01J\x01i&\x01@\x01\x07headers\xc6\0\0\xcb\0\x04\0\
-\x1d[constructor]outgoing-request\x01L\x01h&\x01i/\x01j\x01\xce\0\0\x01@\x01\x04\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10719] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe4R\x01A\x02\x01A2\x01\
+B\x11\x01q\x05\x11connection-failed\x01s\0\x0dbad-parameter\x01s\0\x0cquery-fail\
+ed\x01s\0\x17value-conversion-failed\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\
+\0\x01m\x0e\x07boolean\x04int8\x05int16\x05int32\x05int64\x05uint8\x06uint16\x06\
+uint32\x06uint64\x0afloating32\x0afloating64\x03str\x06binary\x05other\x04\0\x0c\
+db-data-type\x03\0\x02\x01p}\x01q\x0f\x07boolean\x01\x7f\0\x04int8\x01~\0\x05int\
+16\x01|\0\x05int32\x01z\0\x05int64\x01x\0\x05uint8\x01}\0\x06uint16\x01{\0\x06ui\
+nt32\x01y\0\x06uint64\x01w\0\x0afloating32\x01v\0\x0afloating64\x01u\0\x03str\x01\
+s\0\x06binary\x01\x04\0\x07db-null\0\0\x0bunsupported\0\0\x04\0\x08db-value\x03\0\
+\x05\x01q\x0e\x07boolean\x01\x7f\0\x04int8\x01~\0\x05int16\x01|\0\x05int32\x01z\0\
+\x05int64\x01x\0\x05uint8\x01}\0\x06uint16\x01{\0\x06uint32\x01y\0\x06uint64\x01\
+w\0\x0afloating32\x01v\0\x0afloating64\x01u\0\x03str\x01s\0\x06binary\x01\x04\0\x07\
+db-null\0\0\x04\0\x0fparameter-value\x03\0\x07\x01r\x02\x04names\x09data-type\x03\
+\x04\0\x06column\x03\0\x09\x01p\x06\x04\0\x03row\x03\0\x0b\x01p\x0a\x01p\x0c\x01\
+r\x02\x07columns\x0d\x04rows\x0e\x04\0\x07row-set\x03\0\x0f\x03\x01\x1efermyon:s\
+pin/rdbms-types@2.0.0\x05\0\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04\
+self\x01\0\x7f\x04\0\x16[method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\
+\x04\0\x16[method]pollable.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\
+\x04\0\x04poll\x01\x06\x03\x01\x12wasi:io/poll@0.2.0\x05\x01\x02\x03\0\x01\x08po\
+llable\x01B\x0f\x02\x03\x02\x01\x02\x04\0\x08pollable\x03\0\0\x01w\x04\0\x07inst\
+ant\x03\0\x02\x01w\x04\0\x08duration\x03\0\x04\x01@\0\0\x03\x04\0\x03now\x01\x06\
+\x01@\0\0\x05\x04\0\x0aresolution\x01\x07\x01i\x01\x01@\x01\x04when\x03\0\x08\x04\
+\0\x11subscribe-instant\x01\x09\x01@\x01\x04when\x05\0\x08\x04\0\x12subscribe-du\
+ration\x01\x0a\x03\x01!wasi:clocks/monotonic-clock@0.2.0\x05\x03\x01B\x04\x04\0\x05\
+error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\0\x1d[method]error.to-debug-str\
+ing\x01\x02\x03\x01\x13wasi:io/error@0.2.0\x05\x04\x02\x03\0\x03\x05error\x01B(\x02\
+\x03\x02\x01\x05\x04\0\x05error\x03\0\0\x02\x03\x02\x01\x02\x04\0\x08pollable\x03\
+\0\x02\x01i\x01\x01q\x02\x15last-operation-failed\x01\x04\0\x06closed\0\0\x04\0\x0c\
+stream-error\x03\0\x05\x04\0\x0cinput-stream\x03\x01\x04\0\x0doutput-stream\x03\x01\
+\x01h\x07\x01p}\x01j\x01\x0a\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19\
+[method]input-stream.read\x01\x0c\x04\0\"[method]input-stream.blocking-read\x01\x0c\
+\x01j\x01w\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0d\x04\0\x19[method]input-str\
+eam.skip\x01\x0e\x04\0\"[method]input-stream.blocking-skip\x01\x0e\x01i\x03\x01@\
+\x01\x04self\x09\0\x0f\x04\0\x1e[method]input-stream.subscribe\x01\x10\x01h\x08\x01\
+@\x01\x04self\x11\0\x0d\x04\0![method]output-stream.check-write\x01\x12\x01j\0\x01\
+\x06\x01@\x02\x04self\x11\x08contents\x0a\0\x13\x04\0\x1b[method]output-stream.w\
+rite\x01\x14\x04\0.[method]output-stream.blocking-write-and-flush\x01\x14\x01@\x01\
+\x04self\x11\0\x13\x04\0\x1b[method]output-stream.flush\x01\x15\x04\0$[method]ou\
+tput-stream.blocking-flush\x01\x15\x01@\x01\x04self\x11\0\x0f\x04\0\x1f[method]o\
+utput-stream.subscribe\x01\x16\x01@\x02\x04self\x11\x03lenw\0\x13\x04\0\"[method\
+]output-stream.write-zeroes\x01\x17\x04\05[method]output-stream.blocking-write-z\
+eroes-and-flush\x01\x17\x01@\x03\x04self\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[\
+method]output-stream.splice\x01\x18\x04\0%[method]output-stream.blocking-splice\x01\
+\x18\x03\x01\x15wasi:io/streams@0.2.0\x05\x06\x02\x03\0\x02\x08duration\x02\x03\0\
+\x04\x0cinput-stream\x02\x03\0\x04\x0doutput-stream\x01B\xc0\x01\x02\x03\x02\x01\
+\x07\x04\0\x08duration\x03\0\0\x02\x03\x02\x01\x08\x04\0\x0cinput-stream\x03\0\x02\
+\x02\x03\x02\x01\x09\x04\0\x0doutput-stream\x03\0\x04\x02\x03\x02\x01\x05\x04\0\x08\
+io-error\x03\0\x06\x02\x03\x02\x01\x02\x04\0\x08pollable\x03\0\x08\x01q\x0a\x03g\
+et\0\0\x04head\0\0\x04post\0\0\x03put\0\0\x06delete\0\0\x07connect\0\0\x07option\
+s\0\0\x05trace\0\0\x05patch\0\0\x05other\x01s\0\x04\0\x06method\x03\0\x0a\x01q\x03\
+\x04HTTP\0\0\x05HTTPS\0\0\x05other\x01s\0\x04\0\x06scheme\x03\0\x0c\x01ks\x01k{\x01\
+r\x02\x05rcode\x0e\x09info-code\x0f\x04\0\x11DNS-error-payload\x03\0\x10\x01k}\x01\
+r\x02\x08alert-id\x12\x0dalert-message\x0e\x04\0\x1aTLS-alert-received-payload\x03\
+\0\x13\x01ky\x01r\x02\x0afield-name\x0e\x0afield-size\x15\x04\0\x12field-size-pa\
+yload\x03\0\x16\x01kw\x01k\x17\x01q'\x0bDNS-timeout\0\0\x09DNS-error\x01\x11\0\x15\
+destination-not-found\0\0\x17destination-unavailable\0\0\x19destination-IP-prohi\
+bited\0\0\x19destination-IP-unroutable\0\0\x12connection-refused\0\0\x15connecti\
+on-terminated\0\0\x12connection-timeout\0\0\x17connection-read-timeout\0\0\x18co\
+nnection-write-timeout\0\0\x18connection-limit-reached\0\0\x12TLS-protocol-error\
+\0\0\x15TLS-certificate-error\0\0\x12TLS-alert-received\x01\x14\0\x13HTTP-reques\
+t-denied\0\0\x1cHTTP-request-length-required\0\0\x16HTTP-request-body-size\x01\x18\
+\0\x1bHTTP-request-method-invalid\0\0\x18HTTP-request-URI-invalid\0\0\x19HTTP-re\
+quest-URI-too-long\0\0\x20HTTP-request-header-section-size\x01\x15\0\x18HTTP-req\
+uest-header-size\x01\x19\0!HTTP-request-trailer-section-size\x01\x15\0\x19HTTP-r\
+equest-trailer-size\x01\x17\0\x18HTTP-response-incomplete\0\0!HTTP-response-head\
+er-section-size\x01\x15\0\x19HTTP-response-header-size\x01\x17\0\x17HTTP-respons\
+e-body-size\x01\x18\0\"HTTP-response-trailer-section-size\x01\x15\0\x1aHTTP-resp\
+onse-trailer-size\x01\x17\0\x1dHTTP-response-transfer-coding\x01\x0e\0\x1cHTTP-r\
+esponse-content-coding\x01\x0e\0\x15HTTP-response-timeout\0\0\x13HTTP-upgrade-fa\
+iled\0\0\x13HTTP-protocol-error\0\0\x0dloop-detected\0\0\x13configuration-error\0\
+\0\x0einternal-error\x01\x0e\0\x04\0\x0aerror-code\x03\0\x1a\x01q\x03\x0einvalid\
+-syntax\0\0\x09forbidden\0\0\x09immutable\0\0\x04\0\x0cheader-error\x03\0\x1c\x01\
+s\x04\0\x09field-key\x03\0\x1e\x01p}\x04\0\x0bfield-value\x03\0\x20\x04\0\x06fie\
+lds\x03\x01\x04\0\x07headers\x03\0\"\x04\0\x08trailers\x03\0\"\x04\0\x10incoming\
+-request\x03\x01\x04\0\x10outgoing-request\x03\x01\x04\0\x0frequest-options\x03\x01\
+\x04\0\x11response-outparam\x03\x01\x01{\x04\0\x0bstatus-code\x03\0)\x04\0\x11in\
+coming-response\x03\x01\x04\0\x0dincoming-body\x03\x01\x04\0\x0ffuture-trailers\x03\
+\x01\x04\0\x11outgoing-response\x03\x01\x04\0\x0doutgoing-body\x03\x01\x04\0\x18\
+future-incoming-response\x03\x01\x01i\"\x01@\0\01\x04\0\x13[constructor]fields\x01\
+2\x01o\x02\x1f!\x01p3\x01j\x011\x01\x1d\x01@\x01\x07entries4\05\x04\0\x18[static\
+]fields.from-list\x016\x01h\"\x01p!\x01@\x02\x04self7\x04name\x1f\08\x04\0\x12[m\
+ethod]fields.get\x019\x01@\x02\x04self7\x04name\x1f\0\x7f\x04\0\x12[method]field\
+s.has\x01:\x01j\0\x01\x1d\x01@\x03\x04self7\x04name\x1f\x05value8\0;\x04\0\x12[m\
+ethod]fields.set\x01<\x01@\x02\x04self7\x04name\x1f\0;\x04\0\x15[method]fields.d\
+elete\x01=\x01@\x03\x04self7\x04name\x1f\x05value!\0;\x04\0\x15[method]fields.ap\
+pend\x01>\x01@\x01\x04self7\04\x04\0\x16[method]fields.entries\x01?\x01@\x01\x04\
+self7\01\x04\0\x14[method]fields.clone\x01@\x01h%\x01@\x01\x04self\xc1\0\0\x0b\x04\
+\0\x1f[method]incoming-request.method\x01B\x01@\x01\x04self\xc1\0\0\x0e\x04\0([m\
+ethod]incoming-request.path-with-query\x01C\x01k\x0d\x01@\x01\x04self\xc1\0\0\xc4\
+\0\x04\0\x1f[method]incoming-request.scheme\x01E\x04\0\"[method]incoming-request\
+.authority\x01C\x01i#\x01@\x01\x04self\xc1\0\0\xc6\0\x04\0\x20[method]incoming-r\
+equest.headers\x01G\x01i,\x01j\x01\xc8\0\0\x01@\x01\x04self\xc1\0\0\xc9\0\x04\0\x20\
+[method]incoming-request.consume\x01J\x01i&\x01@\x01\x07headers\xc6\0\0\xcb\0\x04\
+\0\x1d[constructor]outgoing-request\x01L\x01h&\x01i/\x01j\x01\xce\0\0\x01@\x01\x04\
 self\xcd\0\0\xcf\0\x04\0\x1d[method]outgoing-request.body\x01P\x01@\x01\x04self\xcd\
 \0\0\x0b\x04\0\x1f[method]outgoing-request.method\x01Q\x01j\0\0\x01@\x02\x04self\
 \xcd\0\x06method\x0b\0\xd2\0\x04\0#[method]outgoing-request.set-method\x01S\x01@\
@@ -9870,8 +15107,8 @@ trailers\xf2\0\0\x81\x01\x04\0\x1c[static]outgoing-body.finish\x01\x82\x01\x01h0
 be\x01\x84\x01\x01i+\x01j\x01\x85\x01\x01\x1b\x01j\x01\x86\x01\0\x01k\x87\x01\x01\
 @\x01\x04self\x83\x01\0\x88\x01\x04\0$[method]future-incoming-response.get\x01\x89\
 \x01\x01h\x07\x01k\x1b\x01@\x01\x03err\x8a\x01\0\x8b\x01\x04\0\x0fhttp-error-cod\
-e\x01\x8c\x01\x03\x01\x15wasi:http/types@0.2.0\x05\x09\x01@\0\0s\x03\0\x0cget-ma\
-nifest\x01\x0a\x01@\x01\x0ccomponent-ids\x01\0\x04\0\x10set-component-id\x01\x0b\
+e\x01\x8c\x01\x03\x01\x15wasi:http/types@0.2.0\x05\x0a\x01@\0\0s\x03\0\x0cget-ma\
+nifest\x01\x0b\x01@\x01\x0ccomponent-ids\x01\0\x04\0\x10set-component-id\x01\x0c\
 \x01B\x19\x04\0\x05store\x03\x01\x01q\x04\x10store-table-full\0\0\x0dno-such-sto\
 re\0\0\x0daccess-denied\0\0\x05other\x01s\0\x04\0\x05error\x03\0\x01\x01i\0\x01j\
 \x01\x03\x01\x02\x01@\x01\x05labels\0\x04\x04\0\x12[static]store.open\x01\x05\x01\
@@ -9881,7 +15118,7 @@ ue\x07\0\x0b\x04\0\x11[method]store.set\x01\x0c\x01@\x02\x04self\x06\x03keys\0\x
 \x04\0\x14[method]store.delete\x01\x0d\x01j\x01\x7f\x01\x02\x01@\x02\x04self\x06\
 \x03keys\0\x0e\x04\0\x14[method]store.exists\x01\x0f\x01ps\x01j\x01\x10\x01\x02\x01\
 @\x01\x04self\x06\0\x11\x04\0\x16[method]store.get-keys\x01\x12\x04\x01\x1cfermy\
-on:spin/key-value@2.0.0\x05\x0c\x01B\x1a\x01s\x04\0\x11inferencing-model\x03\0\0\
+on:spin/key-value@2.0.0\x05\x0d\x01B\x1a\x01s\x04\0\x11inferencing-model\x03\0\0\
 \x01r\x06\x0amax-tokensy\x0erepeat-penaltyv!repeat-penalty-last-n-token-county\x0b\
 temperaturev\x05top-ky\x05top-pv\x04\0\x12inferencing-params\x03\0\x02\x01q\x03\x13\
 model-not-supported\0\0\x0druntime-error\x01s\0\x0dinvalid-input\x01s\0\x04\0\x05\
@@ -9892,23 +15129,74 @@ n-county\x04\0\x10embeddings-usage\x03\0\x0c\x01pv\x01p\x0e\x01r\x02\x0aembeddin
 gs\x0f\x05usage\x0d\x04\0\x11embeddings-result\x03\0\x10\x01k\x03\x01j\x01\x09\x01\
 \x05\x01@\x03\x05model\x01\x06prompts\x06params\x12\0\x13\x04\0\x05infer\x01\x14\
 \x01ps\x01j\x01\x11\x01\x05\x01@\x02\x05model\x0b\x04text\x15\0\x16\x04\0\x13gen\
-erate-embeddings\x01\x17\x04\x01\x16fermyon:spin/llm@2.0.0\x05\x0d\x02\x03\0\x04\
-\x10outgoing-request\x02\x03\0\x04\x0frequest-options\x02\x03\0\x04\x18future-in\
-coming-response\x02\x03\0\x04\x0aerror-code\x01B\x0f\x02\x03\x02\x01\x0e\x04\0\x10\
-outgoing-request\x03\0\0\x02\x03\x02\x01\x0f\x04\0\x0frequest-options\x03\0\x02\x02\
-\x03\x02\x01\x10\x04\0\x18future-incoming-response\x03\0\x04\x02\x03\x02\x01\x11\
-\x04\0\x0aerror-code\x03\0\x06\x01i\x01\x01i\x03\x01k\x09\x01i\x05\x01j\x01\x0b\x01\
-\x07\x01@\x02\x07request\x08\x07options\x0a\0\x0c\x04\0\x06handle\x01\x0d\x04\x01\
-\x20wasi:http/outgoing-handler@0.2.0\x05\x12\x01B\x05\x02\x03\x02\x01\x10\x04\0\x18\
-future-incoming-response\x03\0\0\x01i\x01\x01@\x02\x03urls\x08response\x02\x01\0\
-\x04\0\x0cset-response\x01\x03\x04\x01#fermyon:spin-test-virt/http-handler\x05\x13\
-\x01B\x11\x01r\x01\x03keys\x04\0\x08get-call\x03\0\0\x01p}\x01r\x02\x03keys\x05v\
-alue\x02\x04\0\x08set-call\x03\0\x03\x01@\0\x01\0\x04\0\x05reset\x01\x05\x01p\x01\
-\x01o\x02s\x06\x01p\x07\x01@\0\0\x08\x04\0\x03get\x01\x09\x01p\x04\x01o\x02s\x0a\
-\x01p\x0b\x01@\0\0\x0c\x04\0\x03set\x01\x0d\x04\x01&fermyon:spin-test-virt/key-v\
-alue-calls\x05\x14\x04\x01\x1bfermyon:spin-test-virt/plug\x04\0\x0b\x0a\x01\0\x04\
-plug\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.202.0\
-\x10wit-bindgen-rust\x060.23.0";
+erate-embeddings\x01\x17\x04\x01\x16fermyon:spin/llm@2.0.0\x05\x0e\x01B)\x01q\x04\
+\x0finvalid-address\0\0\x14too-many-connections\0\0\x0atype-error\0\0\x05other\x01\
+s\0\x04\0\x05error\x03\0\0\x04\0\x0aconnection\x03\x01\x01p}\x04\0\x07payload\x03\
+\0\x03\x01q\x02\x05int64\x01x\0\x06binary\x01\x04\0\x04\0\x0fredis-parameter\x03\
+\0\x05\x01q\x04\x03nil\0\0\x06status\x01s\0\x05int64\x01x\0\x06binary\x01\x04\0\x04\
+\0\x0credis-result\x03\0\x07\x01i\x02\x01j\x01\x09\x01\x01\x01@\x01\x07addresss\0\
+\x0a\x04\0\x17[static]connection.open\x01\x0b\x01h\x02\x01j\0\x01\x01\x01@\x03\x04\
+self\x0c\x07channels\x07payload\x04\0\x0d\x04\0\x1a[method]connection.publish\x01\
+\x0e\x01k\x04\x01j\x01\x0f\x01\x01\x01@\x02\x04self\x0c\x03keys\0\x10\x04\0\x16[\
+method]connection.get\x01\x11\x01@\x03\x04self\x0c\x03keys\x05value\x04\0\x0d\x04\
+\0\x16[method]connection.set\x01\x12\x01j\x01x\x01\x01\x01@\x02\x04self\x0c\x03k\
+eys\0\x13\x04\0\x17[method]connection.incr\x01\x14\x01ps\x01j\x01y\x01\x01\x01@\x02\
+\x04self\x0c\x04keys\x15\0\x16\x04\0\x16[method]connection.del\x01\x17\x01@\x03\x04\
+self\x0c\x03keys\x06values\x15\0\x16\x04\0\x17[method]connection.sadd\x01\x18\x01\
+j\x01\x15\x01\x01\x01@\x02\x04self\x0c\x03keys\0\x19\x04\0\x1b[method]connection\
+.smembers\x01\x1a\x04\0\x17[method]connection.srem\x01\x18\x01p\x06\x01p\x08\x01\
+j\x01\x1c\x01\x01\x01@\x03\x04self\x0c\x07commands\x09arguments\x1b\0\x1d\x04\0\x1a\
+[method]connection.execute\x01\x1e\x04\x01\x18fermyon:spin/redis@2.0.0\x05\x0f\x02\
+\x03\0\0\x0fparameter-value\x02\x03\0\0\x07row-set\x02\x03\0\0\x05error\x01B\x13\
+\x02\x03\x02\x01\x10\x04\0\x0fparameter-value\x03\0\0\x02\x03\x02\x01\x11\x04\0\x07\
+row-set\x03\0\x02\x02\x03\x02\x01\x12\x04\0\x05error\x03\0\x04\x04\0\x0aconnecti\
+on\x03\x01\x01i\x06\x01j\x01\x07\x01\x05\x01@\x01\x07addresss\0\x08\x04\0\x17[st\
+atic]connection.open\x01\x09\x01h\x06\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x04\
+self\x0a\x09statements\x06params\x0b\0\x0c\x04\0\x18[method]connection.query\x01\
+\x0d\x01j\x01w\x01\x05\x01@\x03\x04self\x0a\x09statements\x06params\x0b\0\x0e\x04\
+\0\x1a[method]connection.execute\x01\x0f\x04\x01\x1bfermyon:spin/postgres@2.0.0\x05\
+\x13\x01B\x0f\x01q\x04\x0finvalid-address\0\0\x14too-many-connections\0\0\x11con\
+nection-failed\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x01m\x03\x0cat-most\
+-once\x0dat-least-once\x0cexactly-once\x04\0\x03qos\x03\0\x02\x04\0\x0aconnectio\
+n\x03\x01\x01p}\x04\0\x07payload\x03\0\x05\x01i\x04\x01j\x01\x07\x01\x01\x01@\x04\
+\x07addresss\x08usernames\x08passwords\x1bkeep-alive-interval-in-secsw\0\x08\x04\
+\0\x17[static]connection.open\x01\x09\x01h\x04\x01j\0\x01\x01\x01@\x04\x04self\x0a\
+\x05topics\x07payload\x06\x03qos\x03\0\x0b\x04\0\x1a[method]connection.publish\x01\
+\x0c\x04\x01\x17fermyon:spin/mqtt@2.0.0\x05\x14\x01B\x13\x02\x03\x02\x01\x10\x04\
+\0\x0fparameter-value\x03\0\0\x02\x03\x02\x01\x11\x04\0\x07row-set\x03\0\x02\x02\
+\x03\x02\x01\x12\x04\0\x05error\x03\0\x04\x04\0\x0aconnection\x03\x01\x01i\x06\x01\
+j\x01\x07\x01\x05\x01@\x01\x07addresss\0\x08\x04\0\x17[static]connection.open\x01\
+\x09\x01h\x06\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x04self\x0a\x09statements\x06\
+params\x0b\0\x0c\x04\0\x18[method]connection.query\x01\x0d\x01j\0\x01\x05\x01@\x03\
+\x04self\x0a\x09statements\x06params\x0b\0\x0e\x04\0\x1a[method]connection.execu\
+te\x01\x0f\x04\x01\x18fermyon:spin/mysql@2.0.0\x05\x15\x01B\x15\x04\0\x0aconnect\
+ion\x03\x01\x01q\x05\x10no-such-database\0\0\x0daccess-denied\0\0\x12invalid-con\
+nection\0\0\x0ddatabase-full\0\0\x02io\x01s\0\x04\0\x05error\x03\0\x01\x01p}\x01\
+q\x05\x07integer\x01x\0\x04real\x01u\0\x04text\x01s\0\x04blob\x01\x03\0\x04null\0\
+\0\x04\0\x05value\x03\0\x04\x01p\x05\x01r\x01\x06values\x06\x04\0\x0arow-result\x03\
+\0\x07\x01ps\x01p\x08\x01r\x02\x07columns\x09\x04rows\x0a\x04\0\x0cquery-result\x03\
+\0\x0b\x01i\0\x01j\x01\x0d\x01\x02\x01@\x01\x08databases\0\x0e\x04\0\x17[static]\
+connection.open\x01\x0f\x01h\0\x01j\x01\x0c\x01\x02\x01@\x03\x04self\x10\x09stat\
+ements\x0aparameters\x06\0\x11\x04\0\x1a[method]connection.execute\x01\x12\x04\x01\
+\x19fermyon:spin/sqlite@2.0.0\x05\x16\x01B\x05\x01q\x04\x0cinvalid-name\x01s\0\x09\
+undefined\x01s\0\x08provider\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x01j\x01\
+s\x01\x01\x01@\x01\x04names\0\x02\x04\0\x03get\x01\x03\x04\x01\x1cfermyon:spin/v\
+ariables@2.0.0\x05\x17\x02\x03\0\x05\x10outgoing-request\x02\x03\0\x05\x0freques\
+t-options\x02\x03\0\x05\x18future-incoming-response\x02\x03\0\x05\x0aerror-code\x01\
+B\x0f\x02\x03\x02\x01\x18\x04\0\x10outgoing-request\x03\0\0\x02\x03\x02\x01\x19\x04\
+\0\x0frequest-options\x03\0\x02\x02\x03\x02\x01\x1a\x04\0\x18future-incoming-res\
+ponse\x03\0\x04\x02\x03\x02\x01\x1b\x04\0\x0aerror-code\x03\0\x06\x01i\x01\x01i\x03\
+\x01k\x09\x01i\x05\x01j\x01\x0b\x01\x07\x01@\x02\x07request\x08\x07options\x0a\0\
+\x0c\x04\0\x06handle\x01\x0d\x04\x01\x20wasi:http/outgoing-handler@0.2.0\x05\x1c\
+\x01B\x05\x02\x03\x02\x01\x1a\x04\0\x18future-incoming-response\x03\0\0\x01i\x01\
+\x01@\x02\x03urls\x08response\x02\x01\0\x04\0\x0cset-response\x01\x03\x04\x01#fe\
+rmyon:spin-test-virt/http-handler\x05\x1d\x01B\x11\x01r\x01\x03keys\x04\0\x08get\
+-call\x03\0\0\x01p}\x01r\x02\x03keys\x05value\x02\x04\0\x08set-call\x03\0\x03\x01\
+@\0\x01\0\x04\0\x05reset\x01\x05\x01p\x01\x01o\x02s\x06\x01p\x07\x01@\0\0\x08\x04\
+\0\x03get\x01\x09\x01p\x04\x01o\x02s\x0a\x01p\x0b\x01@\0\0\x0c\x04\0\x03set\x01\x0d\
+\x04\x01&fermyon:spin-test-virt/key-value-calls\x05\x1e\x04\x01\x1bfermyon:spin-\
+test-virt/plug\x04\0\x0b\x0a\x01\0\x04plug\x03\0\0\0G\x09producers\x01\x0cproces\
+sed-by\x02\x0dwit-component\x070.202.0\x10wit-bindgen-rust\x060.23.0";
 
 #[inline(never)]
 #[doc(hidden)]

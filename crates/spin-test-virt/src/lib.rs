@@ -9,12 +9,12 @@ use std::{
 use anyhow::Context;
 use bindings::exports::{
     fermyon::{
-        spin::{key_value, llm},
+        spin::{key_value, llm, mysql, postgres, redis, sqlite, variables},
         spin_test_virt::{http_handler, key_value_calls},
     },
     wasi::http::outgoing_handler,
 };
-use bindings::wasi::http::types;
+use bindings::{exports::fermyon::spin::mqtt, wasi::http::types};
 
 struct Component;
 
@@ -115,6 +115,187 @@ impl llm::Guest for Component {
                 prompt_token_count: 0,
             },
         })
+    }
+}
+
+impl redis::Guest for Component {
+    type Connection = RedisConnection;
+}
+
+struct RedisConnection;
+
+impl redis::GuestConnection for RedisConnection {
+    fn open(address: String) -> Result<redis::Connection, redis::Error> {
+        let _ = address;
+        todo!()
+    }
+
+    fn publish(&self, channel: String, payload: redis::Payload) -> Result<(), redis::Error> {
+        let _ = (channel, payload);
+        todo!()
+    }
+
+    fn get(&self, key: String) -> Result<Option<redis::Payload>, redis::Error> {
+        let _ = key;
+        todo!()
+    }
+
+    fn set(&self, key: String, value: redis::Payload) -> Result<(), redis::Error> {
+        let _ = (key, value);
+        todo!()
+    }
+
+    fn incr(&self, key: String) -> Result<i64, redis::Error> {
+        let _ = key;
+        todo!()
+    }
+
+    fn del(&self, keys: Vec<String>) -> Result<u32, redis::Error> {
+        let _ = keys;
+        todo!()
+    }
+
+    fn sadd(&self, key: String, values: Vec<String>) -> Result<u32, redis::Error> {
+        let _ = (key, values);
+        todo!()
+    }
+
+    fn smembers(&self, key: String) -> Result<Vec<String>, redis::Error> {
+        let _ = key;
+        todo!()
+    }
+
+    fn srem(&self, key: String, values: Vec<String>) -> Result<u32, redis::Error> {
+        let _ = (key, values);
+        todo!()
+    }
+
+    fn execute(
+        &self,
+        command: String,
+        arguments: Vec<redis::RedisParameter>,
+    ) -> Result<Vec<redis::RedisResult>, redis::Error> {
+        let _ = (command, arguments);
+        todo!()
+    }
+}
+
+impl sqlite::Guest for Component {
+    type Connection = SqliteConnection;
+}
+
+struct SqliteConnection;
+
+impl sqlite::GuestConnection for SqliteConnection {
+    fn open(database: String) -> Result<sqlite::Connection, sqlite::Error> {
+        let _ = database;
+        todo!()
+    }
+
+    fn execute(
+        &self,
+        statement: String,
+        parameters: Vec<sqlite::Value>,
+    ) -> Result<sqlite::QueryResult, sqlite::Error> {
+        let _ = (statement, parameters);
+        todo!()
+    }
+}
+
+impl mysql::Guest for Component {
+    type Connection = MySqlConnection;
+}
+
+struct MySqlConnection;
+
+impl mysql::GuestConnection for MySqlConnection {
+    fn open(address: String) -> Result<mysql::Connection, mysql::Error> {
+        let _ = address;
+        todo!()
+    }
+
+    fn query(
+        &self,
+        statement: String,
+        params: Vec<mysql::ParameterValue>,
+    ) -> Result<mysql::RowSet, mysql::Error> {
+        let _ = (statement, params);
+        todo!()
+    }
+
+    fn execute(
+        &self,
+        statement: String,
+        params: Vec<mysql::ParameterValue>,
+    ) -> Result<(), mysql::Error> {
+        let _ = (statement, params);
+        todo!()
+    }
+}
+
+impl postgres::Guest for Component {
+    type Connection = PostgresConnection;
+}
+
+struct PostgresConnection;
+
+impl postgres::GuestConnection for PostgresConnection {
+    fn open(address: String) -> Result<postgres::Connection, postgres::Error> {
+        let _ = address;
+        todo!()
+    }
+
+    fn query(
+        &self,
+        statement: String,
+        params: Vec<postgres::ParameterValue>,
+    ) -> Result<postgres::RowSet, postgres::Error> {
+        let _ = (statement, params);
+        todo!()
+    }
+
+    fn execute(
+        &self,
+        statement: String,
+        params: Vec<postgres::ParameterValue>,
+    ) -> Result<u64, postgres::Error> {
+        let _ = (statement, params);
+        todo!()
+    }
+}
+
+impl mqtt::Guest for Component {
+    type Connection = MqttConnection;
+}
+
+struct MqttConnection;
+
+impl mqtt::GuestConnection for MqttConnection {
+    fn open(
+        address: String,
+        username: String,
+        password: String,
+        keep_alive_interval_in_secs: u64,
+    ) -> Result<mqtt::Connection, mqtt::Error> {
+        let _ = (address, username, password, keep_alive_interval_in_secs);
+        todo!()
+    }
+
+    fn publish(
+        &self,
+        topic: String,
+        payload: mqtt::Payload,
+        qos: mqtt::Qos,
+    ) -> Result<(), mqtt::Error> {
+        let _ = (topic, payload, qos);
+        todo!()
+    }
+}
+
+impl variables::Guest for Component {
+    fn get(name: String) -> Result<String, variables::Error> {
+        let _ = name;
+        todo!()
     }
 }
 
