@@ -1,4 +1,5 @@
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use clap::Parser;
+use std::{cell::RefCell, path::PathBuf, rc::Rc, sync::Arc};
 use wasmtime_wasi_http::{
     bindings::http::incoming_handler::{IncomingRequest, ResponseOutparam},
     WasiHttpView,
@@ -22,11 +23,17 @@ const SPIN_TEST_VIRT: &[u8] = include_bytes!("../example/deps/fermyon/spin-test-
 const WASI_VIRT: &[u8] = include_bytes!("../example/deps/wasi/virt.wasm");
 const ROUTER: &[u8] = include_bytes!("../example/deps/fermyon/router.wasm");
 
+#[derive(clap::Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Path to test wasm
+    test_path: PathBuf,
+}
+
 fn main() {
     env_logger::init();
-    let test_path = std::env::args()
-        .nth(1)
-        .expect("second argument should be the path to the test wasm");
+    let cli = Cli::parse();
+    let test_path = cli.test_path;
     let manifest_path =
         spin_common::paths::resolve_manifest_file_path(spin_common::paths::DEFAULT_MANIFEST_FILE)
             .unwrap();
@@ -39,7 +46,7 @@ fn main() {
         }
     };
 
-    let test = std::fs::read(test_path).unwrap();
+    let test = std::fs::read(&test_path).unwrap();
     let app = std::fs::read(app_path).unwrap();
     let app = spin_componentize::componentize_if_necessary(&app)
         .unwrap()
@@ -48,7 +55,14 @@ fn main() {
     let encoded = encode_composition(app, test);
 
     let mut runtime = Runtime::new(raw_manifest, &encoded);
-    runtime.call_run().unwrap();
+    let tests = vec![libtest_mimic::Trial::test(
+        test_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("test"),
+        move || Ok(runtime.call_run()?),
+    )];
+    let _ = libtest_mimic::run(&libtest_mimic::Arguments::default(), tests);
 }
 
 fn encode_composition(app: Vec<u8>, test: Vec<u8>) -> Vec<u8> {
@@ -56,54 +70,46 @@ fn encode_composition(app: Vec<u8>, test: Vec<u8>) -> Vec<u8> {
     let virt = composition
         .instantiate("virt", SPIN_TEST_VIRT, Vec::new())
         .unwrap();
-    let wasi_virt = composition
+    let _wasi_virt = composition
         .instantiate("wasi_virt", WASI_VIRT, Vec::new())
         .unwrap();
 
-    let app_args = vec![
-        (
-            "fermyon:spin/key-value@2.0.0",
-            virt.export("fermyon:spin/key-value@2.0.0").unwrap(),
-        ),
-        (
-            "wasi:http/outgoing-handler@0.2.0",
-            virt.export("wasi:http/outgoing-handler@0.2.0").unwrap(),
-        ),
-        (
-            "wasi:cli/environment@0.2.0",
-            wasi_virt.export("wasi:cli/environment@0.2.0").unwrap(),
-        ),
-    ];
+    let app_args = [
+        ("fermyon:spin/key-value@2.0.0", &virt),
+        ("fermyon:spin/llm@2.0.0", &virt),
+        ("fermyon:spin/redis@2.0.0", &virt),
+        ("fermyon:spin/mysql@2.0.0", &virt),
+        ("fermyon:spin/postgres@2.0.0", &virt),
+        ("fermyon:spin/sqlite@2.0.0", &virt),
+        ("fermyon:spin/mqtt@2.0.0", &virt),
+        ("fermyon:spin/variables@2.0.0", &virt),
+        ("wasi:http/outgoing-handler@0.2.0", &virt),
+        // Don't stub environment yet as this messes with Python
+        // ("wasi:cli/environment@0.2.0", &wasi_virt),
+    ]
+    .into_iter()
+    .map(|(k, v)| (k, v.export(k).unwrap().unwrap()));
     let app = composition.instantiate("app", &app, app_args).unwrap();
 
-    let router_args = vec![
-        ("set-component-id", virt.export("set-component-id").unwrap()),
-        (
-            "wasi:http/incoming-handler@0.2.0",
-            app.export("wasi:http/incoming-handler@0.2.0").unwrap(),
-        ),
-    ];
+    let router_args = [
+        ("set-component-id", &virt),
+        ("wasi:http/incoming-handler@0.2.0", &app),
+    ]
+    .into_iter()
+    .map(|(k, v)| (k, v.export(k).unwrap().unwrap()));
     let router = composition
         .instantiate("router", ROUTER, router_args)
         .unwrap();
 
     let test_args = vec![
-        (
-            "wasi:http/incoming-handler@0.2.0",
-            router.export("wasi:http/incoming-handler@0.2.0").unwrap(),
-        ),
-        (
-            "fermyon:spin/key-value@2.0.0",
-            virt.export("fermyon:spin/key-value@2.0.0").unwrap(),
-        ),
-        (
-            "fermyon:spin-test-virt/key-value-calls",
-            virt.export("fermyon:spin-test-virt/key-value-calls")
-                .unwrap(),
-        ),
-    ];
+        ("wasi:http/incoming-handler@0.2.0", &router),
+        ("fermyon:spin/key-value@2.0.0", &virt),
+        ("fermyon:spin-test-virt/key-value-calls", &virt),
+    ]
+    .into_iter()
+    .map(|(k, v)| (k, v.export(k).unwrap().unwrap()));
     let test = composition.instantiate("test", &test, test_args).unwrap();
-    let export = test.export("run").unwrap();
+    let export = test.export("run").unwrap().unwrap();
 
     composition.export(export, "run").unwrap();
     composition.encode().unwrap()
@@ -120,20 +126,26 @@ impl Composition {
         }
     }
 
-    pub fn instantiate(
+    pub fn instantiate<'a>(
         &self,
         name: &str,
         bytes: &[u8],
-        arguments: Vec<(&str, Export)>,
+        arguments: impl IntoIterator<Item = (&'a str, Export)> + 'a,
     ) -> anyhow::Result<Instance> {
         let package =
             wac_graph::types::Package::from_bytes(name, None, Arc::new(bytes.to_owned()))?;
         let package = self.graph.borrow_mut().register_package(package)?;
         let instance = self.graph.borrow_mut().instantiate(package)?;
         for (arg_name, arg) in arguments {
-            self.graph
+            match self
+                .graph
                 .borrow_mut()
-                .set_instantiation_argument(instance, arg_name, arg.node)?;
+                .set_instantiation_argument(instance, arg_name, arg.node)
+            {
+                // Don't error if we try to pass an invalid argument
+                Ok(_) | Err(wac_graph::Error::InvalidArgumentName { .. }) => {}
+                Err(e) => return Err(e.into()),
+            }
         }
         Ok(Instance {
             graph: self.graph.clone(),
@@ -159,13 +171,21 @@ struct Instance {
 }
 
 impl Instance {
-    fn export(&self, name: &str) -> anyhow::Result<Export> {
+    /// Export a node from the instance
+    ///
+    /// Returns `None` if no export exists with the given name
+    fn export(&self, name: &str) -> anyhow::Result<Option<Export>> {
         let node = self
             .graph
             .borrow_mut()
-            .alias_instance_export(self.node, name)?;
+            .alias_instance_export(self.node, name)
+            .map(Some)
+            .or_else(|e| match e {
+                wac_graph::Error::InstanceMissingExport { .. } => Ok(None),
+                e => Err(e),
+            })?;
 
-        Ok(Export { node })
+        Ok(node.map(|node| Export { node }))
     }
 }
 

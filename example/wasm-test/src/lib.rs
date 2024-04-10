@@ -25,7 +25,7 @@ impl bindings::Guest for Component {
         let calls = key_value_calls::get()
             .into_iter()
             .find_map(|(key, value)| (key == "cache").then_some(value))
-            .unwrap()
+            .unwrap_or_default()
             .into_iter()
             .map(|c| c.key)
             .collect::<Vec<_>>();
