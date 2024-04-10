@@ -3,21 +3,23 @@ use clap::Parser;
 use std::{cell::RefCell, path::PathBuf, rc::Rc, sync::Arc};
 use tokio::sync::oneshot::error::TryRecvError;
 use wasmtime_wasi_http::{
-    bindings::http::incoming_handler::IncomingRequest, body::HyperOutgoingBody, WasiHttpView,
+    bindings::http::{incoming_handler::IncomingRequest, types::Scheme},
+    body::HyperOutgoingBody,
+    WasiHttpView,
 };
 
 mod bindings {
     wasmtime::component::bindgen!({
-            world: "runner",
-            path: "host-wit",
-            with: {
-                "wasi:io/poll": wasmtime_wasi::bindings::io::poll,
-                "wasi:io/error": wasmtime_wasi::bindings::io::error,
-                "wasi:io/streams": wasmtime_wasi::bindings::io::streams,
-                "wasi:clocks/monotonic-clock": wasmtime_wasi::bindings::clocks::monotonic_clock,
-                "wasi:http/types": wasmtime_wasi_http::bindings::http::types,
-                "fermyon:spin-test/http-helper/response-receiver": super::ResponseReceiver,
-            }
+        world: "runner",
+        path: "host-wit",
+        with: {
+            "wasi:io/poll": wasmtime_wasi::bindings::io::poll,
+            "wasi:io/error": wasmtime_wasi::bindings::io::error,
+            "wasi:io/streams": wasmtime_wasi::bindings::io::streams,
+            "wasi:clocks/monotonic-clock": wasmtime_wasi::bindings::clocks::monotonic_clock,
+            "wasi:http/types": wasmtime_wasi_http::bindings::http::types,
+            "fermyon:spin-test/http-helper/response-receiver": super::ResponseReceiver,
+        }
     });
 }
 
@@ -238,7 +240,10 @@ struct Data {
 impl Data {
     fn new(manifest: String) -> Self {
         let table = wasmtime_wasi::ResourceTable::new();
-        let ctx = wasmtime_wasi::WasiCtxBuilder::new().inherit_stdio().build();
+        let ctx = wasmtime_wasi::WasiCtxBuilder::new()
+            .inherit_stdout()
+            .inherit_stderr()
+            .build();
         Self {
             table,
             ctx,
@@ -265,11 +270,40 @@ impl bindings::RunnerImports for Data {
 }
 
 impl bindings::fermyon::spin_test::http_helper::Host for Data {
-    fn new_request(&mut self) -> wasmtime::Result<wasmtime::component::Resource<IncomingRequest>> {
-        let req = hyper::Request::builder()
-            .method("GET")
-            .uri("http://example.com?user_id=123")
-            .body(body::empty())
+    fn new_request(
+        &mut self,
+        request: wasmtime::component::Resource<wasmtime_wasi_http::types::HostOutgoingRequest>,
+    ) -> wasmtime::Result<wasmtime::component::Resource<IncomingRequest>> {
+        let req = self.table.get_mut(&request)?;
+        use wasmtime_wasi_http::bindings::http::types::Method;
+        let method = match &req.method {
+            Method::Get => hyper::Method::GET,
+            Method::Head => hyper::Method::HEAD,
+            Method::Post => hyper::Method::POST,
+            Method::Put => hyper::Method::PUT,
+            Method::Delete => hyper::Method::DELETE,
+            Method::Connect => hyper::Method::CONNECT,
+            Method::Options => hyper::Method::OPTIONS,
+            Method::Trace => hyper::Method::TRACE,
+            Method::Patch => hyper::Method::PATCH,
+            Method::Other(o) => hyper::Method::from_bytes(o.as_bytes())?,
+        };
+        let scheme = match &req.scheme {
+            Some(Scheme::Http) | None => "http",
+            Some(Scheme::Https) => "https",
+            Some(Scheme::Other(other)) => other,
+        };
+        let mut builder = hyper::Request::builder().method(method).uri(format!(
+            "{}://{}{}",
+            scheme,
+            req.authority.as_deref().unwrap_or("localhost:3000"),
+            req.path_with_query.as_deref().unwrap_or("/")
+        ));
+        for (name, value) in req.headers.iter() {
+            builder = builder.header(name, value);
+        }
+        let req = builder
+            .body(req.body.take().unwrap_or_else(body::empty))
             .unwrap();
         self.new_incoming_request(req)
     }
@@ -281,9 +315,9 @@ impl bindings::fermyon::spin_test::http_helper::Host for Data {
         wasmtime::component::Resource<bindings::fermyon::spin_test::http_helper::ResponseReceiver>,
     )> {
         let (tx, rx) = tokio::sync::oneshot::channel();
-        let receiver = ResponseReceiver(rx);
-        let receiver = self.table.push(receiver)?;
-        Ok((self.new_response_outparam(tx)?, receiver))
+        let outparam = self.new_response_outparam(tx)?;
+        let receiver = self.table.push(ResponseReceiver(rx))?;
+        Ok((outparam, receiver))
     }
 }
 
@@ -302,15 +336,17 @@ impl bindings::fermyon::spin_test::http_helper::HostResponseReceiver for Data {
         let response = match receiver.0.try_recv() {
             Ok(r) => r?,
             Err(TryRecvError::Empty) => return Ok(None),
-            Err(TryRecvError::Closed) => bail!("receiver closed"),
+            Err(TryRecvError::Closed) => {
+                bail!("response receiver channel closed because outparam was dropped")
+            }
         };
+        let (parts, body) = response.into_parts();
         let response = wasmtime_wasi_http::types::HostOutgoingResponse {
-            status: response.status(),
-            headers: response.headers().clone(),
-            body: Some(response.into_body()),
+            status: parts.status,
+            headers: parts.headers,
+            body: Some(body),
         };
-        let response = self.table.push(response)?;
-        Ok(Some(response))
+        Ok(Some(self.table.push(response)?))
     }
 
     fn drop(

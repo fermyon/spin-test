@@ -4,6 +4,8 @@ use bindings::{
     wasi::http::incoming_handler,
 };
 
+use crate::bindings::wasi::http::types::{Headers, OutgoingRequest};
+
 #[allow(warnings)]
 mod bindings;
 
@@ -18,7 +20,9 @@ impl bindings::Guest for Component {
         // Set state of the key-value store
         key_value_config.set("123", user.as_bytes()).unwrap();
 
-        let request = new_request();
+        let request = OutgoingRequest::new(Headers::new());
+        request.set_path_with_query(Some("/?user_id=123")).unwrap();
+        let request = new_request(request);
         let (response_out, response_receiver) = new_response();
         incoming_handler::handle(request, response_out);
         let response = response_receiver.get().unwrap();

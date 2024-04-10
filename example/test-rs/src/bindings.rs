@@ -575,6 +575,7 @@ pub mod fermyon {
             pub type IncomingRequest = super::super::super::wasi::http::types::IncomingRequest;
             pub type ResponseOutparam = super::super::super::wasi::http::types::ResponseOutparam;
             pub type OutgoingResponse = super::super::super::wasi::http::types::OutgoingResponse;
+            pub type OutgoingRequest = super::super::super::wasi::http::types::OutgoingRequest;
 
             #[derive(Debug)]
             #[repr(transparent)]
@@ -657,20 +658,20 @@ pub mod fermyon {
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
-            pub fn new_request() -> IncomingRequest {
+            pub fn new_request(request: OutgoingRequest) -> IncomingRequest {
                 unsafe {
                     #[cfg(target_arch = "wasm32")]
                     #[link(wasm_import_module = "fermyon:spin-test/http-helper")]
                     extern "C" {
                         #[link_name = "new-request"]
-                        fn wit_import() -> i32;
+                        fn wit_import(_: i32) -> i32;
                     }
 
                     #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import() -> i32 {
+                    fn wit_import(_: i32) -> i32 {
                         unreachable!()
                     }
-                    let ret = wit_import();
+                    let ret = wit_import((&request).take_handle() as i32);
                     super::super::super::wasi::http::types::IncomingRequest::from_handle(ret as u32)
                 }
             }
@@ -8473,8 +8474,8 @@ pub(crate) use __export_test_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.23.0:test:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7320] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x9d8\x01A\x02\x01A\x1f\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7380] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd98\x01A\x02\x01A\x20\
 \x01B\x19\x04\0\x05store\x03\x01\x01q\x04\x10store-table-full\0\0\x0dno-such-sto\
 re\0\0\x0daccess-denied\0\0\x05other\x01s\0\x04\0\x05error\x03\0\x01\x01i\0\x01j\
 \x01\x03\x01\x02\x01@\x01\x05labels\0\x04\x04\0\x12[static]store.open\x01\x05\x01\
@@ -8613,15 +8614,17 @@ set\x01\x0d\x03\x01&fermyon:spin-test-virt/key-value-calls\x05\x0d\x02\x03\0\x05
 \x0e\x04\0\x10incoming-request\x03\0\0\x02\x03\x02\x01\x0f\x04\0\x11response-out\
 param\x03\0\x02\x01i\x01\x01i\x03\x01@\x02\x07request\x04\x0cresponse-out\x05\x01\
 \0\x04\0\x06handle\x01\x06\x03\x01\x20wasi:http/incoming-handler@0.2.0\x05\x10\x02\
-\x03\0\x05\x11outgoing-response\x01B\x14\x02\x03\x02\x01\x0e\x04\0\x10incoming-r\
-equest\x03\0\0\x02\x03\x02\x01\x0f\x04\0\x11response-outparam\x03\0\x02\x02\x03\x02\
-\x01\x11\x04\0\x11outgoing-response\x03\0\x04\x04\0\x11response-receiver\x03\x01\
-\x01h\x06\x01i\x05\x01k\x08\x01@\x01\x04self\x07\0\x09\x04\0\x1d[method]response\
--receiver.get\x01\x0a\x01i\x01\x01@\0\0\x0b\x04\0\x0bnew-request\x01\x0c\x01i\x03\
-\x01i\x06\x01o\x02\x0d\x0e\x01@\0\0\x0f\x04\0\x0cnew-response\x01\x10\x03\x01\x1d\
-fermyon:spin-test/http-helper\x05\x12\x01@\0\x01\0\x04\0\x03run\x01\x13\x04\x01\x16\
-fermyon:spin-test/test\x04\0\x0b\x0a\x01\0\x04test\x03\0\0\0G\x09producers\x01\x0c\
-processed-by\x02\x0dwit-component\x070.202.0\x10wit-bindgen-rust\x060.23.0";
+\x03\0\x05\x11outgoing-response\x02\x03\0\x05\x10outgoing-request\x01B\x17\x02\x03\
+\x02\x01\x0e\x04\0\x10incoming-request\x03\0\0\x02\x03\x02\x01\x0f\x04\0\x11resp\
+onse-outparam\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x11outgoing-response\x03\0\x04\
+\x02\x03\x02\x01\x12\x04\0\x10outgoing-request\x03\0\x06\x04\0\x11response-recei\
+ver\x03\x01\x01h\x08\x01i\x05\x01k\x0a\x01@\x01\x04self\x09\0\x0b\x04\0\x1d[meth\
+od]response-receiver.get\x01\x0c\x01i\x07\x01i\x01\x01@\x01\x07request\x0d\0\x0e\
+\x04\0\x0bnew-request\x01\x0f\x01i\x03\x01i\x08\x01o\x02\x10\x11\x01@\0\0\x12\x04\
+\0\x0cnew-response\x01\x13\x03\x01\x1dfermyon:spin-test/http-helper\x05\x13\x01@\
+\0\x01\0\x04\0\x03run\x01\x14\x04\x01\x16fermyon:spin-test/test\x04\0\x0b\x0a\x01\
+\0\x04test\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070\
+.202.0\x10wit-bindgen-rust\x060.23.0";
 
 #[inline(never)]
 #[doc(hidden)]

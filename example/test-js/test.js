@@ -2,6 +2,7 @@ import { Store } from "fermyon:spin/key-value@2.0.0";
 import { newRequest, newResponse } from "fermyon:spin-test/http-helper";
 import { handle } from "wasi:http/incoming-handler@0.2.0"
 import { get } from "fermyon:spin-test-virt/key-value-calls";
+import { OutgoingRequest, Fields } from "wasi:http/types@0.2.0"
 
 export function run() {
   // Set up the test
@@ -11,7 +12,9 @@ export function run() {
   cache.set("123", textEncoder.encode(user));
 
   // Execute request
-  const request = newRequest();
+  let request = new OutgoingRequest(new Fields());
+  request.setPathWithQuery("/?user_id=123");
+  request = newRequest(request);
   const [outParam, responseReceiver] = newResponse();
   handle(request, outParam);
 

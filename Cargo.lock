@@ -2450,6 +2450,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm-test"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "wit-bindgen-rt 0.24.0",
+]
+
+[[package]]
 name = "wasmparser"
 version = "0.118.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
