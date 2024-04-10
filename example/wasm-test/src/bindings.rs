@@ -571,8 +571,91 @@ pub mod fermyon {
             #[cfg(target_arch = "wasm32")]
             static __FORCE_SECTION_REF: fn() =
                 super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
             pub type IncomingRequest = super::super::super::wasi::http::types::IncomingRequest;
             pub type ResponseOutparam = super::super::super::wasi::http::types::ResponseOutparam;
+            pub type OutgoingResponse = super::super::super::wasi::http::types::OutgoingResponse;
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct ResponseReceiver {
+                handle: _rt::Resource<ResponseReceiver>,
+            }
+
+            impl ResponseReceiver {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for ResponseReceiver {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "fermyon:spin-test/http-helper")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]response-receiver"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl ResponseReceiver {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn get(&self) -> Option<OutgoingResponse> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "fermyon:spin-test/http-helper")]
+                        extern "C" {
+                            #[link_name = "[method]response-receiver.get"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+
+                                    super::super::super::wasi::http::types::OutgoingResponse::from_handle(l2 as u32)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
             #[allow(unused_unsafe, clippy::all)]
             pub fn new_request() -> IncomingRequest {
                 unsafe {
@@ -592,22 +675,31 @@ pub mod fermyon {
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
-            pub fn new_response() -> ResponseOutparam {
+            pub fn new_response() -> (ResponseOutparam, ResponseReceiver) {
                 unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
                     #[link(wasm_import_module = "fermyon:spin-test/http-helper")]
                     extern "C" {
                         #[link_name = "new-response"]
-                        fn wit_import() -> i32;
+                        fn wit_import(_: *mut u8);
                     }
 
                     #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import() -> i32 {
+                    fn wit_import(_: *mut u8) {
                         unreachable!()
                     }
-                    let ret = wit_import();
-                    super::super::super::wasi::http::types::ResponseOutparam::from_handle(
-                        ret as u32,
+                    wit_import(ptr0);
+                    let l1 = *ptr0.add(0).cast::<i32>();
+                    let l2 = *ptr0.add(4).cast::<i32>();
+                    (
+                        super::super::super::wasi::http::types::ResponseOutparam::from_handle(
+                            l1 as u32,
+                        ),
+                        ResponseReceiver::from_handle(l2 as u32),
                     )
                 }
             }
@@ -8381,8 +8473,8 @@ pub(crate) use __export_test_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.23.0:test:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7186] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x977\x01A\x02\x01A\x1e\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7320] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x9d8\x01A\x02\x01A\x1f\
 \x01B\x19\x04\0\x05store\x03\x01\x01q\x04\x10store-table-full\0\0\x0dno-such-sto\
 re\0\0\x0daccess-denied\0\0\x05other\x01s\0\x04\0\x05error\x03\0\x01\x01i\0\x01j\
 \x01\x03\x01\x02\x01@\x01\x05labels\0\x04\x04\0\x12[static]store.open\x01\x05\x01\
@@ -8520,13 +8612,16 @@ set\x01\x0d\x03\x01&fermyon:spin-test-virt/key-value-calls\x05\x0d\x02\x03\0\x05
 \x10incoming-request\x02\x03\0\x05\x11response-outparam\x01B\x08\x02\x03\x02\x01\
 \x0e\x04\0\x10incoming-request\x03\0\0\x02\x03\x02\x01\x0f\x04\0\x11response-out\
 param\x03\0\x02\x01i\x01\x01i\x03\x01@\x02\x07request\x04\x0cresponse-out\x05\x01\
-\0\x04\0\x06handle\x01\x06\x03\x01\x20wasi:http/incoming-handler@0.2.0\x05\x10\x01\
-B\x0a\x02\x03\x02\x01\x0e\x04\0\x10incoming-request\x03\0\0\x02\x03\x02\x01\x0f\x04\
-\0\x11response-outparam\x03\0\x02\x01i\x01\x01@\0\0\x04\x04\0\x0bnew-request\x01\
-\x05\x01i\x03\x01@\0\0\x06\x04\0\x0cnew-response\x01\x07\x03\x01\x1dfermyon:spin\
--test/http-helper\x05\x11\x01@\0\x01\0\x04\0\x03run\x01\x12\x04\x01\x16fermyon:s\
-pin-test/test\x04\0\x0b\x0a\x01\0\x04test\x03\0\0\0G\x09producers\x01\x0cprocess\
-ed-by\x02\x0dwit-component\x070.202.0\x10wit-bindgen-rust\x060.23.0";
+\0\x04\0\x06handle\x01\x06\x03\x01\x20wasi:http/incoming-handler@0.2.0\x05\x10\x02\
+\x03\0\x05\x11outgoing-response\x01B\x14\x02\x03\x02\x01\x0e\x04\0\x10incoming-r\
+equest\x03\0\0\x02\x03\x02\x01\x0f\x04\0\x11response-outparam\x03\0\x02\x02\x03\x02\
+\x01\x11\x04\0\x11outgoing-response\x03\0\x04\x04\0\x11response-receiver\x03\x01\
+\x01h\x06\x01i\x05\x01k\x08\x01@\x01\x04self\x07\0\x09\x04\0\x1d[method]response\
+-receiver.get\x01\x0a\x01i\x01\x01@\0\0\x0b\x04\0\x0bnew-request\x01\x0c\x01i\x03\
+\x01i\x06\x01o\x02\x0d\x0e\x01@\0\0\x0f\x04\0\x0cnew-response\x01\x10\x03\x01\x1d\
+fermyon:spin-test/http-helper\x05\x12\x01@\0\x01\0\x04\0\x03run\x01\x13\x04\x01\x16\
+fermyon:spin-test/test\x04\0\x0b\x0a\x01\0\x04test\x03\0\0\0G\x09producers\x01\x0c\
+processed-by\x02\x0dwit-component\x070.202.0\x10wit-bindgen-rust\x060.23.0";
 
 #[inline(never)]
 #[doc(hidden)]

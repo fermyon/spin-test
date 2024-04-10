@@ -1,8 +1,9 @@
+use anyhow::bail;
 use clap::Parser;
 use std::{cell::RefCell, path::PathBuf, rc::Rc, sync::Arc};
+use tokio::sync::oneshot::error::TryRecvError;
 use wasmtime_wasi_http::{
-    bindings::http::incoming_handler::{IncomingRequest, ResponseOutparam},
-    WasiHttpView,
+    bindings::http::incoming_handler::IncomingRequest, body::HyperOutgoingBody, WasiHttpView,
 };
 
 mod bindings {
@@ -14,7 +15,8 @@ mod bindings {
                 "wasi:io/error": wasmtime_wasi::bindings::io::error,
                 "wasi:io/streams": wasmtime_wasi::bindings::io::streams,
                 "wasi:clocks/monotonic-clock": wasmtime_wasi::bindings::clocks::monotonic_clock,
-                "wasi:http/types": wasmtime_wasi_http::bindings::http::types
+                "wasi:http/types": wasmtime_wasi_http::bindings::http::types,
+                "fermyon:spin-test/http-helper/response-receiver": super::ResponseReceiver,
             }
     });
 }
@@ -269,13 +271,60 @@ impl bindings::fermyon::spin_test::http_helper::Host for Data {
 
     fn new_response(
         &mut self,
-    ) -> wasmtime::Result<wasmtime::component::Resource<ResponseOutparam>> {
+    ) -> wasmtime::Result<(
+        wasmtime::component::Resource<wasmtime_wasi_http::types::HostResponseOutparam>,
+        wasmtime::component::Resource<bindings::fermyon::spin_test::http_helper::ResponseReceiver>,
+    )> {
         let (tx, rx) = tokio::sync::oneshot::channel();
-        // TODO
-        Box::leak(Box::new(rx));
-        self.new_response_outparam(tx)
+        let receiver = ResponseReceiver(rx);
+        let receiver = self.table.push(receiver)?;
+        Ok((self.new_response_outparam(tx)?, receiver))
     }
 }
+
+impl bindings::fermyon::spin_test::http_helper::HostResponseReceiver for Data {
+    fn get(
+        &mut self,
+        self_: wasmtime::component::Resource<ResponseReceiver>,
+    ) -> wasmtime::Result<
+        Option<
+            wasmtime::component::Resource<
+                bindings::fermyon::spin_test::http_helper::OutgoingResponse,
+            >,
+        >,
+    > {
+        let receiver = self.table.get_mut(&self_)?;
+        let response = match receiver.0.try_recv() {
+            Ok(r) => r?,
+            Err(TryRecvError::Empty) => return Ok(None),
+            Err(TryRecvError::Closed) => bail!("receiver closed"),
+        };
+        let response = wasmtime_wasi_http::types::HostOutgoingResponse {
+            status: response.status(),
+            headers: response.headers().clone(),
+            body: Some(response.into_body()),
+        };
+        let response = self.table.push(response)?;
+        Ok(Some(response))
+    }
+
+    fn drop(
+        &mut self,
+        rep: wasmtime::component::Resource<ResponseReceiver>,
+    ) -> wasmtime::Result<()> {
+        self.table.delete(rep)?;
+        Ok(())
+    }
+}
+
+pub struct ResponseReceiver(
+    tokio::sync::oneshot::Receiver<
+        Result<
+            hyper::Response<HyperOutgoingBody>,
+            wasmtime_wasi_http::bindings::http::types::ErrorCode,
+        >,
+    >,
+);
 
 impl wasmtime_wasi::WasiView for Data {
     fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {

@@ -16,7 +16,10 @@ world runner {
 }
 
 interface http-helper {
-    use wasi:http/types@0.2.0.{incoming-request, response-outparam};
+    use wasi:http/types@0.2.0.{incoming-request, response-outparam, outgoing-response};
+    resource response-receiver {
+        get: func() -> option<outgoing-response>;
+    }
     new-request: func() -> incoming-request;
-    new-response: func() -> response-outparam;
+    new-response: func() -> tuple<response-outparam, response-receiver>;
 }

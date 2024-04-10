@@ -19,8 +19,10 @@ impl bindings::Guest for Component {
         key_value_config.set("123", user.as_bytes()).unwrap();
 
         let request = new_request();
-        let response_out = new_response();
+        let (response_out, response_receiver) = new_response();
         incoming_handler::handle(request, response_out);
+        let response = response_receiver.get().unwrap();
+        assert_eq!(response.status_code(), 200);
 
         let calls = key_value_calls::get()
             .into_iter()
