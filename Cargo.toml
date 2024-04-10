@@ -21,7 +21,6 @@ libtest-mimic = "0.7"
 
 [workspace]
 members = ["crates/*", "example/*-rs"]
-exclude = ["crates/spin-wasi-virt"]
 
 [workspace.dependencies]
 anyhow = "1.0"

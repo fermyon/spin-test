@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 bitflags = "2.5.0"
-wit-bindgen-rt = "0.22.0"
+wit-bindgen-rt = "0.24.0"
 toml = { workspace = true }
 spin-manifest = { workspace = true }
 

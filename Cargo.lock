@@ -1525,7 +1525,7 @@ dependencies = [
  "bitflags",
  "spin-manifest",
  "toml",
- "wit-bindgen-rt 0.22.0",
+ "wit-bindgen-rt",
 ]
 
 [[package]]
@@ -1929,7 +1929,7 @@ dependencies = [
  "spin-outbound-networking",
  "spin-serde",
  "toml",
- "wit-bindgen-rt 0.24.0",
+ "wit-bindgen-rt",
 ]
 
 [[package]]
@@ -2454,7 +2454,7 @@ name = "wasm-test"
 version = "0.1.0"
 dependencies = [
  "bitflags",
- "wit-bindgen-rt 0.24.0",
+ "wit-bindgen-rt",
 ]
 
 [[package]]
@@ -3177,12 +3177,6 @@ dependencies = [
  "wit-component 0.18.2",
  "wit-parser 0.13.2",
 ]
-
-[[package]]
-name = "wit-bindgen-rt"
-version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcb8738270f32a2d6739973cbbb7c1b6dd8959ce515578a6e19165853272ee64"
 
 [[package]]
 name = "wit-bindgen-rt"
