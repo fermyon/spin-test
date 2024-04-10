@@ -20,13 +20,8 @@ wasmtime-wasi-http = "19.0.1"
 libtest-mimic = "0.7"
 
 [workspace]
-members = ["crates/*", "example/*"]
-exclude = [
-    "crates/spin-wasi-virt",
-    "example/deps",
-    "example/app-rs",
-    "example/app-py",
-]
+members = ["crates/*", "example/app-rs"]
+exclude = ["crates/spin-wasi-virt"]
 
 [workspace.dependencies]
 anyhow = "1.0"

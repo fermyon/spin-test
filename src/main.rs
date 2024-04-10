@@ -105,8 +105,10 @@ fn encode_composition(app: Vec<u8>, test: Vec<u8>) -> Vec<u8> {
 
     let test_args = vec![
         ("wasi:http/incoming-handler@0.2.0", &router),
+        ("wasi:http/outgoing-handler@0.2.0", &virt),
         ("fermyon:spin/key-value@2.0.0", &virt),
         ("fermyon:spin-test-virt/key-value-calls", &virt),
+        ("fermyon:spin-test-virt/http-handler", &virt),
     ]
     .into_iter()
     .map(|(k, v)| (k, v.export(k).unwrap().unwrap()));
@@ -202,6 +204,9 @@ struct Runtime {
 
 impl Runtime {
     fn new(manifest: String, composed_component: &[u8]) -> Self {
+        if std::env::var("SPIN_TEST_DUMP_COMPOSITION").is_ok() {
+            let _ = std::fs::write("composition.wasm", composed_component);
+        }
         let engine = wasmtime::Engine::default();
         let mut store = wasmtime::Store::new(&engine, Data::new(manifest));
 
