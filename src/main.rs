@@ -4,9 +4,13 @@ use std::path::PathBuf;
 mod composition;
 mod runtime;
 
-const SPIN_TEST_VIRT: &[u8] = include_bytes!("../example/deps/fermyon/spin-test-virt.wasm");
-const WASI_VIRT: &[u8] = include_bytes!("../example/deps/wasi/virt.wasm");
-const ROUTER: &[u8] = include_bytes!("../example/deps/fermyon/router.wasm");
+/// The built `spin-test-virt` component
+const SPIN_TEST_VIRT: &[u8] = include_bytes!(concat!(
+    env!("OUT_DIR"),
+    "/wasm32-wasi/release/spin_test_virt.wasm"
+));
+/// The built `router` component
+const ROUTER: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/wasm32-wasi/release/router.wasm"));
 
 #[derive(clap::Parser)]
 #[command(version, about, long_about = None)]
@@ -55,9 +59,6 @@ fn encode_composition(app: Vec<u8>, test: Vec<u8>) -> Vec<u8> {
     let virt = composition
         .instantiate("virt", SPIN_TEST_VIRT, Vec::new())
         .unwrap();
-    let _wasi_virt = composition
-        .instantiate("wasi_virt", WASI_VIRT, Vec::new())
-        .unwrap();
 
     let app_args = [
         ("fermyon:spin/key-value@2.0.0", &virt),
@@ -69,8 +70,6 @@ fn encode_composition(app: Vec<u8>, test: Vec<u8>) -> Vec<u8> {
         ("fermyon:spin/mqtt@2.0.0", &virt),
         ("fermyon:spin/variables@2.0.0", &virt),
         ("wasi:http/outgoing-handler@0.2.0", &virt),
-        // Don't stub environment yet as this messes with Python
-        // ("wasi:cli/environment@0.2.0", &wasi_virt),
     ]
     .into_iter()
     .map(|(k, v)| (k, v.export(k).unwrap().unwrap()));

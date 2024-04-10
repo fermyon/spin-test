@@ -1,9 +1,0 @@
-[package]
-name = "spin-wasi-virt"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-wasi-virt = { git = "https://github.com/bytecodealliance/WASI-Virt" }
-
-[workspace]
