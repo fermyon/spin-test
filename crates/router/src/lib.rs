@@ -54,7 +54,13 @@ impl Guest for Component {
             bindings::set_component_id(component_id);
             downstream(request, response_out)
         } else {
-            ResponseOutparam::set(response_out, Err(ErrorCode::InternalError(None)))
+            ResponseOutparam::set(
+                response_out,
+                Err(ErrorCode::InternalError(
+                    format!("no route found in spin.toml manifest for request path '{path}'")
+                        .into(),
+                )),
+            )
         }
     }
 }
