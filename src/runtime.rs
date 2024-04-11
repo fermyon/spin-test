@@ -1,4 +1,4 @@
-use anyhow::bail;
+use anyhow::{bail, Context};
 use tokio::sync::oneshot::error::TryRecvError;
 use wasmtime_wasi_http::{
     bindings::http::{incoming_handler::IncomingRequest, types::Scheme},
@@ -29,23 +29,27 @@ pub struct Runtime {
 
 impl Runtime {
     /// Create a new runtime
-    pub fn new(manifest: String, composed_component: &[u8]) -> Self {
+    pub fn instantiate(manifest: String, composed_component: &[u8]) -> anyhow::Result<Self> {
         if std::env::var("SPIN_TEST_DUMP_COMPOSITION").is_ok() {
             let _ = std::fs::write("composition.wasm", composed_component);
         }
         let engine = wasmtime::Engine::default();
         let mut store = wasmtime::Store::new(&engine, Data::new(manifest));
 
-        let component = wasmtime::component::Component::new(&engine, composed_component).unwrap();
+        let component = wasmtime::component::Component::new(&engine, composed_component)
+            .context("composed component was an invalid Wasm component")?;
 
         let mut linker = wasmtime::component::Linker::new(&engine);
-        wasmtime_wasi::command::sync::add_to_linker(&mut linker).unwrap();
-        wasmtime_wasi_http::bindings::http::types::add_to_linker(&mut linker, |x| x).unwrap();
-        bindings::Runner::add_to_linker(&mut linker, |x| x).unwrap();
+        wasmtime_wasi::command::sync::add_to_linker(&mut linker)
+            .context("failed to link to wasi")?;
+        wasmtime_wasi_http::bindings::http::types::add_to_linker(&mut linker, |x| x)
+            .context("failed to link to wasi-http")?;
+        bindings::Runner::add_to_linker(&mut linker, |x| x)
+            .context("failed to link to test runner world")?;
 
-        let (runner, _) =
-            bindings::Runner::instantiate(&mut store, &component, &mut linker).unwrap();
-        Self { store, runner }
+        let (runner, _) = bindings::Runner::instantiate(&mut store, &component, &mut linker)
+            .context("failed to instantiate test runner world")?;
+        Ok(Self { store, runner })
     }
 
     /// Run the test component
