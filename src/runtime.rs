@@ -163,7 +163,17 @@ impl bindings::fermyon::spin_test::http_helper::HostResponseReceiver for Data {
     > {
         let receiver = self.table.get_mut(&self_)?;
         let response = match receiver.0.try_recv() {
-            Ok(r) => r?,
+            Ok(Ok(r)) => r,
+            Ok(Err(e)) => {
+                use wasmtime_wasi_http::bindings::http::types::ErrorCode;
+                let msg = match &e {
+                    ErrorCode::InternalError(Some(msg)) => msg.clone(),
+                    ErrorCode::InternalError(None) => "an internal error occurred".to_owned(),
+                    _ => e.to_string(),
+                };
+                eprintln!("error when retrieving response: {msg}");
+                return Err(e.into());
+            }
             Err(TryRecvError::Empty) => return Ok(None),
             Err(TryRecvError::Closed) => {
                 bail!("response receiver channel closed because outparam was dropped")
