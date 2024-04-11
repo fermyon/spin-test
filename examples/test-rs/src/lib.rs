@@ -6,7 +6,6 @@ use bindings::{
 
 use crate::bindings::wasi::http::types::{Headers, OutgoingRequest};
 
-#[allow(warnings)]
 mod bindings;
 
 struct Component;
