@@ -2,7 +2,7 @@ use anyhow::{bail, Context};
 use tokio::sync::oneshot::error::TryRecvError;
 use wasmtime_wasi_http::{
     bindings::http::{incoming_handler::IncomingRequest, types::Scheme},
-    body::HyperOutgoingBody,
+    body::{HostIncomingBody, HyperOutgoingBody},
     WasiHttpView,
 };
 
@@ -157,7 +157,7 @@ impl bindings::fermyon::spin_test::http_helper::HostResponseReceiver for Data {
     ) -> wasmtime::Result<
         Option<
             wasmtime::component::Resource<
-                bindings::fermyon::spin_test::http_helper::OutgoingResponse,
+                bindings::fermyon::spin_test::http_helper::IncomingResponse,
             >,
         >,
     > {
@@ -180,10 +180,19 @@ impl bindings::fermyon::spin_test::http_helper::HostResponseReceiver for Data {
             }
         };
         let (parts, body) = response.into_parts();
-        let response = wasmtime_wasi_http::types::HostOutgoingResponse {
-            status: parts.status,
+        let body = HostIncomingBody::new(body, std::time::Duration::from_secs(2));
+
+        let worker = std::sync::Arc::new(
+            tokio::runtime::Runtime::new()
+                .unwrap()
+                .spawn(async {})
+                .into(),
+        );
+        let response = wasmtime_wasi_http::types::HostIncomingResponse {
+            status: parts.status.as_u16(),
             headers: parts.headers,
             body: Some(body),
+            worker,
         };
         Ok(Some(self.table.push(response)?))
     }

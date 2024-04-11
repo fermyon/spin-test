@@ -20,7 +20,7 @@ export function run() {
 
   // Make assertions on response and other state
   const response = responseReceiver.get();
-  if (response.statusCode() !== 200) {
+  if (response.status() !== 200) {
     throw new Error("Expected 200 status code");
   }
   const keyValueCalls = get().filter(x => x[0]).flatMap(x => x[1]).map(call => call.key);

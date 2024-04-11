@@ -1,10 +1,15 @@
 use bindings::{
-    fermyon::spin_test::http_helper::{new_request, new_response},
-    fermyon::{spin::key_value, spin_test_virt::key_value_calls},
-    wasi::http::incoming_handler,
+    fermyon::{
+        spin::key_value,
+        spin_test::http_helper::{new_request, new_response},
+        spin_test_virt::key_value_calls,
+    },
+    wasi::{
+        http::types::{Headers, InputStream, OutgoingRequest},
+        http::{incoming_handler, types::IncomingBody},
+        io::streams::{self, StreamError},
+    },
 };
-
-use crate::bindings::wasi::http::types::{Headers, OutgoingRequest};
 
 mod bindings;
 
@@ -25,7 +30,14 @@ impl bindings::Guest for Component {
         let (response_out, response_receiver) = new_response();
         incoming_handler::handle(request, response_out);
         let response = response_receiver.get().unwrap();
-        assert_eq!(response.status_code(), 200);
+        assert_eq!(response.status(), 200);
+
+        let mut body = String::new();
+        read_body(response.consume().unwrap(), |buffer| {
+            body.push_str(&String::from_utf8(buffer).unwrap())
+        })
+        .unwrap();
+        assert_eq!(body, user);
 
         let calls = key_value_calls::get()
             .into_iter()
@@ -35,6 +47,36 @@ impl bindings::Guest for Component {
             .map(|c| c.key)
             .collect::<Vec<_>>();
         assert_eq!(calls, vec!["123".to_owned()]);
+    }
+}
+
+const READ_SIZE: u64 = 16 * 1024;
+pub fn read_body(
+    body: IncomingBody,
+    mut callback: impl FnMut(Vec<u8>),
+) -> Result<(), streams::Error> {
+    struct Incoming(Option<(InputStream, IncomingBody)>);
+
+    impl Drop for Incoming {
+        fn drop(&mut self) {
+            if let Some((stream, body)) = self.0.take() {
+                drop(stream);
+                IncomingBody::finish(body);
+            }
+        }
+    }
+
+    let stream = body.stream().expect("response body should be readable");
+    let pair = Incoming(Some((stream, body)));
+
+    loop {
+        if let Some((stream, _)) = &pair.0 {
+            match stream.blocking_read(READ_SIZE) {
+                Ok(buffer) => callback(buffer),
+                Err(StreamError::Closed) => return Ok(()),
+                Err(StreamError::LastOperationFailed(error)) => return Err(error),
+            }
+        }
     }
 }
 

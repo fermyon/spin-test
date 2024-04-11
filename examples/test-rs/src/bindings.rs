@@ -574,7 +574,7 @@ pub mod fermyon {
             use super::super::super::_rt;
             pub type IncomingRequest = super::super::super::wasi::http::types::IncomingRequest;
             pub type ResponseOutparam = super::super::super::wasi::http::types::ResponseOutparam;
-            pub type OutgoingResponse = super::super::super::wasi::http::types::OutgoingResponse;
+            pub type IncomingResponse = super::super::super::wasi::http::types::IncomingResponse;
             pub type OutgoingRequest = super::super::super::wasi::http::types::OutgoingRequest;
 
             #[derive(Debug)]
@@ -623,7 +623,7 @@ pub mod fermyon {
 
             impl ResponseReceiver {
                 #[allow(unused_unsafe, clippy::all)]
-                pub fn get(&self) -> Option<OutgoingResponse> {
+                pub fn get(&self) -> Option<IncomingResponse> {
                     unsafe {
                         #[repr(align(4))]
                         struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
@@ -648,7 +648,7 @@ pub mod fermyon {
                                 let e = {
                                     let l2 = *ptr0.add(4).cast::<i32>();
 
-                                    super::super::super::wasi::http::types::OutgoingResponse::from_handle(l2 as u32)
+                                    super::super::super::wasi::http::types::IncomingResponse::from_handle(l2 as u32)
                                 };
                                 Some(e)
                             }
@@ -8614,9 +8614,9 @@ set\x01\x0d\x03\x01&fermyon:spin-test-virt/key-value-calls\x05\x0d\x02\x03\0\x05
 \x0e\x04\0\x10incoming-request\x03\0\0\x02\x03\x02\x01\x0f\x04\0\x11response-out\
 param\x03\0\x02\x01i\x01\x01i\x03\x01@\x02\x07request\x04\x0cresponse-out\x05\x01\
 \0\x04\0\x06handle\x01\x06\x03\x01\x20wasi:http/incoming-handler@0.2.0\x05\x10\x02\
-\x03\0\x05\x11outgoing-response\x02\x03\0\x05\x10outgoing-request\x01B\x17\x02\x03\
+\x03\0\x05\x11incoming-response\x02\x03\0\x05\x10outgoing-request\x01B\x17\x02\x03\
 \x02\x01\x0e\x04\0\x10incoming-request\x03\0\0\x02\x03\x02\x01\x0f\x04\0\x11resp\
-onse-outparam\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x11outgoing-response\x03\0\x04\
+onse-outparam\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x11incoming-response\x03\0\x04\
 \x02\x03\x02\x01\x12\x04\0\x10outgoing-request\x03\0\x06\x04\0\x11response-recei\
 ver\x03\x01\x01h\x08\x01i\x05\x01k\x0a\x01@\x01\x04self\x09\0\x0b\x04\0\x1d[meth\
 od]response-receiver.get\x01\x0c\x01i\x07\x01i\x01\x01@\x01\x07request\x0d\0\x0e\
