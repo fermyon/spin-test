@@ -20,7 +20,7 @@ wasmtime-wasi-http = "19.0.1"
 libtest-mimic = "0.7"
 
 [workspace]
-members = ["crates/*", "example/*-rs"]
+members = ["crates/*", "examples/test-rs", "examples/apps/app-rs"]
 
 [workspace.dependencies]
 anyhow = "1.0"

@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "node componentize.mjs"
+  },
   "dependencies": {
     "@bytecodealliance/componentize-js": "^0.8.3"
   }
