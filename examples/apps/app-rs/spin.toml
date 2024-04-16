@@ -16,6 +16,7 @@ component = "my-app"
 [component.my-app]
 source = "../../../target/wasm32-wasi/release/my_app.wasm"
 allowed_outbound_hosts = ["https://my.api.com"]
+key_value_stores = ["cache"]
 [component.my-app.build]
 command = "cargo build --target wasm32-wasi --release"
 watch = ["src/**/*.rs", "Cargo.toml"]

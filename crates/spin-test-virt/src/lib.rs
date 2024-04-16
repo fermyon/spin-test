@@ -38,9 +38,21 @@ impl KeyValueStore {
 
 impl key_value::GuestStore for KeyValueStore {
     fn open(label: String) -> Result<key_value::Store, key_value::Error> {
+        if let Some(component) = manifest::AppManifest::get_component() {
+            // Only allow opening stores that are defined in the manifest.
+            // This check should only be done when we have a manifest.
+            let store = component
+                .key_value_stores
+                .into_iter()
+                .find(|store| store == &label);
+            if store.is_none() {
+                return Err(key_value::Error::AccessDenied);
+            }
+        }
+
         static STORES: std::sync::OnceLock<Mutex<HashMap<String, KeyValueStore>>> =
             std::sync::OnceLock::new();
-        let mut stores = STORES.get_or_init(|| Default::default()).lock().unwrap();
+        let mut stores = STORES.get_or_init(Default::default).lock().unwrap();
         let key_value = stores
             .entry(label.clone())
             .or_insert_with(|| KeyValueStore::new(label));
@@ -300,6 +312,7 @@ impl variables::Guest for Component {
             .try_into()
             .map_err(|_| variables::Error::InvalidName(name))?;
         let variable = manifest::AppManifest::get_component()
+            .expect("internal error: component id not yet set")
             .variables
             .remove(&name);
         let variable = variable.or_else(|| {
