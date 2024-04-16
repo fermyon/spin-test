@@ -1774,7 +1774,7 @@ checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
 [[package]]
 name = "spin-common"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#b86af6c7188e84f5824f7eef757c65ff2ad265c4"
+source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
 dependencies = [
  "anyhow",
  "dirs",
@@ -1787,7 +1787,7 @@ dependencies = [
 [[package]]
 name = "spin-componentize"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#b86af6c7188e84f5824f7eef757c65ff2ad265c4"
+source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
 dependencies = [
  "anyhow",
  "wasm-encoder 0.200.0",
@@ -1810,7 +1810,7 @@ dependencies = [
 [[package]]
 name = "spin-expressions"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#b86af6c7188e84f5824f7eef757c65ff2ad265c4"
+source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1824,7 +1824,7 @@ dependencies = [
 [[package]]
 name = "spin-locked-app"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#b86af6c7188e84f5824f7eef757c65ff2ad265c4"
+source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1851,7 +1851,7 @@ dependencies = [
 [[package]]
 name = "spin-manifest"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#b86af6c7188e84f5824f7eef757c65ff2ad265c4"
+source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
 dependencies = [
  "anyhow",
  "indexmap 1.9.3",
@@ -1866,7 +1866,7 @@ dependencies = [
 [[package]]
 name = "spin-outbound-networking"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#b86af6c7188e84f5824f7eef757c65ff2ad265c4"
+source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
 dependencies = [
  "anyhow",
  "http",
@@ -1903,7 +1903,7 @@ dependencies = [
 [[package]]
 name = "spin-serde"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#b86af6c7188e84f5824f7eef757c65ff2ad265c4"
+source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
 dependencies = [
  "base64",
  "serde",
@@ -2061,7 +2061,7 @@ dependencies = [
 [[package]]
 name = "terminal"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#b86af6c7188e84f5824f7eef757c65ff2ad265c4"
+source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
 dependencies = [
  "atty",
  "once_cell",
@@ -2313,7 +2313,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "wac-graph"
 version = "0.1.0"
-source = "git+https://github.com/peterhuene/wac#66c067254ecf9ad862a195e49d3465b656f4e517"
+source = "git+https://github.com/bytecodealliance/wac#75f2f37345acbdd9111e1fc011deeeabf9415eae"
 dependencies = [
  "anyhow",
  "id-arena",
@@ -2324,13 +2324,14 @@ dependencies = [
  "thiserror",
  "wac-types",
  "wasm-encoder 0.202.0",
+ "wasm-metadata 0.202.0",
  "wasmparser 0.202.0",
 ]
 
 [[package]]
 name = "wac-types"
 version = "0.1.0"
-source = "git+https://github.com/peterhuene/wac#66c067254ecf9ad862a195e49d3465b656f4e517"
+source = "git+https://github.com/bytecodealliance/wac#75f2f37345acbdd9111e1fc011deeeabf9415eae"
 dependencies = [
  "anyhow",
  "id-arena",
@@ -2484,6 +2485,22 @@ dependencies = [
  "spdx",
  "wasm-encoder 0.200.0",
  "wasmparser 0.200.0",
+]
+
+[[package]]
+name = "wasm-metadata"
+version = "0.202.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "094aea3cb90e09f16ee25a4c0e324b3e8c934e7fd838bfa039aef5352f44a917"
+dependencies = [
+ "anyhow",
+ "indexmap 2.2.6",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "spdx",
+ "wasm-encoder 0.202.0",
+ "wasmparser 0.202.0",
 ]
 
 [[package]]

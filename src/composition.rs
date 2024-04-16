@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc};
 
 /// A composition of components
 pub struct Composition {
@@ -20,10 +20,14 @@ impl Composition {
         bytes: &[u8],
         arguments: impl IntoIterator<Item = (&'a str, Export)> + 'a,
     ) -> anyhow::Result<Instance> {
-        let package =
-            wac_graph::types::Package::from_bytes(name, None, Arc::new(bytes.to_owned()))?;
+        let package = wac_graph::types::Package::from_bytes(
+            name,
+            None,
+            bytes.to_owned(),
+            self.graph.borrow_mut().types_mut(),
+        )?;
         let package = self.graph.borrow_mut().register_package(package)?;
-        let instance = self.graph.borrow_mut().instantiate(package)?;
+        let instance = self.graph.borrow_mut().instantiate(package);
         for (arg_name, arg) in arguments {
             match self
                 .graph
@@ -31,7 +35,7 @@ impl Composition {
                 .set_instantiation_argument(instance, arg_name, arg.node)
             {
                 // Don't error if we try to pass an invalid argument
-                Ok(_) | Err(wac_graph::Error::InvalidArgumentName { .. }) => {}
+                Ok(_) | Err(wac_graph::InstantiationArgumentError::InvalidArgumentName { .. }) => {}
                 Err(e) => return Err(e.into()),
             }
         }
@@ -72,7 +76,7 @@ impl Instance {
             .alias_instance_export(self.node, name)
             .map(Some)
             .or_else(|e| match e {
-                wac_graph::Error::InstanceMissingExport { .. } => Ok(None),
+                wac_graph::AliasError::InstanceMissingExport { .. } => Ok(None),
                 e => Err(e),
             })?;
 
