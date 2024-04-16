@@ -18,6 +18,8 @@ wac-graph = "0.1"
 wasmtime = "19.0.1"
 wasmtime-wasi = "19.0.1"
 wasmtime-wasi-http = "19.0.1"
+wit-component = "0.203.0"
+wit-parser = "0.203.0"
 libtest-mimic = "0.7"
 
 [workspace]

@@ -1,7 +1,7 @@
 mod composition;
 pub mod runtime;
 
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 use anyhow::Context as _;
 
@@ -27,7 +27,7 @@ impl Component {
         let bytes = std::fs::read(&path)
             .with_context(|| format!("failed to read component binary at '{}'", path.display()))?;
         let bytes = spin_componentize::componentize_if_necessary(&bytes)
-            .context("failed to turn app module into a component")?
+            .context("failed to turn module into a component")?
             .into_owned();
         Ok(Self { bytes, path })
     }
@@ -37,7 +37,9 @@ impl Component {
 pub fn encode_composition(
     app_component: Component,
     test_component: Component,
-) -> anyhow::Result<Vec<u8>> {
+) -> anyhow::Result<(Vec<u8>, TestTarget)> {
+    let test_target = TestTarget::from_component(&test_component)?;
+
     let composition = composition::Composition::new();
     let virt = composition
         .instantiate("virt", SPIN_TEST_VIRT, Vec::new())
@@ -123,13 +125,94 @@ pub fn encode_composition(
                 test_component.path.display()
             )
         })?;
-    let export = test
-        .export("run")
-        .context("failed to export 'run' function from test component")?
-        .context("test component must contain 'run' function but it did not")?;
 
-    composition
-        .export(export, "run")
-        .context("failed to export 'run' function from composition")?;
-    composition.encode().context("failed to encode composition")
+    match &test_target {
+        TestTarget::AdHoc { prefixed } => {
+            for test_export in prefixed {
+                let export = test
+                    .export(test_export)
+                    .context("failed to export '{test_export}' function from test component")?
+                    .context(
+                        "test component must contain '{test_export}' function but it did not",
+                    )?;
+
+                composition
+                    .export(export, test_export)
+                    .context("failed to export '{test_export}' function from composition")?;
+            }
+        }
+        TestTarget::TestWorld => {
+            let export = test
+                .export("run")
+                .context("failed to export 'run' function from test component")?
+                .context("test component must contain 'run' function but it did not")?;
+
+            composition
+                .export(export, "run")
+                .context("failed to export 'run' function from composition")?;
+        }
+    }
+
+    let bytes = composition
+        .encode()
+        .context("failed to encode composition")?;
+
+    Ok((bytes, test_target))
+}
+
+/// Represents the target type of the test component.
+#[derive(Debug)]
+pub enum TestTarget {
+    /// The `AdHoc` target indicates the test component contains a set
+    /// of exports prefixed with "spin-test-*" that should be called
+    /// to execute a suite of tests.
+    AdHoc {
+        /// The set of exports prefixed with `spin-test-*`.
+        prefixed: HashSet<String>,
+    },
+    /// The `TestWorld` target indicates the test component exports
+    /// a singular `run` export to execute the test.
+    TestWorld,
+}
+
+impl TestTarget {
+    pub const SPIN_TEST_NAME_PREFIX: &'static str = "spin-test-";
+    const RUN_EXPORT: &'static str = "run";
+
+    fn from_component(test: &Component) -> anyhow::Result<Self> {
+        let decoded = wit_component::decode(&test.bytes).context("failed to decode component")?;
+        let resolve = decoded.resolve();
+        let package = decoded.package();
+
+        let world_id = resolve.select_world(package, None)?;
+        let world = &resolve.worlds[world_id];
+
+        let mut prefixed = HashSet::new();
+        let mut seen_run = false;
+
+        for (export_key, _export_item) in world.exports.iter() {
+            match resolve.name_world_key(export_key) {
+                name if name.starts_with(Self::SPIN_TEST_NAME_PREFIX) => {
+                    // TODO: ensure export_item is a freestanding function?
+                    assert!(prefixed.insert(name));
+                }
+                name if name == Self::RUN_EXPORT => seen_run = true,
+                _ => {}
+            }
+        }
+
+        // Ensure we are either dealing with a test component that exports `run` OR
+        // exports the specially prefixed ad-hoc test exports.
+        if seen_run {
+            if !prefixed.is_empty() {
+                anyhow::bail!("expected ad hoc `spin-test-*` exports or `run`; found both");
+            }
+            Ok(TestTarget::TestWorld)
+        } else {
+            if prefixed.is_empty() {
+                anyhow::bail!("expected ad hoc `spin-test-*` exports or `run`; found neither");
+            }
+            Ok(TestTarget::AdHoc { prefixed })
+        }
+    }
 }
