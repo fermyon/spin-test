@@ -1,10 +1,11 @@
 use spin_sdk::http::{send, IntoResponse, Request, Response};
-use spin_sdk::{http_component, key_value};
+use spin_sdk::{http_component, key_value, variables};
 
 /// A simple Spin HTTP component.
 #[http_component]
 async fn handle_example(req: Request) -> anyhow::Result<impl IntoResponse> {
-    let store = key_value::Store::open("cache".into())?;
+    let cache_name = variables::get("cache_name")?;
+    let store = key_value::Store::open(&cache_name)?;
     let query: Query = serde_qs::from_str(req.query())?;
     let cache = store.get(&query.user_id.to_string())?;
     let user: User = match cache {
