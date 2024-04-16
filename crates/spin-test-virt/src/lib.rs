@@ -1,5 +1,5 @@
-#[allow(warnings)]
 mod bindings;
+mod manifest;
 
 use std::{
     collections::HashMap,
@@ -299,9 +299,11 @@ impl variables::Guest for Component {
             .clone()
             .try_into()
             .map_err(|_| variables::Error::InvalidName(name))?;
-        let variable = AppManifest::get_component().variables.remove(&name);
+        let variable = manifest::AppManifest::get_component()
+            .variables
+            .remove(&name);
         let variable = variable.or_else(|| {
-            AppManifest::get()
+            manifest::AppManifest::get()
                 .variables
                 .into_iter()
                 .find_map(|(k, v)| (k == name).then(|| v.default))
@@ -333,7 +335,7 @@ impl outgoing_handler::Guest for Component {
                 .filter(|p| p != "/")
                 .unwrap_or_default()
         );
-        let url_allowed = AppManifest::allows_url(&url)
+        let url_allowed = manifest::AppManifest::allows_url(&url, "https")
             .map_err(|e| outgoing_handler::ErrorCode::InternalError(Some(format!("{e}"))))?;
         if !url_allowed {
             return Err(outgoing_handler::ErrorCode::HttpRequestDenied);
@@ -399,57 +401,6 @@ impl key_value_calls::Guest for Component {
             .write()
             .unwrap()
             .clear();
-    }
-}
-
-static MANIFEST: OnceLock<spin_manifest::schema::v2::AppManifest> = OnceLock::new();
-struct AppManifest;
-
-impl AppManifest {
-    fn allows_url(url: &str) -> anyhow::Result<bool> {
-        let mut manifest = Self::get();
-        spin_manifest::normalize::normalize_manifest(&mut manifest);
-        let allowed_outbound_hosts = Self::get_component().normalized_allowed_outbound_hosts()?;
-        let resolver = spin_expressions::PreparedResolver::default();
-        let allowed_hosts = spin_outbound_networking::AllowedHostsConfig::parse(
-            &allowed_outbound_hosts,
-            &resolver,
-        )?;
-        let url = spin_outbound_networking::OutboundUrl::parse(url, "https")?;
-        Ok(allowed_hosts.allows(&url))
-    }
-
-    fn get() -> spin_manifest::schema::v2::AppManifest {
-        if let Some(m) = MANIFEST.get() {
-            return m.clone();
-        }
-        MANIFEST
-            .get_or_init(|| {
-                toml::from_str(&bindings::get_manifest()).unwrap_or_else(|_| {
-                    panic!("internal error: manifest was malformed");
-                })
-            })
-            .clone()
-    }
-
-    fn get_component() -> spin_manifest::schema::v2::Component {
-        let component_id: spin_serde::KebabId = COMPONENT_ID
-            .read()
-            .expect("internal error: component ID has not been set")
-            .clone()
-            .try_into()
-            .expect("internal error: component ID is not kebab-case");
-        Self::get()
-            .components
-            .remove(&component_id)
-            .expect("internal error: component not found in manifest")
-    }
-}
-
-static COMPONENT_ID: RwLock<String> = RwLock::new(String::new());
-impl bindings::Guest for Component {
-    fn set_component_id(component_id: String) {
-        *COMPONENT_ID.write().unwrap() = component_id;
     }
 }
 
