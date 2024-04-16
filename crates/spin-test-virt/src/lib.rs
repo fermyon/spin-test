@@ -6,7 +6,6 @@ use std::{
     sync::{Arc, Mutex, OnceLock, RwLock},
 };
 
-use anyhow::Context;
 use bindings::exports::{
     fermyon::{
         spin::{key_value, llm, mysql, postgres, redis, sqlite, variables},
@@ -294,8 +293,21 @@ impl mqtt::GuestConnection for MqttConnection {
 
 impl variables::Guest for Component {
     fn get(name: String) -> Result<String, variables::Error> {
-        let _ = name;
-        todo!()
+        // TODO(rylev): use `spin-expressions`. We don't currently because
+        // it only exposes an `async` API.
+        let name: spin_serde::SnakeId = name
+            .clone()
+            .try_into()
+            .map_err(|_| variables::Error::InvalidName(name))?;
+        let variable = AppManifest::get_component().variables.remove(&name);
+        let variable = variable.or_else(|| {
+            AppManifest::get()
+                .variables
+                .into_iter()
+                .find_map(|(k, v)| (k == name).then(|| v.default))
+                .flatten()
+        });
+        variable.ok_or_else(|| variables::Error::Undefined(name.to_string()))
     }
 }
 
@@ -395,19 +407,9 @@ struct AppManifest;
 
 impl AppManifest {
     fn allows_url(url: &str) -> anyhow::Result<bool> {
-        let mut manifest = Self::get()?;
+        let mut manifest = Self::get();
         spin_manifest::normalize::normalize_manifest(&mut manifest);
-        let id: spin_serde::KebabId = COMPONENT_ID
-            .read()
-            .unwrap()
-            .clone()
-            .try_into()
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
-        let component = manifest
-            .components
-            .get(&id)
-            .with_context(|| format!("component '{id}'not found"))?;
-        let allowed_outbound_hosts = component.normalized_allowed_outbound_hosts()?;
+        let allowed_outbound_hosts = Self::get_component().normalized_allowed_outbound_hosts()?;
         let resolver = spin_expressions::PreparedResolver::default();
         let allowed_hosts = spin_outbound_networking::AllowedHostsConfig::parse(
             &allowed_outbound_hosts,
@@ -417,14 +419,30 @@ impl AppManifest {
         Ok(allowed_hosts.allows(&url))
     }
 
-    fn get() -> anyhow::Result<spin_manifest::schema::v2::AppManifest> {
+    fn get() -> spin_manifest::schema::v2::AppManifest {
         if let Some(m) = MANIFEST.get() {
-            return Ok(m.clone());
+            return m.clone();
         }
-        let Ok(deserialize) = toml::from_str(&bindings::get_manifest()) else {
-            anyhow::bail!("failed to deserialize manifest");
-        };
-        Ok(MANIFEST.get_or_init(|| deserialize).clone())
+        MANIFEST
+            .get_or_init(|| {
+                toml::from_str(&bindings::get_manifest()).unwrap_or_else(|_| {
+                    panic!("internal error: manifest was malformed");
+                })
+            })
+            .clone()
+    }
+
+    fn get_component() -> spin_manifest::schema::v2::Component {
+        let component_id: spin_serde::KebabId = COMPONENT_ID
+            .read()
+            .expect("internal error: component ID has not been set")
+            .clone()
+            .try_into()
+            .expect("internal error: component ID is not kebab-case");
+        Self::get()
+            .components
+            .remove(&component_id)
+            .expect("internal error: component not found in manifest")
     }
 }
 
