@@ -25,8 +25,8 @@ members = ["crates/*", "examples/test-rs", "examples/apps/app-rs"]
 
 [workspace.dependencies]
 anyhow = "1.0"
-spin-expressions = { git = "https://github.com/fermyon/spin" }
+spin-expressions = { git = "https://github.com/fermyon/spin", branch = "non-async-resolver" }
 spin-manifest = { git = "https://github.com/fermyon/spin" }
-spin-outbound-networking = { git = "https://github.com/fermyon/spin" }
+spin-outbound-networking = { git = "https://github.com/fermyon/spin", branch = "non-async-resolver" }
 spin-serde = { git = "https://github.com/fermyon/spin" }
 toml = { version = "0.8", features = ["preserve_order"] }

@@ -293,21 +293,32 @@ impl mqtt::GuestConnection for MqttConnection {
 
 impl variables::Guest for Component {
     fn get(name: String) -> Result<String, variables::Error> {
-        // TODO(rylev): use `spin-expressions`. We don't currently because
-        // it only exposes an `async` API.
-        let name: spin_serde::SnakeId = name
-            .clone()
-            .try_into()
-            .map_err(|_| variables::Error::InvalidName(name))?;
-        let variable = AppManifest::get_component().variables.remove(&name);
-        let variable = variable.or_else(|| {
-            AppManifest::get()
-                .variables
-                .into_iter()
-                .find_map(|(k, v)| (k == name).then(|| v.default))
-                .flatten()
-        });
-        variable.ok_or_else(|| variables::Error::Undefined(name.to_string()))
+        let app_variables = AppManifest::get()
+            .variables
+            .into_iter()
+            .map(|(k, v)| {
+                (
+                    k.to_string(),
+                    spin_locked_app::Variable {
+                        default: v.default,
+                        secret: v.secret,
+                    },
+                )
+            })
+            .collect::<Vec<_>>();
+        let mut resolver = spin_expressions::Resolver::new(app_variables).unwrap();
+        let component_id = AppManifest::get_component_id();
+        let component_variables = AppManifest::get_component()
+            .variables
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v));
+        resolver
+            .add_component_variables(component_id.as_ref(), component_variables)
+            .unwrap();
+        let key = spin_expressions::Key::new(&name).unwrap();
+        resolver
+            .resolve(component_id.as_ref(), key)
+            .map_err(|_| variables::Error::Undefined(name.to_string()))
     }
 }
 
@@ -433,16 +444,20 @@ impl AppManifest {
     }
 
     fn get_component() -> spin_manifest::schema::v2::Component {
+        Self::get()
+            .components
+            .remove(&Self::get_component_id())
+            .expect("internal error: component not found in manifest")
+    }
+
+    fn get_component_id() -> spin_serde::id::Id<'-'> {
         let component_id: spin_serde::KebabId = COMPONENT_ID
             .read()
             .expect("internal error: component ID has not been set")
             .clone()
             .try_into()
             .expect("internal error: component ID is not kebab-case");
-        Self::get()
-            .components
-            .remove(&component_id)
-            .expect("internal error: component not found in manifest")
+        component_id
     }
 }
 

@@ -7,7 +7,7 @@ authors = ["Ryan Levick <ryan.levick@fermyon.com>"]
 description = ""
 
 [variables]
-cache_name = { default = "my-cache" }
+cache_name = { default = "cache" }
 
 [[trigger.http]]
 route = "/..."
@@ -20,4 +20,4 @@ allowed_outbound_hosts = ["https://my.api.com"]
 command = "cargo build --target wasm32-wasi --release"
 watch = ["src/**/*.rs", "Cargo.toml"]
 [component.my-app.variables]
-cache_name = "cache"
+cache_name = "{{cache_name}}"

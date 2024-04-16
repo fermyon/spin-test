@@ -1810,7 +1810,7 @@ dependencies = [
 [[package]]
 name = "spin-expressions"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
+source = "git+https://github.com/fermyon/spin?branch=non-async-resolver#de6c6c2a44f11a45de419bafbc1cadd6bbcaa1a6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1824,14 +1824,14 @@ dependencies = [
 [[package]]
 name = "spin-locked-app"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
+source = "git+https://github.com/fermyon/spin?branch=non-async-resolver#de6c6c2a44f11a45de419bafbc1cadd6bbcaa1a6"
 dependencies = [
  "anyhow",
  "async-trait",
  "ouroboros",
  "serde",
  "serde_json",
- "spin-serde",
+ "spin-serde 2.5.0-pre0 (git+https://github.com/fermyon/spin?branch=non-async-resolver)",
  "thiserror",
 ]
 
@@ -1856,8 +1856,8 @@ dependencies = [
  "anyhow",
  "indexmap 1.9.3",
  "serde",
- "spin-serde",
- "terminal",
+ "spin-serde 2.5.0-pre0 (git+https://github.com/fermyon/spin)",
+ "terminal 2.5.0-pre0 (git+https://github.com/fermyon/spin)",
  "thiserror",
  "toml",
  "url",
@@ -1866,14 +1866,14 @@ dependencies = [
 [[package]]
 name = "spin-outbound-networking"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
+source = "git+https://github.com/fermyon/spin?branch=non-async-resolver#de6c6c2a44f11a45de419bafbc1cadd6bbcaa1a6"
 dependencies = [
  "anyhow",
  "http",
  "ipnet",
  "spin-expressions",
  "spin-locked-app",
- "terminal",
+ "terminal 2.5.0-pre0 (git+https://github.com/fermyon/spin?branch=non-async-resolver)",
  "url",
  "urlencoding",
 ]
@@ -1898,6 +1898,15 @@ dependencies = [
  "spin-macro",
  "thiserror",
  "wit-bindgen",
+]
+
+[[package]]
+name = "spin-serde"
+version = "2.5.0-pre0"
+source = "git+https://github.com/fermyon/spin?branch=non-async-resolver#de6c6c2a44f11a45de419bafbc1cadd6bbcaa1a6"
+dependencies = [
+ "base64",
+ "serde",
 ]
 
 [[package]]
@@ -1952,9 +1961,10 @@ dependencies = [
  "anyhow",
  "bitflags",
  "spin-expressions",
+ "spin-locked-app",
  "spin-manifest",
  "spin-outbound-networking",
- "spin-serde",
+ "spin-serde 2.5.0-pre0 (git+https://github.com/fermyon/spin)",
  "toml",
  "wit-bindgen-rt",
 ]
@@ -2056,6 +2066,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "terminal"
+version = "2.5.0-pre0"
+source = "git+https://github.com/fermyon/spin?branch=non-async-resolver#de6c6c2a44f11a45de419bafbc1cadd6bbcaa1a6"
+dependencies = [
+ "atty",
+ "once_cell",
+ "termcolor",
 ]
 
 [[package]]
