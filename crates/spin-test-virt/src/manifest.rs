@@ -6,7 +6,9 @@ pub struct AppManifest;
 impl AppManifest {
     /// Returns whether the given URL is allowed by the manifest.
     pub fn allows_url(url: &str, scheme: &str) -> anyhow::Result<bool> {
-        let allowed_outbound_hosts = Self::get_component().normalized_allowed_outbound_hosts()?;
+        let allowed_outbound_hosts = Self::get_component()
+            .expect("internal error: component id not yet set")
+            .normalized_allowed_outbound_hosts()?;
         let resolver = spin_expressions::PreparedResolver::default();
         let allowed_hosts = spin_outbound_networking::AllowedHostsConfig::parse(
             &allowed_outbound_hosts,
@@ -33,27 +35,35 @@ impl AppManifest {
     }
 
     /// Gets the current component from the manifest.
-    pub fn get_component() -> spin_manifest::schema::v2::Component {
-        Self::get()
-            .components
-            .remove(&Self::get_component_id())
-            .expect("internal error: component not found in manifest")
+    ///
+    /// Returns `None` if the component id has not been set.
+    pub fn get_component() -> Option<spin_manifest::schema::v2::Component> {
+        Some(
+            Self::get()
+                .components
+                .remove(&Self::get_component_id()?)
+                .expect("internal error: component not found in manifest"),
+        )
     }
 
     /// Gets the ID of the current component.
-    pub fn get_component_id() -> spin_serde::KebabId {
-        COMPONENT_ID
-            .read()
-            .expect("internal error: component ID has not been set")
-            .clone()
-            .try_into()
-            .expect("internal error: component ID is not kebab-case")
+    ///
+    /// Returns `None` if the component id has not been set.
+    pub fn get_component_id() -> Option<spin_serde::KebabId> {
+        Some(
+            COMPONENT_ID
+                .read()
+                .unwrap()
+                .clone()?
+                .try_into()
+                .expect("internal error: component ID is not kebab-case"),
+        )
     }
 }
 
-static COMPONENT_ID: RwLock<String> = RwLock::new(String::new());
+static COMPONENT_ID: RwLock<Option<String>> = RwLock::new(None);
 impl crate::bindings::Guest for crate::Component {
     fn set_component_id(component_id: String) {
-        *COMPONENT_ID.write().unwrap() = component_id;
+        *COMPONENT_ID.write().unwrap() = Some(component_id);
     }
 }
