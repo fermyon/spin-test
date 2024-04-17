@@ -35,62 +35,62 @@ impl Stores {
 }
 
 /// An instance of a key-value store.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 struct KeyValueStore {
+    label: String,
     /// The data stored in the key-value store.
-    data: Arc<RwLock<HashMap<String, Vec<u8>>>>,
+    data: SharedHashMap<String, Vec<u8>>,
     /// The calls made to the key-value store.
-    calls: Arc<RwLock<KeyValueStoreCalls>>,
+    calls: SharedHashMap<String, Vec<key_value_calls::Call>>,
 }
+
+type SharedHashMap<K, V> = Arc<RwLock<HashMap<K, V>>>;
 
 impl KeyValueStore {
     /// Create a new key-value store.
-    fn new() -> Self {
-        Self::default()
+    fn new(label: String) -> Self {
+        Self {
+            label,
+            data: Default::default(),
+            calls: Default::default(),
+        }
     }
 
     /// Get the value associated with a key.
     fn get(&self, key: String) -> Option<Vec<u8>> {
-        self.write_calls()
-            .get
-            .push(key_value_calls::GetCall { key: key.clone() });
-        self.read_data().get(&key).cloned()
+        let result = self.read_data().get(&key).cloned();
+        self.push_call(key_value_calls::Call::Get(key));
+        result
     }
 
     /// Set the value associated with a key.
     fn set(&self, key: String, value: Vec<u8>) {
         self.write_data().insert(key.clone(), value.clone());
-        self.write_calls()
-            .set
-            .push(key_value_calls::SetCall { key, value });
+        self.push_call(key_value_calls::Call::Set((key, value)));
     }
 
     /// Delete the value associated with a key.
     fn delete(&self, key: String) {
         self.write_data().remove(&key);
-        self.write_calls()
-            .delete
-            .push(key_value_calls::DeleteCall { key });
+        self.push_call(key_value_calls::Call::Delete(key));
     }
 
     /// Check if a key exists in the key-value store.
     fn exists(&self, key: String) -> bool {
         let result = self.read_data().contains_key(&key);
-        self.write_calls()
-            .exists
-            .push(key_value_calls::ExistsCall { key });
+        self.push_call(key_value_calls::Call::Exists(key));
         result
     }
 
     /// Get the keys in the key-value store.
     fn get_keys(&self) -> Vec<String> {
-        self.write_calls().get_keys += 1;
+        self.push_call(key_value_calls::Call::GetKeys);
         self.read_data().keys().cloned().collect()
     }
 
     /// Clear the recorded calls made to the key-value store.
     fn clear_calls(&self) {
-        self.write_calls().clear();
+        self.calls.write().unwrap().clear()
     }
 
     fn write_data(&self) -> std::sync::RwLockWriteGuard<'_, HashMap<String, Vec<u8>>> {
@@ -101,30 +101,22 @@ impl KeyValueStore {
         self.data.read().unwrap()
     }
 
-    fn write_calls(&self) -> std::sync::RwLockWriteGuard<'_, KeyValueStoreCalls> {
-        self.calls.write().unwrap()
+    fn push_call(&self, call: key_value_calls::Call) {
+        self.calls
+            .write()
+            .unwrap()
+            .entry(self.label.clone())
+            .or_default()
+            .push(call)
     }
 
-    fn read_calls(&self) -> std::sync::RwLockReadGuard<'_, KeyValueStoreCalls> {
-        self.calls.read().unwrap()
-    }
-}
-
-/// The calls made to a key-value store.
-#[derive(Debug, Default)]
-struct KeyValueStoreCalls {
-    get: Vec<key_value_calls::GetCall>,
-    set: Vec<key_value_calls::SetCall>,
-    delete: Vec<key_value_calls::DeleteCall>,
-    exists: Vec<key_value_calls::ExistsCall>,
-    get_keys: u64,
-}
-
-/// Clear the calls made to a key-value store.
-impl KeyValueStoreCalls {
-    fn clear(&mut self) {
-        self.get.clear();
-        self.set.clear();
+    fn read_calls(&self) -> Vec<key_value_calls::Call> {
+        self.calls
+            .read()
+            .unwrap()
+            .get(&self.label)
+            .cloned()
+            .unwrap_or_default()
     }
 }
 
@@ -143,7 +135,9 @@ impl key_value::GuestStore for KeyValueStore {
         }
 
         let mut stores = Stores::get().write().unwrap();
-        let key_value = stores.entry(label).or_insert_with(KeyValueStore::new);
+        let key_value = stores
+            .entry(label.clone())
+            .or_insert_with(|| KeyValueStore::new(label));
         Ok(key_value::Store::new(key_value.clone()))
     }
 
@@ -449,40 +443,20 @@ impl http_handler::Guest for Component {
 }
 
 impl key_value_calls::Guest for Component {
-    fn get() -> Vec<(String, Vec<key_value_calls::GetCall>)> {
-        map_calls(|calls| calls.get.clone())
+    fn calls() -> Vec<(String, Vec<key_value_calls::Call>)> {
+        Stores::get()
+            .read()
+            .unwrap()
+            .iter()
+            .map(|(label, store)| (label.clone(), store.read_calls()))
+            .collect()
     }
 
-    fn set() -> Vec<(String, Vec<key_value_calls::SetCall>)> {
-        map_calls(|calls| calls.set.clone())
-    }
-
-    fn delete() -> Vec<(String, Vec<key_value_calls::DeleteCall>)> {
-        map_calls(|calls| calls.delete.clone())
-    }
-
-    fn exists() -> Vec<(String, Vec<key_value_calls::ExistsCall>)> {
-        map_calls(|calls| calls.exists.clone())
-    }
-
-    fn get_keys() -> Vec<(String, u64)> {
-        map_calls(|calls| calls.get_keys)
-    }
-
-    fn reset() {
+    fn reset_calls() {
         for store in Stores::get().read().unwrap().values() {
             store.clear_calls();
         }
     }
-}
-
-fn map_calls<U>(func: impl Fn(&KeyValueStoreCalls) -> U) -> Vec<(String, U)> {
-    Stores::get()
-        .read()
-        .unwrap()
-        .iter()
-        .map(|(k, v)| (k.clone(), func(&*v.read_calls())))
-        .collect()
 }
 
 bindings::export!(Component with_types_in bindings);

@@ -1,3 +1,0 @@
-# Virtualized Spin App Host SDK
-
-The Rust Host SDK allows running a virtualized Spin app (i.e., a composition of a Spin compliant component, the `spin-test-virt` component, and the spin-test `router`) on the host. Typically this is not needed as typically these virtualized apps will be composed together with a `spin-test` compliant test component and run using `spin-test`. This SDK predates the creation of the `spin-test` host, and is only kept around in case compelling use cases for running virtualized Spin apps directly on the host appears.

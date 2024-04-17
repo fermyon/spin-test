@@ -23,6 +23,7 @@ impl bindings::Guest for Component {
         let key_value_config = key_value::Store::open("cache").unwrap();
         // Set state of the key-value store
         key_value_config.set("123", user.as_bytes()).unwrap();
+        key_value_calls::reset_calls();
 
         let request = OutgoingRequest::new(Headers::new());
         request.set_path_with_query(Some("/?user_id=123")).unwrap();
@@ -39,14 +40,25 @@ impl bindings::Guest for Component {
         .unwrap();
         assert_eq!(body, user);
 
-        let calls = key_value_calls::get()
+        let calls = key_value_calls::calls()
             .into_iter()
             .find_map(|(key, value)| (key == "cache").then_some(value))
-            .unwrap_or_default()
-            .into_iter()
-            .map(|c| c.key)
-            .collect::<Vec<_>>();
-        assert_eq!(calls, vec!["123".to_owned()]);
+            .unwrap_or_default();
+        assert_eq!(calls, vec![key_value_calls::Call::Get("123".to_owned())]);
+    }
+}
+
+impl PartialEq for key_value_calls::Call {
+    fn eq(&self, other: &Self) -> bool {
+        use key_value_calls::Call::*;
+        match (self, other) {
+            (Get(a), Get(b)) => a == b,
+            (Set(a), Set(b)) => a == b,
+            (Delete(a), Delete(b)) => a == b,
+            (Exists(a), Exists(b)) => a == b,
+            (GetKeys, GetKeys) => true,
+            _ => false,
+        }
     }
 }
 

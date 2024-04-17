@@ -5,6 +5,12 @@ package fermyon:spin-test-virt;
 world plug {
     export fermyon:spin/key-value@2.0.0;
     export fermyon:spin/llm@2.0.0;
+    export fermyon:spin/redis@2.0.0;
+    export fermyon:spin/postgres@2.0.0;
+    export fermyon:spin/mqtt@2.0.0;
+    export fermyon:spin/mysql@2.0.0;
+    export fermyon:spin/sqlite@2.0.0;
+    export fermyon:spin/variables@2.0.0;
     export wasi:http/outgoing-handler@0.2.0;
     export set-component-id: func(component-id: string);
 
@@ -24,16 +30,15 @@ interface http-handler {
 }
 
 interface key-value-calls {
-    reset: func();
-    get: func() -> list<tuple<string, list<get-call>>>;
-    set: func() -> list<tuple<string, list<set-call>>>;
+    calls: func() -> list<tuple<string, list<call>>>;
 
-    record get-call {
-        key: string
+    variant call {
+        get(string),
+        set(tuple<string, list<u8>>),
+        delete(string),
+        exists(string),
+        get-keys
     }
-
-    record set-call {
-        key: string,
-        value: list<u8>
-    }
+    
+    reset-calls: func();
 }
