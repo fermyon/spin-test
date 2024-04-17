@@ -13,6 +13,7 @@ component = "my-app"
 [component.my-app]
 source = "app.wasm"
 allowed_outbound_hosts = ["https://my.api.com"]
+key_value_stores = ["cache"]
 [component.my-app.build]
 command = "componentize-py -w spin-http componentize app -o app.wasm"
 watch = ["app.py", "Pipfile"]

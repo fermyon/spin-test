@@ -1774,7 +1774,7 @@ checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
 [[package]]
 name = "spin-common"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
+source = "git+https://github.com/fermyon/spin#5a449eb12186a535570dc5623d0563ce1b70688d"
 dependencies = [
  "anyhow",
  "dirs",
@@ -1787,7 +1787,7 @@ dependencies = [
 [[package]]
 name = "spin-componentize"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
+source = "git+https://github.com/fermyon/spin#5a449eb12186a535570dc5623d0563ce1b70688d"
 dependencies = [
  "anyhow",
  "wasm-encoder 0.200.0",
@@ -1810,7 +1810,7 @@ dependencies = [
 [[package]]
 name = "spin-expressions"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
+source = "git+https://github.com/fermyon/spin#5a449eb12186a535570dc5623d0563ce1b70688d"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1824,7 +1824,7 @@ dependencies = [
 [[package]]
 name = "spin-locked-app"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
+source = "git+https://github.com/fermyon/spin#5a449eb12186a535570dc5623d0563ce1b70688d"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1851,7 +1851,7 @@ dependencies = [
 [[package]]
 name = "spin-manifest"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
+source = "git+https://github.com/fermyon/spin#5a449eb12186a535570dc5623d0563ce1b70688d"
 dependencies = [
  "anyhow",
  "indexmap 1.9.3",
@@ -1866,7 +1866,7 @@ dependencies = [
 [[package]]
 name = "spin-outbound-networking"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
+source = "git+https://github.com/fermyon/spin#5a449eb12186a535570dc5623d0563ce1b70688d"
 dependencies = [
  "anyhow",
  "http",
@@ -1903,7 +1903,7 @@ dependencies = [
 [[package]]
 name = "spin-serde"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
+source = "git+https://github.com/fermyon/spin#5a449eb12186a535570dc5623d0563ce1b70688d"
 dependencies = [
  "base64",
  "serde",
@@ -2046,7 +2046,7 @@ dependencies = [
 [[package]]
 name = "terminal"
 version = "2.5.0-pre0"
-source = "git+https://github.com/fermyon/spin#3cb186956868db23fab771843a67fe39ec9ceadd"
+source = "git+https://github.com/fermyon/spin#5a449eb12186a535570dc5623d0563ce1b70688d"
 dependencies = [
  "atty",
  "once_cell",
