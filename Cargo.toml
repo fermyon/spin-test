@@ -14,7 +14,7 @@ spin-common = { git = "https://github.com/fermyon/spin" }
 spin-componentize = { git = "https://github.com/fermyon/spin" }
 spin-manifest = { workspace = true }
 tokio = "1.0"
-wac-graph = { git = "https://github.com/bytecodealliance/wac" }
+wac-graph = "0.1"
 wasmtime = "19.0.1"
 wasmtime-wasi = "19.0.1"
 wasmtime-wasi-http = "19.0.1"
