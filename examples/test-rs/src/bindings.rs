@@ -749,34 +749,162 @@ pub mod fermyon {
                 super::super::super::__link_custom_section_describing_imports;
             use super::super::super::_rt;
             #[derive(Clone)]
-            pub struct GetCall {
-                pub key: _rt::String,
+            pub enum Call {
+                Get(_rt::String),
+                Set((_rt::String, _rt::Vec<u8>)),
+                Delete(_rt::String),
+                Exists(_rt::String),
+                GetKeys,
             }
-            impl ::core::fmt::Debug for GetCall {
+            impl ::core::fmt::Debug for Call {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("GetCall").field("key", &self.key).finish()
-                }
-            }
-            #[derive(Clone)]
-            pub struct SetCall {
-                pub key: _rt::String,
-                pub value: _rt::Vec<u8>,
-            }
-            impl ::core::fmt::Debug for SetCall {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("SetCall")
-                        .field("key", &self.key)
-                        .field("value", &self.value)
-                        .finish()
+                    match self {
+                        Call::Get(e) => f.debug_tuple("Call::Get").field(e).finish(),
+                        Call::Set(e) => f.debug_tuple("Call::Set").field(e).finish(),
+                        Call::Delete(e) => f.debug_tuple("Call::Delete").field(e).finish(),
+                        Call::Exists(e) => f.debug_tuple("Call::Exists").field(e).finish(),
+                        Call::GetKeys => f.debug_tuple("Call::GetKeys").finish(),
+                    }
                 }
             }
             #[allow(unused_unsafe, clippy::all)]
-            pub fn reset() {
+            pub fn calls() -> _rt::Vec<(_rt::String, _rt::Vec<Call>)> {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "fermyon:spin-test-virt/key-value-calls")]
+                    extern "C" {
+                        #[link_name = "calls"]
+                        fn wit_import(_: *mut u8);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: *mut u8) {
+                        unreachable!()
+                    }
+                    wit_import(ptr0);
+                    let l1 = *ptr0.add(0).cast::<*mut u8>();
+                    let l2 = *ptr0.add(4).cast::<usize>();
+                    let base26 = l1;
+                    let len26 = l2;
+                    let mut result26 = _rt::Vec::with_capacity(len26);
+                    for i in 0..len26 {
+                        let base = base26.add(i * 16);
+                        let e26 = {
+                            let l3 = *base.add(0).cast::<*mut u8>();
+                            let l4 = *base.add(4).cast::<usize>();
+                            let len5 = l4;
+                            let bytes5 = _rt::Vec::from_raw_parts(l3.cast(), len5, len5);
+                            let l6 = *base.add(8).cast::<*mut u8>();
+                            let l7 = *base.add(12).cast::<usize>();
+                            let base25 = l6;
+                            let len25 = l7;
+                            let mut result25 = _rt::Vec::with_capacity(len25);
+                            for i in 0..len25 {
+                                let base = base25.add(i * 20);
+                                let e25 = {
+                                    let l8 = i32::from(*base.add(0).cast::<u8>());
+                                    let v24 = match l8 {
+                                        0 => {
+                                            let e24 = {
+                                                let l9 = *base.add(4).cast::<*mut u8>();
+                                                let l10 = *base.add(8).cast::<usize>();
+                                                let len11 = l10;
+                                                let bytes11 = _rt::Vec::from_raw_parts(
+                                                    l9.cast(),
+                                                    len11,
+                                                    len11,
+                                                );
+
+                                                _rt::string_lift(bytes11)
+                                            };
+                                            Call::Get(e24)
+                                        }
+                                        1 => {
+                                            let e24 = {
+                                                let l12 = *base.add(4).cast::<*mut u8>();
+                                                let l13 = *base.add(8).cast::<usize>();
+                                                let len14 = l13;
+                                                let bytes14 = _rt::Vec::from_raw_parts(
+                                                    l12.cast(),
+                                                    len14,
+                                                    len14,
+                                                );
+                                                let l15 = *base.add(12).cast::<*mut u8>();
+                                                let l16 = *base.add(16).cast::<usize>();
+                                                let len17 = l16;
+
+                                                (
+                                                    _rt::string_lift(bytes14),
+                                                    _rt::Vec::from_raw_parts(
+                                                        l15.cast(),
+                                                        len17,
+                                                        len17,
+                                                    ),
+                                                )
+                                            };
+                                            Call::Set(e24)
+                                        }
+                                        2 => {
+                                            let e24 = {
+                                                let l18 = *base.add(4).cast::<*mut u8>();
+                                                let l19 = *base.add(8).cast::<usize>();
+                                                let len20 = l19;
+                                                let bytes20 = _rt::Vec::from_raw_parts(
+                                                    l18.cast(),
+                                                    len20,
+                                                    len20,
+                                                );
+
+                                                _rt::string_lift(bytes20)
+                                            };
+                                            Call::Delete(e24)
+                                        }
+                                        3 => {
+                                            let e24 = {
+                                                let l21 = *base.add(4).cast::<*mut u8>();
+                                                let l22 = *base.add(8).cast::<usize>();
+                                                let len23 = l22;
+                                                let bytes23 = _rt::Vec::from_raw_parts(
+                                                    l21.cast(),
+                                                    len23,
+                                                    len23,
+                                                );
+
+                                                _rt::string_lift(bytes23)
+                                            };
+                                            Call::Exists(e24)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 4, "invalid enum discriminant");
+                                            Call::GetKeys
+                                        }
+                                    };
+
+                                    v24
+                                };
+                                result25.push(e25);
+                            }
+                            _rt::cabi_dealloc(base25, len25 * 20, 4);
+
+                            (_rt::string_lift(bytes5), result25)
+                        };
+                        result26.push(e26);
+                    }
+                    _rt::cabi_dealloc(base26, len26 * 16, 4);
+                    result26
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn reset_calls() {
                 unsafe {
                     #[cfg(target_arch = "wasm32")]
                     #[link(wasm_import_module = "fermyon:spin-test-virt/key-value-calls")]
                     extern "C" {
-                        #[link_name = "reset"]
+                        #[link_name = "reset-calls"]
                         fn wit_import();
                     }
 
@@ -785,130 +913,6 @@ pub mod fermyon {
                         unreachable!()
                     }
                     wit_import();
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn get() -> _rt::Vec<(_rt::String, _rt::Vec<GetCall>)> {
-                unsafe {
-                    #[repr(align(4))]
-                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
-                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "fermyon:spin-test-virt/key-value-calls")]
-                    extern "C" {
-                        #[link_name = "get"]
-                        fn wit_import(_: *mut u8);
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import(_: *mut u8) {
-                        unreachable!()
-                    }
-                    wit_import(ptr0);
-                    let l1 = *ptr0.add(0).cast::<*mut u8>();
-                    let l2 = *ptr0.add(4).cast::<usize>();
-                    let base12 = l1;
-                    let len12 = l2;
-                    let mut result12 = _rt::Vec::with_capacity(len12);
-                    for i in 0..len12 {
-                        let base = base12.add(i * 16);
-                        let e12 = {
-                            let l3 = *base.add(0).cast::<*mut u8>();
-                            let l4 = *base.add(4).cast::<usize>();
-                            let len5 = l4;
-                            let bytes5 = _rt::Vec::from_raw_parts(l3.cast(), len5, len5);
-                            let l6 = *base.add(8).cast::<*mut u8>();
-                            let l7 = *base.add(12).cast::<usize>();
-                            let base11 = l6;
-                            let len11 = l7;
-                            let mut result11 = _rt::Vec::with_capacity(len11);
-                            for i in 0..len11 {
-                                let base = base11.add(i * 8);
-                                let e11 = {
-                                    let l8 = *base.add(0).cast::<*mut u8>();
-                                    let l9 = *base.add(4).cast::<usize>();
-                                    let len10 = l9;
-                                    let bytes10 = _rt::Vec::from_raw_parts(l8.cast(), len10, len10);
-
-                                    GetCall {
-                                        key: _rt::string_lift(bytes10),
-                                    }
-                                };
-                                result11.push(e11);
-                            }
-                            _rt::cabi_dealloc(base11, len11 * 8, 4);
-
-                            (_rt::string_lift(bytes5), result11)
-                        };
-                        result12.push(e12);
-                    }
-                    _rt::cabi_dealloc(base12, len12 * 16, 4);
-                    result12
-                }
-            }
-            #[allow(unused_unsafe, clippy::all)]
-            pub fn set() -> _rt::Vec<(_rt::String, _rt::Vec<SetCall>)> {
-                unsafe {
-                    #[repr(align(4))]
-                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
-                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-                    #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "fermyon:spin-test-virt/key-value-calls")]
-                    extern "C" {
-                        #[link_name = "set"]
-                        fn wit_import(_: *mut u8);
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    fn wit_import(_: *mut u8) {
-                        unreachable!()
-                    }
-                    wit_import(ptr0);
-                    let l1 = *ptr0.add(0).cast::<*mut u8>();
-                    let l2 = *ptr0.add(4).cast::<usize>();
-                    let base15 = l1;
-                    let len15 = l2;
-                    let mut result15 = _rt::Vec::with_capacity(len15);
-                    for i in 0..len15 {
-                        let base = base15.add(i * 16);
-                        let e15 = {
-                            let l3 = *base.add(0).cast::<*mut u8>();
-                            let l4 = *base.add(4).cast::<usize>();
-                            let len5 = l4;
-                            let bytes5 = _rt::Vec::from_raw_parts(l3.cast(), len5, len5);
-                            let l6 = *base.add(8).cast::<*mut u8>();
-                            let l7 = *base.add(12).cast::<usize>();
-                            let base14 = l6;
-                            let len14 = l7;
-                            let mut result14 = _rt::Vec::with_capacity(len14);
-                            for i in 0..len14 {
-                                let base = base14.add(i * 16);
-                                let e14 = {
-                                    let l8 = *base.add(0).cast::<*mut u8>();
-                                    let l9 = *base.add(4).cast::<usize>();
-                                    let len10 = l9;
-                                    let bytes10 = _rt::Vec::from_raw_parts(l8.cast(), len10, len10);
-                                    let l11 = *base.add(8).cast::<*mut u8>();
-                                    let l12 = *base.add(12).cast::<usize>();
-                                    let len13 = l12;
-
-                                    SetCall {
-                                        key: _rt::string_lift(bytes10),
-                                        value: _rt::Vec::from_raw_parts(l11.cast(), len13, len13),
-                                    }
-                                };
-                                result14.push(e14);
-                            }
-                            _rt::cabi_dealloc(base14, len14 * 16, 4);
-
-                            (_rt::string_lift(bytes5), result14)
-                        };
-                        result15.push(e15);
-                    }
-                    _rt::cabi_dealloc(base15, len15 * 16, 4);
-                    result15
                 }
             }
         }
@@ -8474,8 +8478,8 @@ pub(crate) use __export_test_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.23.0:test:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7380] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd98\x01A\x02\x01A\x20\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 7376] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd58\x01A\x02\x01A\x20\
 \x01B\x19\x04\0\x05store\x03\x01\x01q\x04\x10store-table-full\0\0\x0dno-such-sto\
 re\0\0\x0daccess-denied\0\0\x05other\x01s\0\x04\0\x05error\x03\0\x01\x01i\0\x01j\
 \x01\x03\x01\x02\x01@\x01\x05labels\0\x04\x04\0\x12[static]store.open\x01\x05\x01\
@@ -8605,26 +8609,25 @@ be\x01\x84\x01\x01i+\x01j\x01\x85\x01\x01\x1b\x01j\x01\x86\x01\0\x01k\x87\x01\x0
 e\x01\x8c\x01\x03\x01\x15wasi:http/types@0.2.0\x05\x0a\x02\x03\0\x05\x18future-i\
 ncoming-response\x01B\x05\x02\x03\x02\x01\x0b\x04\0\x18future-incoming-response\x03\
 \0\0\x01i\x01\x01@\x02\x03urls\x08response\x02\x01\0\x04\0\x0cset-response\x01\x03\
-\x03\x01#fermyon:spin-test-virt/http-handler\x05\x0c\x01B\x11\x01r\x01\x03keys\x04\
-\0\x08get-call\x03\0\0\x01p}\x01r\x02\x03keys\x05value\x02\x04\0\x08set-call\x03\
-\0\x03\x01@\0\x01\0\x04\0\x05reset\x01\x05\x01p\x01\x01o\x02s\x06\x01p\x07\x01@\0\
-\0\x08\x04\0\x03get\x01\x09\x01p\x04\x01o\x02s\x0a\x01p\x0b\x01@\0\0\x0c\x04\0\x03\
-set\x01\x0d\x03\x01&fermyon:spin-test-virt/key-value-calls\x05\x0d\x02\x03\0\x05\
-\x10incoming-request\x02\x03\0\x05\x11response-outparam\x01B\x08\x02\x03\x02\x01\
-\x0e\x04\0\x10incoming-request\x03\0\0\x02\x03\x02\x01\x0f\x04\0\x11response-out\
-param\x03\0\x02\x01i\x01\x01i\x03\x01@\x02\x07request\x04\x0cresponse-out\x05\x01\
-\0\x04\0\x06handle\x01\x06\x03\x01\x20wasi:http/incoming-handler@0.2.0\x05\x10\x02\
-\x03\0\x05\x11incoming-response\x02\x03\0\x05\x10outgoing-request\x01B\x17\x02\x03\
-\x02\x01\x0e\x04\0\x10incoming-request\x03\0\0\x02\x03\x02\x01\x0f\x04\0\x11resp\
-onse-outparam\x03\0\x02\x02\x03\x02\x01\x11\x04\0\x11incoming-response\x03\0\x04\
-\x02\x03\x02\x01\x12\x04\0\x10outgoing-request\x03\0\x06\x04\0\x11response-recei\
-ver\x03\x01\x01h\x08\x01i\x05\x01k\x0a\x01@\x01\x04self\x09\0\x0b\x04\0\x1d[meth\
-od]response-receiver.get\x01\x0c\x01i\x07\x01i\x01\x01@\x01\x07request\x0d\0\x0e\
-\x04\0\x0bnew-request\x01\x0f\x01i\x03\x01i\x08\x01o\x02\x10\x11\x01@\0\0\x12\x04\
-\0\x0cnew-response\x01\x13\x03\x01\x1dfermyon:spin-test/http-helper\x05\x13\x01@\
-\0\x01\0\x04\0\x03run\x01\x14\x04\x01\x16fermyon:spin-test/test\x04\0\x0b\x0a\x01\
-\0\x04test\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070\
-.202.0\x10wit-bindgen-rust\x060.23.0";
+\x03\x01#fermyon:spin-test-virt/http-handler\x05\x0c\x01B\x0b\x01p}\x01o\x02s\0\x01\
+q\x05\x03get\x01s\0\x03set\x01\x01\0\x06delete\x01s\0\x06exists\x01s\0\x08get-ke\
+ys\0\0\x04\0\x04call\x03\0\x02\x01p\x03\x01o\x02s\x04\x01p\x05\x01@\0\0\x06\x04\0\
+\x05calls\x01\x07\x01@\0\x01\0\x04\0\x0breset-calls\x01\x08\x03\x01&fermyon:spin\
+-test-virt/key-value-calls\x05\x0d\x02\x03\0\x05\x10incoming-request\x02\x03\0\x05\
+\x11response-outparam\x01B\x08\x02\x03\x02\x01\x0e\x04\0\x10incoming-request\x03\
+\0\0\x02\x03\x02\x01\x0f\x04\0\x11response-outparam\x03\0\x02\x01i\x01\x01i\x03\x01\
+@\x02\x07request\x04\x0cresponse-out\x05\x01\0\x04\0\x06handle\x01\x06\x03\x01\x20\
+wasi:http/incoming-handler@0.2.0\x05\x10\x02\x03\0\x05\x11incoming-response\x02\x03\
+\0\x05\x10outgoing-request\x01B\x17\x02\x03\x02\x01\x0e\x04\0\x10incoming-reques\
+t\x03\0\0\x02\x03\x02\x01\x0f\x04\0\x11response-outparam\x03\0\x02\x02\x03\x02\x01\
+\x11\x04\0\x11incoming-response\x03\0\x04\x02\x03\x02\x01\x12\x04\0\x10outgoing-\
+request\x03\0\x06\x04\0\x11response-receiver\x03\x01\x01h\x08\x01i\x05\x01k\x0a\x01\
+@\x01\x04self\x09\0\x0b\x04\0\x1d[method]response-receiver.get\x01\x0c\x01i\x07\x01\
+i\x01\x01@\x01\x07request\x0d\0\x0e\x04\0\x0bnew-request\x01\x0f\x01i\x03\x01i\x08\
+\x01o\x02\x10\x11\x01@\0\0\x12\x04\0\x0cnew-response\x01\x13\x03\x01\x1dfermyon:\
+spin-test/http-helper\x05\x13\x01@\0\x01\0\x04\0\x03run\x01\x14\x04\x01\x16fermy\
+on:spin-test/test\x04\0\x0b\x0a\x01\0\x04test\x03\0\0\0G\x09producers\x01\x0cpro\
+cessed-by\x02\x0dwit-component\x070.202.0\x10wit-bindgen-rust\x060.23.0";
 
 #[inline(never)]
 #[doc(hidden)]

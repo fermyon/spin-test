@@ -1931,21 +1931,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "spin-test-sdk"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "http",
- "http-body-util",
- "hyper",
- "tokio",
- "wasmtime",
- "wasmtime-wasi",
- "wasmtime-wasi-http",
-]
-
-[[package]]
 name = "spin-test-virt"
 version = "0.1.0"
 dependencies = [

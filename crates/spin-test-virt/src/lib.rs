@@ -21,18 +21,102 @@ impl key_value::Guest for Component {
     type Store = KeyValueStore;
 }
 
+/// The global collection of key-value stores.
+struct Stores;
+
+impl Stores {
+    /// Get the global collection of key-value stores.
+    ///
+    /// The keys are the labels of the stores.
+    fn get() -> &'static RwLock<HashMap<String, KeyValueStore>> {
+        static STORES: OnceLock<RwLock<HashMap<String, KeyValueStore>>> = OnceLock::new();
+        STORES.get_or_init(Default::default)
+    }
+}
+
+/// An instance of a key-value store.
 #[derive(Debug, Clone)]
 struct KeyValueStore {
     label: String,
-    inner: Arc<RwLock<HashMap<String, Vec<u8>>>>,
+    /// The data stored in the key-value store.
+    data: SharedHashMap<String, Vec<u8>>,
+    /// The calls made to the key-value store.
+    calls: SharedHashMap<String, Vec<key_value_calls::Call>>,
 }
 
+type SharedHashMap<K, V> = Arc<RwLock<HashMap<K, V>>>;
+
 impl KeyValueStore {
+    /// Create a new key-value store.
     fn new(label: String) -> Self {
         Self {
             label,
-            inner: Default::default(),
+            data: Default::default(),
+            calls: Default::default(),
         }
+    }
+
+    /// Get the value associated with a key.
+    fn get(&self, key: String) -> Option<Vec<u8>> {
+        let result = self.read_data().get(&key).cloned();
+        self.push_call(key_value_calls::Call::Get(key));
+        result
+    }
+
+    /// Set the value associated with a key.
+    fn set(&self, key: String, value: Vec<u8>) {
+        self.write_data().insert(key.clone(), value.clone());
+        self.push_call(key_value_calls::Call::Set((key, value)));
+    }
+
+    /// Delete the value associated with a key.
+    fn delete(&self, key: String) {
+        self.write_data().remove(&key);
+        self.push_call(key_value_calls::Call::Delete(key));
+    }
+
+    /// Check if a key exists in the key-value store.
+    fn exists(&self, key: String) -> bool {
+        let result = self.read_data().contains_key(&key);
+        self.push_call(key_value_calls::Call::Exists(key));
+        result
+    }
+
+    /// Get the keys in the key-value store.
+    fn get_keys(&self) -> Vec<String> {
+        self.push_call(key_value_calls::Call::GetKeys);
+        self.read_data().keys().cloned().collect()
+    }
+
+    /// Clear the recorded calls made to the key-value store.
+    fn clear_calls(&self) {
+        self.calls.write().unwrap().clear()
+    }
+
+    fn write_data(&self) -> std::sync::RwLockWriteGuard<'_, HashMap<String, Vec<u8>>> {
+        self.data.write().unwrap()
+    }
+
+    fn read_data(&self) -> std::sync::RwLockReadGuard<'_, HashMap<String, Vec<u8>>> {
+        self.data.read().unwrap()
+    }
+
+    fn push_call(&self, call: key_value_calls::Call) {
+        self.calls
+            .write()
+            .unwrap()
+            .entry(self.label.clone())
+            .or_default()
+            .push(call)
+    }
+
+    fn read_calls(&self) -> Vec<key_value_calls::Call> {
+        self.calls
+            .read()
+            .unwrap()
+            .get(&self.label)
+            .cloned()
+            .unwrap_or_default()
     }
 }
 
@@ -50,9 +134,7 @@ impl key_value::GuestStore for KeyValueStore {
             }
         }
 
-        static STORES: std::sync::OnceLock<Mutex<HashMap<String, KeyValueStore>>> =
-            std::sync::OnceLock::new();
-        let mut stores = STORES.get_or_init(Default::default).lock().unwrap();
+        let mut stores = Stores::get().write().unwrap();
         let key_value = stores
             .entry(label.clone())
             .or_insert_with(|| KeyValueStore::new(label));
@@ -60,42 +142,25 @@ impl key_value::GuestStore for KeyValueStore {
     }
 
     fn get(&self, key: String) -> Result<Option<Vec<u8>>, key_value::Error> {
-        GET_CALLS
-            .get_or_init(|| Default::default())
-            .write()
-            .unwrap()
-            .entry(self.label.clone())
-            .or_default()
-            .push(key_value_calls::GetCall { key: key.clone() });
-        Ok(self.inner.read().unwrap().get(&key).cloned())
+        Ok(self.get(key))
     }
 
     fn set(&self, key: String, value: Vec<u8>) -> Result<(), key_value::Error> {
-        SET_CALLS
-            .get_or_init(|| Default::default())
-            .write()
-            .unwrap()
-            .entry(self.label.clone())
-            .or_default()
-            .push(key_value_calls::SetCall {
-                key: key.clone(),
-                value: value.clone(),
-            });
-        self.inner.write().unwrap().insert(key, value);
+        self.set(key, value);
         Ok(())
     }
 
     fn delete(&self, key: String) -> Result<(), key_value::Error> {
-        let _ = self.inner.write().unwrap().remove(&key);
-        todo!()
+        self.delete(key);
+        Ok(())
     }
 
     fn exists(&self, key: String) -> Result<bool, key_value::Error> {
-        Ok(self.inner.read().unwrap().contains_key(&key))
+        Ok(self.exists(key))
     }
 
     fn get_keys(&self) -> Result<Vec<String>, key_value::Error> {
-        Ok(self.inner.read().unwrap().keys().cloned().collect())
+        Ok(self.get_keys())
     }
 }
 
@@ -393,43 +458,20 @@ impl http_handler::Guest for Component {
     }
 }
 
-static GET_CALLS: OnceLock<RwLock<HashMap<String, Vec<key_value_calls::GetCall>>>> =
-    OnceLock::new();
-static SET_CALLS: OnceLock<RwLock<HashMap<String, Vec<key_value_calls::SetCall>>>> =
-    OnceLock::new();
-
 impl key_value_calls::Guest for Component {
-    fn get() -> Vec<(String, Vec<key_value_calls::GetCall>)> {
-        GET_CALLS
-            .get_or_init(Default::default)
+    fn calls() -> Vec<(String, Vec<key_value_calls::Call>)> {
+        Stores::get()
             .read()
             .unwrap()
             .iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
+            .map(|(label, store)| (label.clone(), store.read_calls()))
             .collect()
     }
 
-    fn set() -> Vec<(String, Vec<key_value_calls::SetCall>)> {
-        SET_CALLS
-            .get_or_init(Default::default)
-            .read()
-            .unwrap()
-            .iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect()
-    }
-
-    fn reset() {
-        SET_CALLS
-            .get_or_init(Default::default)
-            .write()
-            .unwrap()
-            .clear();
-        GET_CALLS
-            .get_or_init(Default::default)
-            .write()
-            .unwrap()
-            .clear();
+    fn reset_calls() {
+        for store in Stores::get().read().unwrap().values() {
+            store.clear_calls();
+        }
     }
 }
 

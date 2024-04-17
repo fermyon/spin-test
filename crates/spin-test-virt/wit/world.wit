@@ -30,16 +30,15 @@ interface http-handler {
 }
 
 interface key-value-calls {
-    reset: func();
-    get: func() -> list<tuple<string, list<get-call>>>;
-    set: func() -> list<tuple<string, list<set-call>>>;
+    calls: func() -> list<tuple<string, list<call>>>;
 
-    record get-call {
-        key: string
+    variant call {
+        get(string),
+        set(tuple<string, list<u8>>),
+        delete(string),
+        exists(string),
+        get-keys
     }
-
-    record set-call {
-        key: string,
-        value: list<u8>
-    }
+    
+    reset-calls: func();
 }

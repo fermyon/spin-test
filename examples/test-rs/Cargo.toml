@@ -18,14 +18,14 @@ world = "test"
 path = "../../host-wit"
 
 [package.metadata.component.target.dependencies]
-"fermyon:spin" = { path = "../../crates/spin-test-virt/wit/deps/fermyon" }
 "fermyon:spin-test-virt" = { path = "../../host-wit/deps/spin-test" }
-"wasi:http" = { path = "../../crates/spin-test-virt/wit/deps/http" }
-"wasi:random" = { path = "../../crates/spin-test-virt/wit/deps/random" }
-"wasi:cli" = { path = "../../crates/spin-test-virt/wit/deps/cli" }
-"wasi:io" = { path = "../../crates/spin-test-virt/wit/deps/io" }
-"wasi:clocks" = { path = "../../crates/spin-test-virt/wit/deps/clocks" }
-"wasi:filesystem" = { path = "../../crates/spin-test-virt/wit/deps/filesystem" }
-"wasi:sockets" = { path = "../../crates/spin-test-virt/wit/deps/sockets" }
+"fermyon:spin" = { path = "../../host-wit/deps/fermyon" }
+"wasi:http" = { path = "../../host-wit/deps/http" }
+"wasi:random" = { path = "../../host-wit/deps/random" }
+"wasi:cli" = { path = "../../host-wit/deps/cli" }
+"wasi:io" = { path = "../../host-wit/deps/io" }
+"wasi:clocks" = { path = "../../host-wit/deps/clocks" }
+"wasi:filesystem" = { path = "../../host-wit/deps/filesystem" }
+"wasi:sockets" = { path = "../../host-wit/deps/sockets" }
 
 [package.metadata.component.dependencies]
