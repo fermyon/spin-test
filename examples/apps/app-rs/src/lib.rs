@@ -1,9 +1,13 @@
 use spin_sdk::http::{send, IntoResponse, Request, Response};
-use spin_sdk::{http_component, key_value, variables};
+use spin_sdk::{http_component, key_value, redis, variables};
 
 /// A simple Spin HTTP component.
 #[http_component]
 async fn handle_example(req: Request) -> anyhow::Result<impl IntoResponse> {
+    let redis = redis::Connection::open("redis://redis:6379")?;
+    redis.set("key", &"value".to_owned().into_bytes())?;
+    println!("Redis Value: {:?}", redis.get("key")?);
+
     let cache_name = variables::get("cache_name")?;
     let store = key_value::Store::open(&cache_name)?;
     let query: Query = serde_qs::from_str(req.query())?;

@@ -2,7 +2,7 @@ mod bindings;
 mod manifest;
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::{Arc, Mutex, OnceLock, RwLock},
 };
 
@@ -214,52 +214,151 @@ impl redis::Guest for Component {
     type Connection = RedisConnection;
 }
 
-struct RedisConnection;
+struct RedisConnection {
+    /// The data stored in the Redis store.
+    data: SharedHashMap<String, RedisValue>,
+}
+
+enum RedisValue {
+    Payload(redis::Payload),
+    Set(HashSet<String>),
+}
+
+impl RedisConnection {
+    fn new() -> Self {
+        Self {
+            data: Default::default(),
+        }
+    }
+
+    /// Get the redis payload associated with a key.
+    ///
+    /// Returns `Ok(None)` if the key does not exist and `Err(redis::Error::TypeError)` if the key
+    /// exists but is not a payload.
+    fn get_payload(&self, key: String) -> Result<Option<redis::Payload>, redis::Error> {
+        match self.read_data().get(&key) {
+            Some(RedisValue::Payload(p)) => Ok(Some(p.clone())),
+            Some(RedisValue::Set(_)) => Err(redis::Error::TypeError),
+            None => Ok(None),
+        }
+    }
+
+    /// Get the set associated with the key.
+    fn get_set(&self, key: String) -> Result<HashSet<String>, redis::Error> {
+        match self.read_data().get(&key) {
+            Some(RedisValue::Set(s)) => Ok(s.clone()),
+            Some(RedisValue::Payload(_)) => Err(redis::Error::TypeError),
+            None => Ok(Default::default()),
+        }
+    }
+
+    /// Add the values to the set associated with the key.
+    fn add_to_set(&self, key: String, new: Vec<String>) -> Result<usize, redis::Error> {
+        match self.write_data().get_mut(&key) {
+            Some(RedisValue::Set(s)) => {
+                let original_len = s.len();
+                s.extend(new);
+                Ok(s.len() - original_len)
+            }
+            Some(RedisValue::Payload(_)) => Err(redis::Error::TypeError),
+            None => {
+                let set = new.into_iter().collect::<HashSet<_>>();
+                let len = set.len();
+                self.write_data().insert(key.clone(), RedisValue::Set(set));
+                Ok(len)
+            }
+        }
+    }
+
+    /// Remove the values from the set associated with the key.
+    fn remove_from_set(&self, key: String, values: Vec<String>) -> Result<usize, redis::Error> {
+        match self.write_data().get_mut(&key) {
+            Some(RedisValue::Set(s)) => {
+                let original_len = s.len();
+                s.retain(|v| !values.contains(v));
+                Ok(original_len - s.len())
+            }
+            Some(RedisValue::Payload(_)) => Err(redis::Error::TypeError),
+            None => Ok(0),
+        }
+    }
+
+    /// Set the value associated with a key.
+    fn set(&self, key: String, value: redis::Payload) {
+        self.write_data().insert(key, RedisValue::Payload(value));
+    }
+
+    /// Delete the values associated with the keys.
+    ///
+    /// Returns the number of keys that were deleted.
+    fn del(&self, keys: Vec<String>) -> usize {
+        let mut data = self.write_data();
+        let original_len = data.len();
+        data.retain(|k, _| !keys.contains(k));
+        let new_len = data.len();
+        original_len - new_len
+    }
+
+    fn write_data(&self) -> std::sync::RwLockWriteGuard<'_, HashMap<String, RedisValue>> {
+        self.data.write().unwrap()
+    }
+
+    fn read_data(&self) -> std::sync::RwLockReadGuard<'_, HashMap<String, RedisValue>> {
+        self.data.read().unwrap()
+    }
+}
 
 impl redis::GuestConnection for RedisConnection {
     fn open(address: String) -> Result<redis::Connection, redis::Error> {
-        let _ = address;
-        todo!()
+        let url_allowed = manifest::AppManifest::allows_url(&address, "redis")
+            .map_err(|_| redis::Error::InvalidAddress)?;
+        if !url_allowed {
+            return Err(redis::Error::InvalidAddress);
+        }
+        Ok(redis::Connection::new(RedisConnection::new()))
     }
 
     fn publish(&self, channel: String, payload: redis::Payload) -> Result<(), redis::Error> {
         let _ = (channel, payload);
-        todo!()
+        Ok(())
     }
 
     fn get(&self, key: String) -> Result<Option<redis::Payload>, redis::Error> {
-        let _ = key;
-        todo!()
+        self.get_payload(key)
     }
 
     fn set(&self, key: String, value: redis::Payload) -> Result<(), redis::Error> {
-        let _ = (key, value);
-        todo!()
+        self.set(key, value);
+        Ok(())
     }
 
     fn incr(&self, key: String) -> Result<i64, redis::Error> {
-        let _ = key;
-        todo!()
+        let value = self
+            .get_payload(key)?
+            .map(|v| String::from_utf8(v))
+            .transpose()
+            .map_err(|_| redis::Error::TypeError)?;
+        let result = value
+            .map(|v| v.parse::<i64>())
+            .transpose()
+            .map_err(|_| redis::Error::TypeError)?;
+        Ok(result.unwrap_or(0) + 1)
     }
 
     fn del(&self, keys: Vec<String>) -> Result<u32, redis::Error> {
-        let _ = keys;
-        todo!()
+        Ok(self.del(keys) as u32)
     }
 
     fn sadd(&self, key: String, values: Vec<String>) -> Result<u32, redis::Error> {
-        let _ = (key, values);
-        todo!()
+        self.add_to_set(key, values).map(|n| n as u32)
     }
 
     fn smembers(&self, key: String) -> Result<Vec<String>, redis::Error> {
-        let _ = key;
-        todo!()
+        self.get_set(key).map(|s| s.into_iter().collect())
     }
 
     fn srem(&self, key: String, values: Vec<String>) -> Result<u32, redis::Error> {
-        let _ = (key, values);
-        todo!()
+        self.remove_from_set(key, values).map(|n| n as u32)
     }
 
     fn execute(
@@ -268,7 +367,8 @@ impl redis::GuestConnection for RedisConnection {
         arguments: Vec<redis::RedisParameter>,
     ) -> Result<Vec<redis::RedisResult>, redis::Error> {
         let _ = (command, arguments);
-        todo!()
+        // TODO: implement this by getting input from user
+        Err(redis::Error::Other("not yet implemented".into()))
     }
 }
 
@@ -281,7 +381,7 @@ struct SqliteConnection;
 impl sqlite::GuestConnection for SqliteConnection {
     fn open(database: String) -> Result<sqlite::Connection, sqlite::Error> {
         let _ = database;
-        todo!()
+        Err(sqlite::Error::Io("not yet implemented".into()))
     }
 
     fn execute(
@@ -290,7 +390,7 @@ impl sqlite::GuestConnection for SqliteConnection {
         parameters: Vec<sqlite::Value>,
     ) -> Result<sqlite::QueryResult, sqlite::Error> {
         let _ = (statement, parameters);
-        todo!()
+        Err(sqlite::Error::Io("not yet implemented".into()))
     }
 }
 
@@ -303,7 +403,7 @@ struct MySqlConnection;
 impl mysql::GuestConnection for MySqlConnection {
     fn open(address: String) -> Result<mysql::Connection, mysql::Error> {
         let _ = address;
-        todo!()
+        Err(mysql::Error::Other("not yet implemented".into()))
     }
 
     fn query(
@@ -312,7 +412,7 @@ impl mysql::GuestConnection for MySqlConnection {
         params: Vec<mysql::ParameterValue>,
     ) -> Result<mysql::RowSet, mysql::Error> {
         let _ = (statement, params);
-        todo!()
+        Err(mysql::Error::Other("not yet implemented".into()))
     }
 
     fn execute(
@@ -321,7 +421,7 @@ impl mysql::GuestConnection for MySqlConnection {
         params: Vec<mysql::ParameterValue>,
     ) -> Result<(), mysql::Error> {
         let _ = (statement, params);
-        todo!()
+        Err(mysql::Error::Other("not yet implemented".into()))
     }
 }
 
@@ -334,7 +434,7 @@ struct PostgresConnection;
 impl postgres::GuestConnection for PostgresConnection {
     fn open(address: String) -> Result<postgres::Connection, postgres::Error> {
         let _ = address;
-        todo!()
+        Err(postgres::Error::Other("not yet implemented".into()))
     }
 
     fn query(
@@ -343,7 +443,7 @@ impl postgres::GuestConnection for PostgresConnection {
         params: Vec<postgres::ParameterValue>,
     ) -> Result<postgres::RowSet, postgres::Error> {
         let _ = (statement, params);
-        todo!()
+        Err(postgres::Error::Other("not yet implemented".into()))
     }
 
     fn execute(
@@ -352,7 +452,7 @@ impl postgres::GuestConnection for PostgresConnection {
         params: Vec<postgres::ParameterValue>,
     ) -> Result<u64, postgres::Error> {
         let _ = (statement, params);
-        todo!()
+        Err(postgres::Error::Other("not yet implemented".into()))
     }
 }
 
@@ -370,7 +470,7 @@ impl mqtt::GuestConnection for MqttConnection {
         keep_alive_interval_in_secs: u64,
     ) -> Result<mqtt::Connection, mqtt::Error> {
         let _ = (address, username, password, keep_alive_interval_in_secs);
-        todo!()
+        Err(mqtt::Error::Other("not yet implemented".to_string()))
     }
 
     fn publish(
@@ -380,7 +480,7 @@ impl mqtt::GuestConnection for MqttConnection {
         qos: mqtt::Qos,
     ) -> Result<(), mqtt::Error> {
         let _ = (topic, payload, qos);
-        todo!()
+        Err(mqtt::Error::Other("not yet implemented".to_string()))
     }
 }
 
