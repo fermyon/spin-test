@@ -1,13 +1,21 @@
 use std::{env, process};
 
 fn main() {
+    check_cargo_component_installed();
     cargo_component_build("crates/router");
     cargo_component_build("crates/spin-test-virt");
 }
 
+fn check_cargo_component_installed() {
+    let (_, output) = run(["cargo", "component", "--version"], ".");
+    if !output.status.success() {
+        panic!("cargo-component is not installed. Please install it by running `cargo install cargo-component`");
+    }
+}
+
 fn cargo_component_build(dir: &str) {
     let out_dir = env::var_os("OUT_DIR").unwrap();
-    run(
+    let (cmd, output) = run(
         [
             "cargo",
             "component",
@@ -18,11 +26,16 @@ fn cargo_component_build(dir: &str) {
         ],
         dir,
     );
+    if !output.status.success() {
+        println!("{}", std::str::from_utf8(&output.stderr).unwrap());
+        println!("{}", std::str::from_utf8(&output.stdout).unwrap());
+        panic!("while running the build script, the command '{cmd}' failed to run in '{dir}'")
+    }
     println!("cargo:rerun-if-changed={dir}/Cargo.toml");
     println!("cargo:rerun-if-changed={dir}/src");
 }
 
-fn run<'a>(args: impl IntoIterator<Item = &'a str> + 'a, dir: &str) {
+fn run<'a>(args: impl IntoIterator<Item = &'a str> + 'a, dir: &str) -> (String, process::Output) {
     let mut cmd = process::Command::new(get_os_process());
     cmd.stdout(process::Stdio::inherit());
     cmd.stderr(process::Stdio::piped());
@@ -36,13 +49,7 @@ fn run<'a>(args: impl IntoIterator<Item = &'a str> + 'a, dir: &str) {
         .join(" ");
     cmd.arg(&c);
 
-    let output = cmd.output().unwrap();
-    let exit = output.status;
-    if !exit.success() {
-        println!("{}", std::str::from_utf8(&output.stderr).unwrap());
-        println!("{}", std::str::from_utf8(&output.stdout).unwrap());
-        panic!("while running the build script, the command '{c}' failed to run in '{dir}'")
-    }
+    (c, cmd.output().unwrap())
 }
 
 fn get_os_process() -> String {
