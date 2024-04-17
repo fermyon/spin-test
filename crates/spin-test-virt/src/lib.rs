@@ -105,6 +105,7 @@ impl llm::Guest for Component {
         prompt: String,
         params: Option<llm::InferencingParams>,
     ) -> Result<llm::InferencingResult, llm::Error> {
+        check_model(&model)?;
         let _ = (model, prompt, params);
         Ok(llm::InferencingResult {
             text: "Hello, world!".to_string(),
@@ -119,6 +120,7 @@ impl llm::Guest for Component {
         model: llm::EmbeddingModel,
         text: Vec<String>,
     ) -> Result<llm::EmbeddingsResult, llm::Error> {
+        check_model(&model)?;
         let _ = (model, text);
         Ok(llm::EmbeddingsResult {
             embeddings: vec![],
@@ -127,6 +129,20 @@ impl llm::Guest for Component {
             },
         })
     }
+}
+
+fn check_model(model: &str) -> Result<(), llm::Error> {
+    let model_allowed = manifest::AppManifest::get_component()
+        .expect("internal error: component id not yet set")
+        .ai_models
+        .into_iter()
+        .any(|m| m.as_ref() == model);
+
+    if !model_allowed {
+        return Err(llm::Error::ModelNotSupported);
+    }
+
+    Ok(())
 }
 
 impl redis::Guest for Component {
