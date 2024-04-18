@@ -10,7 +10,7 @@ pub fn spin_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let func_name = &func_item.sig.ident;
 
     let world_name = format!("{SPIN_TEST_NAME_PREFIX}{func_name}").to_kebab_case();
-    let world_text = generate_world(func_name);
+    let world_text = generate_world(&world_name);
 
     let export_name = format_ident!("{}", world_name.to_snake_case());
     let export_impl = format_ident!("{}", world_name.to_upper_camel_case());
@@ -38,8 +38,7 @@ pub fn spin_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-fn generate_world(ident: &syn::Ident) -> proc_macro2::TokenStream {
-    let world_name = format!("{SPIN_TEST_NAME_PREFIX}{ident}").to_kebab_case();
+fn generate_world(world_name: &str) -> proc_macro2::TokenStream {
     let world_text = format!(
         r#"
         package test:test;
