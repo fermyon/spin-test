@@ -101,6 +101,9 @@ pub fn encode_composition(
             &virt,
             "`spin-test-virt`",
         ),
+        ("fermyon:spin-test-virt/sqlite", &virt, "`spin-test-virt`"),
+        // Needed for types
+        ("fermyon:spin/sqlite@2.0.0", &virt, "`spin-test-virt`"),
         (
             "fermyon:spin-test-virt/http-handler",
             &virt,
