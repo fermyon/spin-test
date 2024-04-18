@@ -60,3 +60,56 @@ impl http::types::IncomingBody {
         Ok(result)
     }
 }
+
+impl http::types::OutgoingResponse {
+    /// Get the body of the outgoing response.
+    ///
+    /// May only be called once.
+    pub fn write_body(&self, bytes: &[u8]) {
+        self.body().unwrap().write_bytes(bytes);
+    }
+}
+
+impl http::types::OutgoingBody {
+    /// Write bytes to the outgoing response body.
+    pub fn write_bytes(self, mut bytes: &[u8]) {
+        struct Outgoing(Option<(http::types::OutputStream, http::types::OutgoingBody)>);
+        impl Outgoing {
+            fn stream(&self) -> &http::types::OutputStream {
+                &self.0.as_ref().unwrap().0
+            }
+        }
+
+        impl Drop for Outgoing {
+            fn drop(&mut self) {
+                if let Some((stream, body)) = self.0.take() {
+                    drop(stream);
+                    _ = http::types::OutgoingBody::finish(body, None);
+                }
+            }
+        }
+
+        let stream = self.write().expect("response body should be writable");
+        let pair = Outgoing(Some((stream, self)));
+
+        let pollable = pair.stream().subscribe();
+        while !bytes.is_empty() {
+            // Block until ready to write
+            pollable.block();
+            // Check how much we can write
+            let n = pair.stream().check_write().unwrap() as usize;
+            // Get the minimum of how much we can write and how much we have left
+            let len = std::cmp::min(n, bytes.len());
+            // Break off the chunk we can write
+            let (chunk, rest) = bytes.split_at(len);
+            // Write the chunk
+            pair.stream().write(chunk).unwrap();
+            // Loop back with the rest
+            bytes = rest;
+        }
+        // Flush the stream
+        pair.stream().flush().unwrap();
+        // Block until the stream is finished
+        pollable.block();
+    }
+}

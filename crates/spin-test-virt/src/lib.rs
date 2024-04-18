@@ -13,7 +13,7 @@ use bindings::exports::{
     },
     wasi::http::outgoing_handler,
 };
-use bindings::wasi::http::types::{self, OutgoingResponse};
+use bindings::wasi::http::types;
 
 struct Component;
 
@@ -562,7 +562,7 @@ impl variables::Guest for Component {
     }
 }
 
-static RESPONSES: std::sync::OnceLock<Mutex<HashMap<String, OutgoingResponse>>> =
+static RESPONSES: std::sync::OnceLock<Mutex<HashMap<String, types::OutgoingResponse>>> =
     std::sync::OnceLock::new();
 
 impl outgoing_handler::Guest for Component {

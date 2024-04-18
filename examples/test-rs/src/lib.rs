@@ -1,4 +1,7 @@
-use spin_test_sdk::{bindings::wasi::http, key_value, spin_test};
+use spin_test_sdk::{
+    bindings::{fermyon::spin_test_virt::http_handler, wasi::http},
+    key_value, spin_test,
+};
 
 #[spin_test]
 fn cache_hit() {
@@ -24,8 +27,9 @@ fn cache_hit() {
 fn cache_miss() {
     let user_json = r#"{"id":123,"name":"Ryan"}"#;
 
-    // TODO:
-    // http_handler::set_response("https://my.api.com?user_id=123", response);
+    let response = http::types::OutgoingResponse::new(http::types::Headers::new());
+    response.write_body(user_json.as_bytes());
+    http_handler::set_response("https://my.api.com?user_id=123", response);
     // Configure the test
     make_request(user_json);
 
@@ -33,7 +37,10 @@ fn cache_miss() {
     let key_value_config = key_value::Store::open("cache").unwrap();
     assert_eq!(
         key_value_config.calls(),
-        vec![key_value::Call::Get("123".to_owned())]
+        vec![
+            key_value::Call::Get("123".to_owned()),
+            key_value::Call::Set(("123".to_owned(), user_json.as_bytes().to_vec()))
+        ]
     );
 }
 
