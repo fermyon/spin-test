@@ -1,44 +1,43 @@
 use spin_test_sdk::{
-    http::read_body,
-    incoming_handler, key_value, key_value_calls, new_request, new_response, spin_test,
-    wit::fermyon::{spin::sqlite::RowResult, spin_test_virt::sqlite},
-    Headers, OutgoingRequest,
+    fermyon::spin::{key_value, sqlite},
+    fermyon::spin_test::perform_request,
+    fermyon::spin_test_virt::{key_value_calls, sqlite as virtualized_sqlite},
+    spin_test,
+    wasi::http,
 };
 
 #[spin_test]
-fn simple_kv_test1() {
-    // Configure the test
-    let user = r#"{"id":123,"name":"Ryan"}"#;
+fn cache_hit() {
+    let user_json = r#"{"id":123,"name":"Ryan"}"#;
 
+    // Configure the test
     let key_value_config = key_value::Store::open("cache").unwrap();
     // Set state of the key-value store
-    key_value_config.set("123", user.as_bytes()).unwrap();
+    key_value_config.set("123", user_json.as_bytes()).unwrap();
+    // Reset the call history
     key_value_calls::reset_calls();
-    sqlite::set_response(
+
+    // Set the expected response for the SQLite query
+    virtualized_sqlite::set_response(
         "select name from users where user_id = ?;",
         &[sqlite::Value::Integer(123)],
         Ok(&sqlite::QueryResult {
             columns: vec!["name".into()],
-            rows: vec![RowResult {
+            rows: vec![sqlite::RowResult {
                 values: vec![sqlite::Value::Text("Ryan".into())],
             }],
         }),
     );
 
-    let request = OutgoingRequest::new(Headers::new());
+    // Perform the request
+    let request = http::types::OutgoingRequest::new(http::types::Headers::new());
     request.set_path_with_query(Some("/?user_id=123")).unwrap();
-    let request = new_request(request);
-    let (response_out, response_receiver) = new_response();
-    incoming_handler::handle(request, response_out);
-    let response = response_receiver.get().unwrap();
-    assert_eq!(response.status(), 200);
+    let response = perform_request(request);
 
-    let mut body = String::new();
-    read_body(response.consume().unwrap(), |buffer| {
-        body.push_str(&String::from_utf8(buffer).unwrap())
-    })
-    .unwrap();
-    assert_eq!(body, user);
+    // Assert response status and body
+    assert_eq!(response.status(), 200);
+    let body = response.consume().unwrap().read_to_string().unwrap();
+    assert_eq!(body, user_json);
 
     let calls = key_value_calls::calls()
         .into_iter()
