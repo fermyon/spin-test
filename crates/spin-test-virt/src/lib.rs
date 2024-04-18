@@ -9,7 +9,7 @@ use std::{
 use bindings::exports::{
     fermyon::{
         spin::{key_value, llm, mysql, postgres, redis, sqlite, variables},
-        spin_test_virt::{http_handler, key_value_calls},
+        spin_test_virt::{self, http_handler, key_value_calls},
     },
     wasi::http::outgoing_handler,
 };
@@ -380,8 +380,15 @@ struct SqliteConnection;
 
 impl sqlite::GuestConnection for SqliteConnection {
     fn open(database: String) -> Result<sqlite::Connection, sqlite::Error> {
-        let _ = database;
-        Err(sqlite::Error::Io("not yet implemented".into()))
+        let component = manifest::AppManifest::get_component().unwrap();
+        let db = component
+            .sqlite_databases
+            .into_iter()
+            .find(|db| db == &database);
+        if db.is_none() {
+            return Err(sqlite::Error::AccessDenied);
+        }
+        Ok(sqlite::Connection::new(SqliteConnection))
     }
 
     fn execute(
@@ -389,10 +396,58 @@ impl sqlite::GuestConnection for SqliteConnection {
         statement: String,
         parameters: Vec<sqlite::Value>,
     ) -> Result<sqlite::QueryResult, sqlite::Error> {
-        let _ = (statement, parameters);
-        Err(sqlite::Error::Io("not yet implemented".into()))
+        SQLITE_RESPONSES
+            .get_or_init(Default::default)
+            .lock()
+            .unwrap()
+            .remove(&(statement, parameters))
+            .transpose()?
+            .ok_or_else(|| sqlite::Error::Io("no response found for query".into()))
     }
 }
+
+static SQLITE_RESPONSES: std::sync::OnceLock<
+    Mutex<HashMap<(String, Vec<sqlite::Value>), Result<sqlite::QueryResult, sqlite::Error>>>,
+> = std::sync::OnceLock::new();
+impl spin_test_virt::sqlite::Guest for Component {
+    fn set_response(
+        query: String,
+        params: Vec<sqlite::Value>,
+        response: Result<sqlite::QueryResult, sqlite::Error>,
+    ) {
+        SQLITE_RESPONSES
+            .get_or_init(Default::default)
+            .lock()
+            .unwrap()
+            .insert((query, params), response);
+    }
+}
+
+impl std::hash::Hash for sqlite::Value {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            sqlite::Value::Null => 0.hash(state),
+            sqlite::Value::Integer(i) => i.hash(state),
+            sqlite::Value::Real(f) => f.to_bits().hash(state),
+            sqlite::Value::Text(s) => s.hash(state),
+            sqlite::Value::Blob(b) => b.hash(state),
+        }
+    }
+}
+
+impl PartialEq for sqlite::Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (sqlite::Value::Null, sqlite::Value::Null) => true,
+            (sqlite::Value::Integer(a), sqlite::Value::Integer(b)) => a == b,
+            (sqlite::Value::Real(a), sqlite::Value::Real(b)) => a == b,
+            (sqlite::Value::Text(a), sqlite::Value::Text(b)) => a == b,
+            (sqlite::Value::Blob(a), sqlite::Value::Blob(b)) => a == b,
+            _ => false,
+        }
+    }
+}
+impl Eq for sqlite::Value {}
 
 impl mysql::Guest for Component {
     type Connection = MySqlConnection;

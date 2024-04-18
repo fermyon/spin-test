@@ -21,7 +21,14 @@ world config {
     export fermyon:spin/key-value@2.0.0;
     export http-handler;
     export key-value-calls;
+    export sqlite;
     import get-manifest: func() -> string;
+}
+
+interface sqlite {
+    use fermyon:spin/sqlite@2.0.0.{value, query-result, error};
+
+    set-response: func(query: string, params: list<value>, response: result<query-result, error>);
 }
 
 interface http-handler {

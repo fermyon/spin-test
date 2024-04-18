@@ -307,6 +307,471 @@ pub mod fermyon {
                 }
             }
         }
+
+        #[allow(dead_code, clippy::all)]
+        pub mod sqlite {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            /// A handle to an open sqlite instance
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Connection {
+                handle: _rt::Resource<Connection>,
+            }
+
+            impl Connection {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Connection {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "fermyon:spin/sqlite@2.0.0")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]connection"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            /// The set of errors which may be raised by functions in this interface
+            #[derive(Clone)]
+            pub enum Error {
+                /// The host does not recognize the database name requested.
+                NoSuchDatabase,
+                /// The requesting component does not have access to the specified database (which may or may not exist).
+                AccessDenied,
+                /// The provided connection is not valid
+                InvalidConnection,
+                /// The database has reached its capacity
+                DatabaseFull,
+                /// Some implementation-specific error has occurred (e.g. I/O)
+                Io(_rt::String),
+            }
+            impl ::core::fmt::Debug for Error {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        Error::NoSuchDatabase => f.debug_tuple("Error::NoSuchDatabase").finish(),
+                        Error::AccessDenied => f.debug_tuple("Error::AccessDenied").finish(),
+                        Error::InvalidConnection => {
+                            f.debug_tuple("Error::InvalidConnection").finish()
+                        }
+                        Error::DatabaseFull => f.debug_tuple("Error::DatabaseFull").finish(),
+                        Error::Io(e) => f.debug_tuple("Error::Io").field(e).finish(),
+                    }
+                }
+            }
+            impl ::core::fmt::Display for Error {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    write!(f, "{:?}", self)
+                }
+            }
+
+            impl std::error::Error for Error {}
+            /// A single column's result from a database query
+            #[derive(Clone)]
+            pub enum Value {
+                Integer(i64),
+                Real(f64),
+                Text(_rt::String),
+                Blob(_rt::Vec<u8>),
+                Null,
+            }
+            impl ::core::fmt::Debug for Value {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        Value::Integer(e) => f.debug_tuple("Value::Integer").field(e).finish(),
+                        Value::Real(e) => f.debug_tuple("Value::Real").field(e).finish(),
+                        Value::Text(e) => f.debug_tuple("Value::Text").field(e).finish(),
+                        Value::Blob(e) => f.debug_tuple("Value::Blob").field(e).finish(),
+                        Value::Null => f.debug_tuple("Value::Null").finish(),
+                    }
+                }
+            }
+            /// A set of values for each of the columns in a query-result
+            #[derive(Clone)]
+            pub struct RowResult {
+                pub values: _rt::Vec<Value>,
+            }
+            impl ::core::fmt::Debug for RowResult {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("RowResult")
+                        .field("values", &self.values)
+                        .finish()
+                }
+            }
+            /// A result of a query
+            #[derive(Clone)]
+            pub struct QueryResult {
+                /// The names of the columns retrieved in the query
+                pub columns: _rt::Vec<_rt::String>,
+                /// the row results each containing the values for all the columns for a given row
+                pub rows: _rt::Vec<RowResult>,
+            }
+            impl ::core::fmt::Debug for QueryResult {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("QueryResult")
+                        .field("columns", &self.columns)
+                        .field("rows", &self.rows)
+                        .finish()
+                }
+            }
+            impl Connection {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Open a connection to a named database instance.
+                ///
+                /// If `database` is "default", the default instance is opened.
+                ///
+                /// `error::no-such-database` will be raised if the `name` is not recognized.
+                pub fn open(database: &str) -> Result<Connection, Error> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let vec0 = database;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+                        let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "fermyon:spin/sqlite@2.0.0")]
+                        extern "C" {
+                            #[link_name = "[static]connection.open"]
+                            fn wit_import(_: *mut u8, _: usize, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: *mut u8, _: usize, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import(ptr0.cast_mut(), len0, ptr1);
+                        let l2 = i32::from(*ptr1.add(0).cast::<u8>());
+                        match l2 {
+                            0 => {
+                                let e = {
+                                    let l3 = *ptr1.add(4).cast::<i32>();
+
+                                    Connection::from_handle(l3 as u32)
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l4 = i32::from(*ptr1.add(4).cast::<u8>());
+                                    let v8 = match l4 {
+                                        0 => Error::NoSuchDatabase,
+                                        1 => Error::AccessDenied,
+                                        2 => Error::InvalidConnection,
+                                        3 => Error::DatabaseFull,
+                                        n => {
+                                            debug_assert_eq!(n, 4, "invalid enum discriminant");
+                                            let e8 = {
+                                                let l5 = *ptr1.add(8).cast::<*mut u8>();
+                                                let l6 = *ptr1.add(12).cast::<usize>();
+                                                let len7 = l6;
+                                                let bytes7 =
+                                                    _rt::Vec::from_raw_parts(l5.cast(), len7, len7);
+
+                                                _rt::string_lift(bytes7)
+                                            };
+                                            Error::Io(e8)
+                                        }
+                                    };
+
+                                    v8
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl Connection {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Execute a statement returning back data if there is any
+                pub fn execute(
+                    &self,
+                    statement: &str,
+                    parameters: &[Value],
+                ) -> Result<QueryResult, Error> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 20]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 20]);
+                        let vec0 = statement;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+                        let vec3 = parameters;
+                        let len3 = vec3.len();
+                        let layout3 =
+                            _rt::alloc::Layout::from_size_align_unchecked(vec3.len() * 16, 8);
+                        let result3 = if layout3.size() != 0 {
+                            let ptr = _rt::alloc::alloc(layout3).cast::<u8>();
+                            if ptr.is_null() {
+                                _rt::alloc::handle_alloc_error(layout3);
+                            }
+                            ptr
+                        } else {
+                            {
+                                ::core::ptr::null_mut()
+                            }
+                        };
+                        for (i, e) in vec3.into_iter().enumerate() {
+                            let base = result3.add(i * 16);
+                            {
+                                match e {
+                                    Value::Integer(e) => {
+                                        *base.add(0).cast::<u8>() = (0i32) as u8;
+                                        *base.add(8).cast::<i64>() = _rt::as_i64(e);
+                                    }
+                                    Value::Real(e) => {
+                                        *base.add(0).cast::<u8>() = (1i32) as u8;
+                                        *base.add(8).cast::<f64>() = _rt::as_f64(e);
+                                    }
+                                    Value::Text(e) => {
+                                        *base.add(0).cast::<u8>() = (2i32) as u8;
+                                        let vec1 = e;
+                                        let ptr1 = vec1.as_ptr().cast::<u8>();
+                                        let len1 = vec1.len();
+                                        *base.add(12).cast::<usize>() = len1;
+                                        *base.add(8).cast::<*mut u8>() = ptr1.cast_mut();
+                                    }
+                                    Value::Blob(e) => {
+                                        *base.add(0).cast::<u8>() = (3i32) as u8;
+                                        let vec2 = e;
+                                        let ptr2 = vec2.as_ptr().cast::<u8>();
+                                        let len2 = vec2.len();
+                                        *base.add(12).cast::<usize>() = len2;
+                                        *base.add(8).cast::<*mut u8>() = ptr2.cast_mut();
+                                    }
+                                    Value::Null => {
+                                        *base.add(0).cast::<u8>() = (4i32) as u8;
+                                    }
+                                }
+                            }
+                        }
+                        let ptr4 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "fermyon:spin/sqlite@2.0.0")]
+                        extern "C" {
+                            #[link_name = "[method]connection.execute"]
+                            fn wit_import(
+                                _: i32,
+                                _: *mut u8,
+                                _: usize,
+                                _: *mut u8,
+                                _: usize,
+                                _: *mut u8,
+                            );
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(
+                            _: i32,
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                        ) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            ptr0.cast_mut(),
+                            len0,
+                            result3,
+                            len3,
+                            ptr4,
+                        );
+                        let l5 = i32::from(*ptr4.add(0).cast::<u8>());
+                        if layout3.size() != 0 {
+                            _rt::alloc::dealloc(result3.cast(), layout3);
+                        }
+                        match l5 {
+                            0 => {
+                                let e = {
+                                    let l6 = *ptr4.add(4).cast::<*mut u8>();
+                                    let l7 = *ptr4.add(8).cast::<usize>();
+                                    let base11 = l6;
+                                    let len11 = l7;
+                                    let mut result11 = _rt::Vec::with_capacity(len11);
+                                    for i in 0..len11 {
+                                        let base = base11.add(i * 8);
+                                        let e11 = {
+                                            let l8 = *base.add(0).cast::<*mut u8>();
+                                            let l9 = *base.add(4).cast::<usize>();
+                                            let len10 = l9;
+                                            let bytes10 =
+                                                _rt::Vec::from_raw_parts(l8.cast(), len10, len10);
+
+                                            _rt::string_lift(bytes10)
+                                        };
+                                        result11.push(e11);
+                                    }
+                                    _rt::cabi_dealloc(base11, len11 * 8, 4);
+                                    let l12 = *ptr4.add(12).cast::<*mut u8>();
+                                    let l13 = *ptr4.add(16).cast::<usize>();
+                                    let base27 = l12;
+                                    let len27 = l13;
+                                    let mut result27 = _rt::Vec::with_capacity(len27);
+                                    for i in 0..len27 {
+                                        let base = base27.add(i * 8);
+                                        let e27 = {
+                                            let l14 = *base.add(0).cast::<*mut u8>();
+                                            let l15 = *base.add(4).cast::<usize>();
+                                            let base26 = l14;
+                                            let len26 = l15;
+                                            let mut result26 = _rt::Vec::with_capacity(len26);
+                                            for i in 0..len26 {
+                                                let base = base26.add(i * 16);
+                                                let e26 = {
+                                                    let l16 = i32::from(*base.add(0).cast::<u8>());
+                                                    let v25 = match l16 {
+                                                        0 => {
+                                                            let e25 = {
+                                                                let l17 =
+                                                                    *base.add(8).cast::<i64>();
+
+                                                                l17
+                                                            };
+                                                            Value::Integer(e25)
+                                                        }
+                                                        1 => {
+                                                            let e25 = {
+                                                                let l18 =
+                                                                    *base.add(8).cast::<f64>();
+
+                                                                l18
+                                                            };
+                                                            Value::Real(e25)
+                                                        }
+                                                        2 => {
+                                                            let e25 = {
+                                                                let l19 =
+                                                                    *base.add(8).cast::<*mut u8>();
+                                                                let l20 =
+                                                                    *base.add(12).cast::<usize>();
+                                                                let len21 = l20;
+                                                                let bytes21 =
+                                                                    _rt::Vec::from_raw_parts(
+                                                                        l19.cast(),
+                                                                        len21,
+                                                                        len21,
+                                                                    );
+
+                                                                _rt::string_lift(bytes21)
+                                                            };
+                                                            Value::Text(e25)
+                                                        }
+                                                        3 => {
+                                                            let e25 = {
+                                                                let l22 =
+                                                                    *base.add(8).cast::<*mut u8>();
+                                                                let l23 =
+                                                                    *base.add(12).cast::<usize>();
+                                                                let len24 = l23;
+
+                                                                _rt::Vec::from_raw_parts(
+                                                                    l22.cast(),
+                                                                    len24,
+                                                                    len24,
+                                                                )
+                                                            };
+                                                            Value::Blob(e25)
+                                                        }
+                                                        n => {
+                                                            debug_assert_eq!(
+                                                                n, 4,
+                                                                "invalid enum discriminant"
+                                                            );
+                                                            Value::Null
+                                                        }
+                                                    };
+
+                                                    v25
+                                                };
+                                                result26.push(e26);
+                                            }
+                                            _rt::cabi_dealloc(base26, len26 * 16, 8);
+
+                                            RowResult { values: result26 }
+                                        };
+                                        result27.push(e27);
+                                    }
+                                    _rt::cabi_dealloc(base27, len27 * 8, 4);
+
+                                    QueryResult {
+                                        columns: result11,
+                                        rows: result27,
+                                    }
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l28 = i32::from(*ptr4.add(4).cast::<u8>());
+                                    let v32 = match l28 {
+                                        0 => Error::NoSuchDatabase,
+                                        1 => Error::AccessDenied,
+                                        2 => Error::InvalidConnection,
+                                        3 => Error::DatabaseFull,
+                                        n => {
+                                            debug_assert_eq!(n, 4, "invalid enum discriminant");
+                                            let e32 = {
+                                                let l29 = *ptr4.add(8).cast::<*mut u8>();
+                                                let l30 = *ptr4.add(12).cast::<usize>();
+                                                let len31 = l30;
+                                                let bytes31 = _rt::Vec::from_raw_parts(
+                                                    l29.cast(),
+                                                    len31,
+                                                    len31,
+                                                );
+
+                                                _rt::string_lift(bytes31)
+                                            };
+                                            Error::Io(e32)
+                                        }
+                                    };
+
+                                    v32
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 #[allow(dead_code)]
@@ -13987,6 +14452,269 @@ pub mod exports {
                 struct _RetArea([::core::mem::MaybeUninit<u8>; 8]);
                 static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 8]);
             }
+
+            #[allow(dead_code, clippy::all)]
+            pub mod sqlite {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+                use super::super::super::super::_rt;
+                pub type Value = super::super::super::super::exports::fermyon::spin::sqlite::Value;
+                pub type QueryResult =
+                    super::super::super::super::exports::fermyon::spin::sqlite::QueryResult;
+                pub type Error = super::super::super::super::exports::fermyon::spin::sqlite::Error;
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_set_response_cabi<T: Guest>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                    arg2: *mut u8,
+                    arg3: usize,
+                    arg4: i32,
+                    arg5: *mut u8,
+                    arg6: *mut u8,
+                    arg7: *mut u8,
+                    arg8: usize,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    let base11 = arg2;
+                    let len11 = arg3;
+                    let mut result11 = _rt::Vec::with_capacity(len11);
+                    for i in 0..len11 {
+                        let base = base11.add(i * 16);
+                        let e11 = {
+                            let l1 = i32::from(*base.add(0).cast::<u8>());
+                            use super::super::super::super::exports::fermyon::spin::sqlite::Value as V10;
+                            let v10 = match l1 {
+                                0 => {
+                                    let e10 = {
+                                        let l2 = *base.add(8).cast::<i64>();
+
+                                        l2
+                                    };
+                                    V10::Integer(e10)
+                                }
+                                1 => {
+                                    let e10 = {
+                                        let l3 = *base.add(8).cast::<f64>();
+
+                                        l3
+                                    };
+                                    V10::Real(e10)
+                                }
+                                2 => {
+                                    let e10 = {
+                                        let l4 = *base.add(8).cast::<*mut u8>();
+                                        let l5 = *base.add(12).cast::<usize>();
+                                        let len6 = l5;
+                                        let bytes6 =
+                                            _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
+
+                                        _rt::string_lift(bytes6)
+                                    };
+                                    V10::Text(e10)
+                                }
+                                3 => {
+                                    let e10 = {
+                                        let l7 = *base.add(8).cast::<*mut u8>();
+                                        let l8 = *base.add(12).cast::<usize>();
+                                        let len9 = l8;
+
+                                        _rt::Vec::from_raw_parts(l7.cast(), len9, len9)
+                                    };
+                                    V10::Blob(e10)
+                                }
+                                n => {
+                                    debug_assert_eq!(n, 4, "invalid enum discriminant");
+                                    V10::Null
+                                }
+                            };
+
+                            v10
+                        };
+                        result11.push(e11);
+                    }
+                    _rt::cabi_dealloc(base11, len11 * 16, 8);
+                    T::set_response(
+                        _rt::string_lift(bytes0),
+                        result11,
+                        match arg4 {
+                            0 => {
+                                let e = {
+                                    let base15 = arg5;
+                                    let len15 = arg6 as usize;
+                                    let mut result15 = _rt::Vec::with_capacity(len15);
+                                    for i in 0..len15 {
+                                        let base = base15.add(i * 8);
+                                        let e15 = {
+                                            let l12 = *base.add(0).cast::<*mut u8>();
+                                            let l13 = *base.add(4).cast::<usize>();
+                                            let len14 = l13;
+                                            let bytes14 =
+                                                _rt::Vec::from_raw_parts(l12.cast(), len14, len14);
+
+                                            _rt::string_lift(bytes14)
+                                        };
+                                        result15.push(e15);
+                                    }
+                                    _rt::cabi_dealloc(base15, len15 * 8, 4);
+                                    let base29 = arg7;
+                                    let len29 = arg8;
+                                    let mut result29 = _rt::Vec::with_capacity(len29);
+                                    for i in 0..len29 {
+                                        let base = base29.add(i * 8);
+                                        let e29 = {
+                                            let l16 = *base.add(0).cast::<*mut u8>();
+                                            let l17 = *base.add(4).cast::<usize>();
+                                            let base28 = l16;
+                                            let len28 = l17;
+                                            let mut result28 = _rt::Vec::with_capacity(len28);
+                                            for i in 0..len28 {
+                                                let base = base28.add(i * 16);
+                                                let e28 = {
+                                                    let l18 = i32::from(*base.add(0).cast::<u8>());
+                                                    use super::super::super::super::exports::fermyon::spin::sqlite::Value as V27;
+                                                    let v27 = match l18 {
+                                                        0 => {
+                                                            let e27 = {
+                                                                let l19 =
+                                                                    *base.add(8).cast::<i64>();
+
+                                                                l19
+                                                            };
+                                                            V27::Integer(e27)
+                                                        }
+                                                        1 => {
+                                                            let e27 = {
+                                                                let l20 =
+                                                                    *base.add(8).cast::<f64>();
+
+                                                                l20
+                                                            };
+                                                            V27::Real(e27)
+                                                        }
+                                                        2 => {
+                                                            let e27 = {
+                                                                let l21 =
+                                                                    *base.add(8).cast::<*mut u8>();
+                                                                let l22 =
+                                                                    *base.add(12).cast::<usize>();
+                                                                let len23 = l22;
+                                                                let bytes23 =
+                                                                    _rt::Vec::from_raw_parts(
+                                                                        l21.cast(),
+                                                                        len23,
+                                                                        len23,
+                                                                    );
+
+                                                                _rt::string_lift(bytes23)
+                                                            };
+                                                            V27::Text(e27)
+                                                        }
+                                                        3 => {
+                                                            let e27 = {
+                                                                let l24 =
+                                                                    *base.add(8).cast::<*mut u8>();
+                                                                let l25 =
+                                                                    *base.add(12).cast::<usize>();
+                                                                let len26 = l25;
+
+                                                                _rt::Vec::from_raw_parts(
+                                                                    l24.cast(),
+                                                                    len26,
+                                                                    len26,
+                                                                )
+                                                            };
+                                                            V27::Blob(e27)
+                                                        }
+                                                        n => {
+                                                            debug_assert_eq!(
+                                                                n, 4,
+                                                                "invalid enum discriminant"
+                                                            );
+                                                            V27::Null
+                                                        }
+                                                    };
+
+                                                    v27
+                                                };
+                                                result28.push(e28);
+                                            }
+                                            _rt::cabi_dealloc(base28, len28 * 16, 8);
+
+                                            super::super::super::super::exports::fermyon::spin::sqlite::RowResult{
+              values: result28,
+            }
+                                        };
+                                        result29.push(e29);
+                                    }
+                                    _rt::cabi_dealloc(base29, len29 * 8, 4);
+
+                                    super::super::super::super::exports::fermyon::spin::sqlite::QueryResult{
+          columns: result15,
+          rows: result29,
+        }
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    use super::super::super::super::exports::fermyon::spin::sqlite::Error as V31;
+                                    let v31 = match arg5 as i32 {
+                                        0 => V31::NoSuchDatabase,
+                                        1 => V31::AccessDenied,
+                                        2 => V31::InvalidConnection,
+                                        3 => V31::DatabaseFull,
+                                        n => {
+                                            debug_assert_eq!(n, 4, "invalid enum discriminant");
+                                            let e31 = {
+                                                let len30 = arg7 as usize;
+                                                let bytes30 = _rt::Vec::from_raw_parts(
+                                                    arg6.cast(),
+                                                    len30,
+                                                    len30,
+                                                );
+
+                                                _rt::string_lift(bytes30)
+                                            };
+                                            V31::Io(e31)
+                                        }
+                                    };
+
+                                    v31
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        },
+                    );
+                }
+                pub trait Guest {
+                    fn set_response(
+                        query: _rt::String,
+                        params: _rt::Vec<Value>,
+                        response: Result<QueryResult, Error>,
+                    );
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_fermyon_spin_test_virt_sqlite_cabi{
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+    #[export_name = "fermyon:spin-test-virt/sqlite#set-response"]
+    unsafe extern "C" fn export_set_response(arg0: *mut u8,arg1: usize,arg2: *mut u8,arg3: usize,arg4: i32,arg5: *mut u8,arg6: *mut u8,arg7: *mut u8,arg8: usize,) {
+      $($path_to_types)*::_export_set_response_cabi::<$ty>(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+    }
+  };);
+}
+                #[doc(hidden)]
+                pub(crate) use __export_fermyon_spin_test_virt_sqlite_cabi;
+            }
         }
     }
     #[allow(dead_code)]
@@ -14828,6 +15556,27 @@ mod _rt {
         }
     }
 
+    pub fn as_f64<T: AsF64>(t: T) -> f64 {
+        t.as_f64()
+    }
+
+    pub trait AsF64 {
+        fn as_f64(self) -> f64;
+    }
+
+    impl<'a, T: Copy + AsF64> AsF64 for &'a T {
+        fn as_f64(self) -> f64 {
+            (*self).as_f64()
+        }
+    }
+
+    impl AsF64 for f64 {
+        #[inline]
+        fn as_f64(self) -> f64 {
+            self as f64
+        }
+    }
+
     #[cfg(target_arch = "wasm32")]
     pub fn run_ctors_once() {
         wit_bindgen_rt::run_ctors_once();
@@ -14852,27 +15601,6 @@ mod _rt {
         #[inline]
         fn as_f32(self) -> f32 {
             self as f32
-        }
-    }
-
-    pub fn as_f64<T: AsF64>(t: T) -> f64 {
-        t.as_f64()
-    }
-
-    pub trait AsF64 {
-        fn as_f64(self) -> f64;
-    }
-
-    impl<'a, T: Copy + AsF64> AsF64 for &'a T {
-        fn as_f64(self) -> f64 {
-            (*self).as_f64()
-        }
-    }
-
-    impl AsF64 for f64 {
-        #[inline]
-        fn as_f64(self) -> f64 {
-            self as f64
         }
     }
     extern crate alloc as alloc_crate;
@@ -14912,6 +15640,7 @@ macro_rules! __export_plug_impl {
                               $($path_to_types_root)*::exports::wasi::http::outgoing_handler::__export_wasi_http_outgoing_handler_0_2_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wasi::http::outgoing_handler);
                               $($path_to_types_root)*::exports::fermyon::spin_test_virt::http_handler::__export_fermyon_spin_test_virt_http_handler_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::http_handler);
                               $($path_to_types_root)*::exports::fermyon::spin_test_virt::key_value_calls::__export_fermyon_spin_test_virt_key_value_calls_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::key_value_calls);
+                              $($path_to_types_root)*::exports::fermyon::spin_test_virt::sqlite::__export_fermyon_spin_test_virt_sqlite_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::sqlite);
                               )
                             }
 #[doc(inline)]
@@ -14920,8 +15649,8 @@ pub(crate) use __export_plug_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.24.0:plug:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10715] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe0R\x01A\x02\x01A2\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 11297] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa6W\x01A\x02\x01A9\x01\
 B\x11\x01q\x05\x11connection-failed\x01s\0\x0dbad-parameter\x01s\0\x0cquery-fail\
 ed\x01s\0\x17value-conversion-failed\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\
 \0\x01m\x0e\x07boolean\x04int8\x05int16\x05int32\x05int64\x05uint8\x06uint16\x06\
@@ -15053,69 +15782,7 @@ trailers\xf2\0\0\x81\x01\x04\0\x1c[static]outgoing-body.finish\x01\x82\x01\x01h0
 be\x01\x84\x01\x01i+\x01j\x01\x85\x01\x01\x1b\x01j\x01\x86\x01\0\x01k\x87\x01\x01\
 @\x01\x04self\x83\x01\0\x88\x01\x04\0$[method]future-incoming-response.get\x01\x89\
 \x01\x01h\x07\x01k\x1b\x01@\x01\x03err\x8a\x01\0\x8b\x01\x04\0\x0fhttp-error-cod\
-e\x01\x8c\x01\x03\x01\x15wasi:http/types@0.2.0\x05\x0a\x01@\0\0s\x03\0\x0cget-ma\
-nifest\x01\x0b\x01@\x01\x0ccomponent-ids\x01\0\x04\0\x10set-component-id\x01\x0c\
-\x01B\x19\x04\0\x05store\x03\x01\x01q\x04\x10store-table-full\0\0\x0dno-such-sto\
-re\0\0\x0daccess-denied\0\0\x05other\x01s\0\x04\0\x05error\x03\0\x01\x01i\0\x01j\
-\x01\x03\x01\x02\x01@\x01\x05labels\0\x04\x04\0\x12[static]store.open\x01\x05\x01\
-h\0\x01p}\x01k\x07\x01j\x01\x08\x01\x02\x01@\x02\x04self\x06\x03keys\0\x09\x04\0\
-\x11[method]store.get\x01\x0a\x01j\0\x01\x02\x01@\x03\x04self\x06\x03keys\x05val\
-ue\x07\0\x0b\x04\0\x11[method]store.set\x01\x0c\x01@\x02\x04self\x06\x03keys\0\x0b\
-\x04\0\x14[method]store.delete\x01\x0d\x01j\x01\x7f\x01\x02\x01@\x02\x04self\x06\
-\x03keys\0\x0e\x04\0\x14[method]store.exists\x01\x0f\x01ps\x01j\x01\x10\x01\x02\x01\
-@\x01\x04self\x06\0\x11\x04\0\x16[method]store.get-keys\x01\x12\x04\x01\x1cfermy\
-on:spin/key-value@2.0.0\x05\x0d\x01B\x1a\x01s\x04\0\x11inferencing-model\x03\0\0\
-\x01r\x06\x0amax-tokensy\x0erepeat-penaltyv!repeat-penalty-last-n-token-county\x0b\
-temperaturev\x05top-ky\x05top-pv\x04\0\x12inferencing-params\x03\0\x02\x01q\x03\x13\
-model-not-supported\0\0\x0druntime-error\x01s\0\x0dinvalid-input\x01s\0\x04\0\x05\
-error\x03\0\x04\x01r\x02\x12prompt-token-county\x15generated-token-county\x04\0\x11\
-inferencing-usage\x03\0\x06\x01r\x02\x04texts\x05usage\x07\x04\0\x12inferencing-\
-result\x03\0\x08\x01s\x04\0\x0fembedding-model\x03\0\x0a\x01r\x01\x12prompt-toke\
-n-county\x04\0\x10embeddings-usage\x03\0\x0c\x01pv\x01p\x0e\x01r\x02\x0aembeddin\
-gs\x0f\x05usage\x0d\x04\0\x11embeddings-result\x03\0\x10\x01k\x03\x01j\x01\x09\x01\
-\x05\x01@\x03\x05model\x01\x06prompts\x06params\x12\0\x13\x04\0\x05infer\x01\x14\
-\x01ps\x01j\x01\x11\x01\x05\x01@\x02\x05model\x0b\x04text\x15\0\x16\x04\0\x13gen\
-erate-embeddings\x01\x17\x04\x01\x16fermyon:spin/llm@2.0.0\x05\x0e\x01B)\x01q\x04\
-\x0finvalid-address\0\0\x14too-many-connections\0\0\x0atype-error\0\0\x05other\x01\
-s\0\x04\0\x05error\x03\0\0\x04\0\x0aconnection\x03\x01\x01p}\x04\0\x07payload\x03\
-\0\x03\x01q\x02\x05int64\x01x\0\x06binary\x01\x04\0\x04\0\x0fredis-parameter\x03\
-\0\x05\x01q\x04\x03nil\0\0\x06status\x01s\0\x05int64\x01x\0\x06binary\x01\x04\0\x04\
-\0\x0credis-result\x03\0\x07\x01i\x02\x01j\x01\x09\x01\x01\x01@\x01\x07addresss\0\
-\x0a\x04\0\x17[static]connection.open\x01\x0b\x01h\x02\x01j\0\x01\x01\x01@\x03\x04\
-self\x0c\x07channels\x07payload\x04\0\x0d\x04\0\x1a[method]connection.publish\x01\
-\x0e\x01k\x04\x01j\x01\x0f\x01\x01\x01@\x02\x04self\x0c\x03keys\0\x10\x04\0\x16[\
-method]connection.get\x01\x11\x01@\x03\x04self\x0c\x03keys\x05value\x04\0\x0d\x04\
-\0\x16[method]connection.set\x01\x12\x01j\x01x\x01\x01\x01@\x02\x04self\x0c\x03k\
-eys\0\x13\x04\0\x17[method]connection.incr\x01\x14\x01ps\x01j\x01y\x01\x01\x01@\x02\
-\x04self\x0c\x04keys\x15\0\x16\x04\0\x16[method]connection.del\x01\x17\x01@\x03\x04\
-self\x0c\x03keys\x06values\x15\0\x16\x04\0\x17[method]connection.sadd\x01\x18\x01\
-j\x01\x15\x01\x01\x01@\x02\x04self\x0c\x03keys\0\x19\x04\0\x1b[method]connection\
-.smembers\x01\x1a\x04\0\x17[method]connection.srem\x01\x18\x01p\x06\x01p\x08\x01\
-j\x01\x1c\x01\x01\x01@\x03\x04self\x0c\x07commands\x09arguments\x1b\0\x1d\x04\0\x1a\
-[method]connection.execute\x01\x1e\x04\x01\x18fermyon:spin/redis@2.0.0\x05\x0f\x02\
-\x03\0\0\x0fparameter-value\x02\x03\0\0\x07row-set\x02\x03\0\0\x05error\x01B\x13\
-\x02\x03\x02\x01\x10\x04\0\x0fparameter-value\x03\0\0\x02\x03\x02\x01\x11\x04\0\x07\
-row-set\x03\0\x02\x02\x03\x02\x01\x12\x04\0\x05error\x03\0\x04\x04\0\x0aconnecti\
-on\x03\x01\x01i\x06\x01j\x01\x07\x01\x05\x01@\x01\x07addresss\0\x08\x04\0\x17[st\
-atic]connection.open\x01\x09\x01h\x06\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x04\
-self\x0a\x09statements\x06params\x0b\0\x0c\x04\0\x18[method]connection.query\x01\
-\x0d\x01j\x01w\x01\x05\x01@\x03\x04self\x0a\x09statements\x06params\x0b\0\x0e\x04\
-\0\x1a[method]connection.execute\x01\x0f\x04\x01\x1bfermyon:spin/postgres@2.0.0\x05\
-\x13\x01B\x0f\x01q\x04\x0finvalid-address\0\0\x14too-many-connections\0\0\x11con\
-nection-failed\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x01m\x03\x0cat-most\
--once\x0dat-least-once\x0cexactly-once\x04\0\x03qos\x03\0\x02\x04\0\x0aconnectio\
-n\x03\x01\x01p}\x04\0\x07payload\x03\0\x05\x01i\x04\x01j\x01\x07\x01\x01\x01@\x04\
-\x07addresss\x08usernames\x08passwords\x1bkeep-alive-interval-in-secsw\0\x08\x04\
-\0\x17[static]connection.open\x01\x09\x01h\x04\x01j\0\x01\x01\x01@\x04\x04self\x0a\
-\x05topics\x07payload\x06\x03qos\x03\0\x0b\x04\0\x1a[method]connection.publish\x01\
-\x0c\x04\x01\x17fermyon:spin/mqtt@2.0.0\x05\x14\x01B\x13\x02\x03\x02\x01\x10\x04\
-\0\x0fparameter-value\x03\0\0\x02\x03\x02\x01\x11\x04\0\x07row-set\x03\0\x02\x02\
-\x03\x02\x01\x12\x04\0\x05error\x03\0\x04\x04\0\x0aconnection\x03\x01\x01i\x06\x01\
-j\x01\x07\x01\x05\x01@\x01\x07addresss\0\x08\x04\0\x17[static]connection.open\x01\
-\x09\x01h\x06\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x04self\x0a\x09statements\x06\
-params\x0b\0\x0c\x04\0\x18[method]connection.query\x01\x0d\x01j\0\x01\x05\x01@\x03\
-\x04self\x0a\x09statements\x06params\x0b\0\x0e\x04\0\x1a[method]connection.execu\
-te\x01\x0f\x04\x01\x18fermyon:spin/mysql@2.0.0\x05\x15\x01B\x15\x04\0\x0aconnect\
+e\x01\x8c\x01\x03\x01\x15wasi:http/types@0.2.0\x05\x0a\x01B\x15\x04\0\x0aconnect\
 ion\x03\x01\x01q\x05\x10no-such-database\0\0\x0daccess-denied\0\0\x12invalid-con\
 nection\0\0\x0ddatabase-full\0\0\x02io\x01s\0\x04\0\x05error\x03\0\x01\x01p}\x01\
 q\x05\x07integer\x01x\0\x04real\x01u\0\x04text\x01s\0\x04blob\x01\x03\0\x04null\0\
@@ -15123,26 +15790,102 @@ q\x05\x07integer\x01x\0\x04real\x01u\0\x04text\x01s\0\x04blob\x01\x03\0\x04null\
 \0\x07\x01ps\x01p\x08\x01r\x02\x07columns\x09\x04rows\x0a\x04\0\x0cquery-result\x03\
 \0\x0b\x01i\0\x01j\x01\x0d\x01\x02\x01@\x01\x08databases\0\x0e\x04\0\x17[static]\
 connection.open\x01\x0f\x01h\0\x01j\x01\x0c\x01\x02\x01@\x03\x04self\x10\x09stat\
-ements\x0aparameters\x06\0\x11\x04\0\x1a[method]connection.execute\x01\x12\x04\x01\
-\x19fermyon:spin/sqlite@2.0.0\x05\x16\x01B\x05\x01q\x04\x0cinvalid-name\x01s\0\x09\
-undefined\x01s\0\x08provider\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x01j\x01\
+ements\x0aparameters\x06\0\x11\x04\0\x1a[method]connection.execute\x01\x12\x03\x01\
+\x19fermyon:spin/sqlite@2.0.0\x05\x0b\x01@\0\0s\x03\0\x0cget-manifest\x01\x0c\x01\
+@\x01\x0ccomponent-ids\x01\0\x04\0\x10set-component-id\x01\x0d\x01B\x19\x04\0\x05\
+store\x03\x01\x01q\x04\x10store-table-full\0\0\x0dno-such-store\0\0\x0daccess-de\
+nied\0\0\x05other\x01s\0\x04\0\x05error\x03\0\x01\x01i\0\x01j\x01\x03\x01\x02\x01\
+@\x01\x05labels\0\x04\x04\0\x12[static]store.open\x01\x05\x01h\0\x01p}\x01k\x07\x01\
+j\x01\x08\x01\x02\x01@\x02\x04self\x06\x03keys\0\x09\x04\0\x11[method]store.get\x01\
+\x0a\x01j\0\x01\x02\x01@\x03\x04self\x06\x03keys\x05value\x07\0\x0b\x04\0\x11[me\
+thod]store.set\x01\x0c\x01@\x02\x04self\x06\x03keys\0\x0b\x04\0\x14[method]store\
+.delete\x01\x0d\x01j\x01\x7f\x01\x02\x01@\x02\x04self\x06\x03keys\0\x0e\x04\0\x14\
+[method]store.exists\x01\x0f\x01ps\x01j\x01\x10\x01\x02\x01@\x01\x04self\x06\0\x11\
+\x04\0\x16[method]store.get-keys\x01\x12\x04\x01\x1cfermyon:spin/key-value@2.0.0\
+\x05\x0e\x01B\x1a\x01s\x04\0\x11inferencing-model\x03\0\0\x01r\x06\x0amax-tokens\
+y\x0erepeat-penaltyv!repeat-penalty-last-n-token-county\x0btemperaturev\x05top-k\
+y\x05top-pv\x04\0\x12inferencing-params\x03\0\x02\x01q\x03\x13model-not-supporte\
+d\0\0\x0druntime-error\x01s\0\x0dinvalid-input\x01s\0\x04\0\x05error\x03\0\x04\x01\
+r\x02\x12prompt-token-county\x15generated-token-county\x04\0\x11inferencing-usag\
+e\x03\0\x06\x01r\x02\x04texts\x05usage\x07\x04\0\x12inferencing-result\x03\0\x08\
+\x01s\x04\0\x0fembedding-model\x03\0\x0a\x01r\x01\x12prompt-token-county\x04\0\x10\
+embeddings-usage\x03\0\x0c\x01pv\x01p\x0e\x01r\x02\x0aembeddings\x0f\x05usage\x0d\
+\x04\0\x11embeddings-result\x03\0\x10\x01k\x03\x01j\x01\x09\x01\x05\x01@\x03\x05\
+model\x01\x06prompts\x06params\x12\0\x13\x04\0\x05infer\x01\x14\x01ps\x01j\x01\x11\
+\x01\x05\x01@\x02\x05model\x0b\x04text\x15\0\x16\x04\0\x13generate-embeddings\x01\
+\x17\x04\x01\x16fermyon:spin/llm@2.0.0\x05\x0f\x01B)\x01q\x04\x0finvalid-address\
+\0\0\x14too-many-connections\0\0\x0atype-error\0\0\x05other\x01s\0\x04\0\x05erro\
+r\x03\0\0\x04\0\x0aconnection\x03\x01\x01p}\x04\0\x07payload\x03\0\x03\x01q\x02\x05\
+int64\x01x\0\x06binary\x01\x04\0\x04\0\x0fredis-parameter\x03\0\x05\x01q\x04\x03\
+nil\0\0\x06status\x01s\0\x05int64\x01x\0\x06binary\x01\x04\0\x04\0\x0credis-resu\
+lt\x03\0\x07\x01i\x02\x01j\x01\x09\x01\x01\x01@\x01\x07addresss\0\x0a\x04\0\x17[\
+static]connection.open\x01\x0b\x01h\x02\x01j\0\x01\x01\x01@\x03\x04self\x0c\x07c\
+hannels\x07payload\x04\0\x0d\x04\0\x1a[method]connection.publish\x01\x0e\x01k\x04\
+\x01j\x01\x0f\x01\x01\x01@\x02\x04self\x0c\x03keys\0\x10\x04\0\x16[method]connec\
+tion.get\x01\x11\x01@\x03\x04self\x0c\x03keys\x05value\x04\0\x0d\x04\0\x16[metho\
+d]connection.set\x01\x12\x01j\x01x\x01\x01\x01@\x02\x04self\x0c\x03keys\0\x13\x04\
+\0\x17[method]connection.incr\x01\x14\x01ps\x01j\x01y\x01\x01\x01@\x02\x04self\x0c\
+\x04keys\x15\0\x16\x04\0\x16[method]connection.del\x01\x17\x01@\x03\x04self\x0c\x03\
+keys\x06values\x15\0\x16\x04\0\x17[method]connection.sadd\x01\x18\x01j\x01\x15\x01\
+\x01\x01@\x02\x04self\x0c\x03keys\0\x19\x04\0\x1b[method]connection.smembers\x01\
+\x1a\x04\0\x17[method]connection.srem\x01\x18\x01p\x06\x01p\x08\x01j\x01\x1c\x01\
+\x01\x01@\x03\x04self\x0c\x07commands\x09arguments\x1b\0\x1d\x04\0\x1a[method]co\
+nnection.execute\x01\x1e\x04\x01\x18fermyon:spin/redis@2.0.0\x05\x10\x02\x03\0\0\
+\x0fparameter-value\x02\x03\0\0\x07row-set\x02\x03\0\0\x05error\x01B\x13\x02\x03\
+\x02\x01\x11\x04\0\x0fparameter-value\x03\0\0\x02\x03\x02\x01\x12\x04\0\x07row-s\
+et\x03\0\x02\x02\x03\x02\x01\x13\x04\0\x05error\x03\0\x04\x04\0\x0aconnection\x03\
+\x01\x01i\x06\x01j\x01\x07\x01\x05\x01@\x01\x07addresss\0\x08\x04\0\x17[static]c\
+onnection.open\x01\x09\x01h\x06\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x04self\x0a\
+\x09statements\x06params\x0b\0\x0c\x04\0\x18[method]connection.query\x01\x0d\x01\
+j\x01w\x01\x05\x01@\x03\x04self\x0a\x09statements\x06params\x0b\0\x0e\x04\0\x1a[\
+method]connection.execute\x01\x0f\x04\x01\x1bfermyon:spin/postgres@2.0.0\x05\x14\
+\x01B\x0f\x01q\x04\x0finvalid-address\0\0\x14too-many-connections\0\0\x11connect\
+ion-failed\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x01m\x03\x0cat-most-onc\
+e\x0dat-least-once\x0cexactly-once\x04\0\x03qos\x03\0\x02\x04\0\x0aconnection\x03\
+\x01\x01p}\x04\0\x07payload\x03\0\x05\x01i\x04\x01j\x01\x07\x01\x01\x01@\x04\x07\
+addresss\x08usernames\x08passwords\x1bkeep-alive-interval-in-secsw\0\x08\x04\0\x17\
+[static]connection.open\x01\x09\x01h\x04\x01j\0\x01\x01\x01@\x04\x04self\x0a\x05\
+topics\x07payload\x06\x03qos\x03\0\x0b\x04\0\x1a[method]connection.publish\x01\x0c\
+\x04\x01\x17fermyon:spin/mqtt@2.0.0\x05\x15\x01B\x13\x02\x03\x02\x01\x11\x04\0\x0f\
+parameter-value\x03\0\0\x02\x03\x02\x01\x12\x04\0\x07row-set\x03\0\x02\x02\x03\x02\
+\x01\x13\x04\0\x05error\x03\0\x04\x04\0\x0aconnection\x03\x01\x01i\x06\x01j\x01\x07\
+\x01\x05\x01@\x01\x07addresss\0\x08\x04\0\x17[static]connection.open\x01\x09\x01\
+h\x06\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x04self\x0a\x09statements\x06params\
+\x0b\0\x0c\x04\0\x18[method]connection.query\x01\x0d\x01j\0\x01\x05\x01@\x03\x04\
+self\x0a\x09statements\x06params\x0b\0\x0e\x04\0\x1a[method]connection.execute\x01\
+\x0f\x04\x01\x18fermyon:spin/mysql@2.0.0\x05\x16\x01B\x15\x04\0\x0aconnection\x03\
+\x01\x01q\x05\x10no-such-database\0\0\x0daccess-denied\0\0\x12invalid-connection\
+\0\0\x0ddatabase-full\0\0\x02io\x01s\0\x04\0\x05error\x03\0\x01\x01p}\x01q\x05\x07\
+integer\x01x\0\x04real\x01u\0\x04text\x01s\0\x04blob\x01\x03\0\x04null\0\0\x04\0\
+\x05value\x03\0\x04\x01p\x05\x01r\x01\x06values\x06\x04\0\x0arow-result\x03\0\x07\
+\x01ps\x01p\x08\x01r\x02\x07columns\x09\x04rows\x0a\x04\0\x0cquery-result\x03\0\x0b\
+\x01i\0\x01j\x01\x0d\x01\x02\x01@\x01\x08databases\0\x0e\x04\0\x17[static]connec\
+tion.open\x01\x0f\x01h\0\x01j\x01\x0c\x01\x02\x01@\x03\x04self\x10\x09statements\
+\x0aparameters\x06\0\x11\x04\0\x1a[method]connection.execute\x01\x12\x04\x01\x19\
+fermyon:spin/sqlite@2.0.0\x05\x17\x01B\x05\x01q\x04\x0cinvalid-name\x01s\0\x09un\
+defined\x01s\0\x08provider\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x01j\x01\
 s\x01\x01\x01@\x01\x04names\0\x02\x04\0\x03get\x01\x03\x04\x01\x1cfermyon:spin/v\
-ariables@2.0.0\x05\x17\x02\x03\0\x05\x10outgoing-request\x02\x03\0\x05\x0freques\
+ariables@2.0.0\x05\x18\x02\x03\0\x05\x10outgoing-request\x02\x03\0\x05\x0freques\
 t-options\x02\x03\0\x05\x18future-incoming-response\x02\x03\0\x05\x0aerror-code\x01\
-B\x0f\x02\x03\x02\x01\x18\x04\0\x10outgoing-request\x03\0\0\x02\x03\x02\x01\x19\x04\
-\0\x0frequest-options\x03\0\x02\x02\x03\x02\x01\x1a\x04\0\x18future-incoming-res\
-ponse\x03\0\x04\x02\x03\x02\x01\x1b\x04\0\x0aerror-code\x03\0\x06\x01i\x01\x01i\x03\
+B\x0f\x02\x03\x02\x01\x19\x04\0\x10outgoing-request\x03\0\0\x02\x03\x02\x01\x1a\x04\
+\0\x0frequest-options\x03\0\x02\x02\x03\x02\x01\x1b\x04\0\x18future-incoming-res\
+ponse\x03\0\x04\x02\x03\x02\x01\x1c\x04\0\x0aerror-code\x03\0\x06\x01i\x01\x01i\x03\
 \x01k\x09\x01i\x05\x01j\x01\x0b\x01\x07\x01@\x02\x07request\x08\x07options\x0a\0\
-\x0c\x04\0\x06handle\x01\x0d\x04\x01\x20wasi:http/outgoing-handler@0.2.0\x05\x1c\
-\x01B\x05\x02\x03\x02\x01\x1a\x04\0\x18future-incoming-response\x03\0\0\x01i\x01\
+\x0c\x04\0\x06handle\x01\x0d\x04\x01\x20wasi:http/outgoing-handler@0.2.0\x05\x1d\
+\x01B\x05\x02\x03\x02\x01\x1b\x04\0\x18future-incoming-response\x03\0\0\x01i\x01\
 \x01@\x02\x03urls\x08response\x02\x01\0\x04\0\x0cset-response\x01\x03\x04\x01#fe\
-rmyon:spin-test-virt/http-handler\x05\x1d\x01B\x0b\x01p}\x01o\x02s\0\x01q\x05\x03\
+rmyon:spin-test-virt/http-handler\x05\x1e\x01B\x0b\x01p}\x01o\x02s\0\x01q\x05\x03\
 get\x01s\0\x03set\x01\x01\0\x06delete\x01s\0\x06exists\x01s\0\x08get-keys\0\0\x04\
 \0\x04call\x03\0\x02\x01p\x03\x01o\x02s\x04\x01p\x05\x01@\0\0\x06\x04\0\x05calls\
 \x01\x07\x01@\0\x01\0\x04\0\x0breset-calls\x01\x08\x04\x01&fermyon:spin-test-vir\
-t/key-value-calls\x05\x1e\x04\x01\x1bfermyon:spin-test-virt/plug\x04\0\x0b\x0a\x01\
-\0\x04plug\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070\
-.202.0\x10wit-bindgen-rust\x060.23.0";
+t/key-value-calls\x05\x1f\x02\x03\0\x0d\x05value\x02\x03\0\x0d\x0cquery-result\x02\
+\x03\0\x0d\x05error\x01B\x0a\x02\x03\x02\x01\x20\x04\0\x05value\x03\0\0\x02\x03\x02\
+\x01!\x04\0\x0cquery-result\x03\0\x02\x02\x03\x02\x01\"\x04\0\x05error\x03\0\x04\
+\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x05querys\x06params\x06\x08response\x07\x01\
+\0\x04\0\x0cset-response\x01\x08\x04\x01\x1dfermyon:spin-test-virt/sqlite\x05#\x04\
+\x01\x1bfermyon:spin-test-virt/plug\x04\0\x0b\x0a\x01\0\x04plug\x03\0\0\0G\x09pr\
+oducers\x01\x0cprocessed-by\x02\x0dwit-component\x070.202.0\x10wit-bindgen-rust\x06\
+0.24.0";
 
 #[inline(never)]
 #[doc(hidden)]

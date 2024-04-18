@@ -1,6 +1,8 @@
 use spin_test_sdk::{
-    http::read_body, incoming_handler, key_value, key_value_calls, new_request, new_response,
-    spin_test, Headers, OutgoingRequest,
+    http::read_body,
+    incoming_handler, key_value, key_value_calls, new_request, new_response, spin_test,
+    wit::fermyon::{spin::sqlite::RowResult, spin_test_virt::sqlite},
+    Headers, OutgoingRequest,
 };
 
 #[spin_test]
@@ -12,6 +14,16 @@ fn simple_kv_test1() {
     // Set state of the key-value store
     key_value_config.set("123", user.as_bytes()).unwrap();
     key_value_calls::reset_calls();
+    sqlite::set_response(
+        "select name from users where user_id = ?;",
+        &[sqlite::Value::Integer(123)],
+        Ok(&sqlite::QueryResult {
+            columns: vec!["name".into()],
+            rows: vec![RowResult {
+                values: vec![sqlite::Value::Text("Ryan".into())],
+            }],
+        }),
+    );
 
     let request = OutgoingRequest::new(Headers::new());
     request.set_path_with_query(Some("/?user_id=123")).unwrap();
