@@ -1,89 +1,79 @@
 pub use spin_test_sdk_macro::spin_test;
 
-mod bindings {
+mod type_extensions;
+
+/// Raw bindings to everything available to the test.
+pub mod bindings {
     wit_bindgen::generate!({
         world: "test-imports",
         path: "../../host-wit",
     });
 }
 
+use bindings::fermyon::spin_test;
+use bindings::wasi::http;
+
+/// Configure and assert the behavior of the key-value store.
+pub mod key_value {
+    use std::ops::Deref;
+
+    use super::bindings::fermyon::spin::key_value;
+    use super::bindings::fermyon::spin_test_virt::key_value_calls;
+
+    #[doc(inline)]
+    pub use key_value_calls::Call;
+
+    /// A wrapper around the key-value store.
+    pub struct Store {
+        name: String,
+        inner: key_value::Store,
+    }
+
+    impl Store {
+        /// Open a key-value store.
+        pub fn open(name: &str) -> Result<Self, key_value::Error> {
+            Ok(Self {
+                inner: key_value::Store::open(name)?,
+                name: name.to_owned(),
+            })
+        }
+
+        pub fn calls(&self) -> Vec<key_value_calls::Call> {
+            key_value_calls::calls()
+                .into_iter()
+                .find_map(|(key, value)| (key == self.name).then_some(value))
+                .unwrap_or_default()
+        }
+
+        /// Reset the call history.
+        pub fn reset_calls(&self) {
+            key_value_calls::reset_calls();
+        }
+    }
+
+    impl Deref for Store {
+        type Target = key_value::Store;
+
+        fn deref(&self) -> &Self::Target {
+            &self.inner
+        }
+    }
+
+    impl Drop for Store {
+        fn drop(&mut self) {
+            self.reset_calls();
+        }
+    }
+}
+
+/// Make a request to the Spin app and return the response.
+pub fn perform_request(request: http::types::OutgoingRequest) -> http::types::IncomingResponse {
+    let request = spin_test::http_helper::new_request(request);
+    let (response_out, response_receiver) = spin_test::http_helper::new_response();
+    http::incoming_handler::handle(request, response_out);
+    response_receiver.get().unwrap()
+}
+
 #[doc(hidden)]
+/// This module is used by the `spin_test` macro for hooking into the wit_bindgen runtime.
 pub use wit_bindgen;
-
-pub mod wasi {
-    use super::bindings;
-    pub use bindings::wasi::{clocks, io};
-    pub mod http {
-        pub use super::bindings::wasi::http::*;
-        use super::io::streams;
-
-        impl types::IncomingBody {
-            /// Read the body of the incoming request calling the callback on each chunk.
-            pub fn read(self, mut callback: impl FnMut(Vec<u8>)) -> Result<(), streams::Error> {
-                struct Incoming(Option<(streams::InputStream, types::IncomingBody)>);
-
-                impl Drop for Incoming {
-                    fn drop(&mut self) {
-                        if let Some((stream, body)) = self.0.take() {
-                            drop(stream);
-                            types::IncomingBody::finish(body);
-                        }
-                    }
-                }
-
-                let stream = self.stream().expect("response body should be readable");
-                let pair = Incoming(Some((stream, self)));
-
-                loop {
-                    if let Some((stream, _)) = &pair.0 {
-                        const READ_SIZE: u64 = 16 * 1024;
-                        match stream.blocking_read(READ_SIZE) {
-                            Ok(buffer) => callback(buffer),
-                            Err(streams::StreamError::Closed) => return Ok(()),
-                            Err(streams::StreamError::LastOperationFailed(error)) => {
-                                return Err(error)
-                            }
-                        }
-                    }
-                }
-            }
-
-            pub fn read_to_string(self) -> Result<String, streams::Error> {
-                let mut result = String::new();
-                self.read(|buffer| result.push_str(&String::from_utf8(buffer).unwrap()))?;
-                Ok(result)
-            }
-        }
-    }
-}
-
-pub mod fermyon {
-    pub use super::bindings::fermyon::{spin, spin_test_virt};
-    pub mod spin_test {
-        pub use super::super::bindings::fermyon::spin_test::*;
-
-        /// Make a request to the HTTP handler and return the response.
-        pub fn perform_request(
-            request: crate::wasi::http::types::OutgoingRequest,
-        ) -> crate::wasi::http::types::IncomingResponse {
-            let request = http_helper::new_request(request);
-            let (response_out, response_receiver) = http_helper::new_response();
-            crate::wasi::http::incoming_handler::handle(request, response_out);
-            response_receiver.get().unwrap()
-        }
-    }
-}
-
-impl PartialEq for fermyon::spin_test_virt::key_value_calls::Call {
-    fn eq(&self, other: &Self) -> bool {
-        use fermyon::spin_test_virt::key_value_calls::Call::*;
-        match (self, other) {
-            (Get(a), Get(b)) => a == b,
-            (Set(a), Set(b)) => a == b,
-            (Delete(a), Delete(b)) => a == b,
-            (Exists(a), Exists(b)) => a == b,
-            (GetKeys, GetKeys) => true,
-            _ => false,
-        }
-    }
-}

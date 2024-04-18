@@ -1,10 +1,4 @@
-use spin_test_sdk::{
-    fermyon::spin::{key_value, sqlite},
-    fermyon::spin_test::perform_request,
-    fermyon::spin_test_virt::{key_value_calls, sqlite as virtualized_sqlite},
-    spin_test,
-    wasi::http,
-};
+use spin_test_sdk::{bindings::wasi::http, key_value, spin_test};
 
 #[spin_test]
 fn cache_hit() {
@@ -15,33 +9,45 @@ fn cache_hit() {
     // Set state of the key-value store
     key_value_config.set("123", user_json.as_bytes()).unwrap();
     // Reset the call history
-    key_value_calls::reset_calls();
+    key_value_config.reset_calls();
 
-    // Set the expected response for the SQLite query
-    virtualized_sqlite::set_response(
-        "select name from users where user_id = ?;",
-        &[sqlite::Value::Integer(123)],
-        Ok(&sqlite::QueryResult {
-            columns: vec!["name".into()],
-            rows: vec![sqlite::RowResult {
-                values: vec![sqlite::Value::Text("Ryan".into())],
-            }],
-        }),
+    make_request(user_json);
+
+    // Assert the key-value store was queried
+    assert_eq!(
+        key_value_config.calls(),
+        vec![key_value::Call::Get("123".to_owned())]
     );
+}
 
+#[spin_test]
+fn cache_miss() {
+    let user_json = r#"{"id":123,"name":"Ryan"}"#;
+
+    // TODO:
+    // http_handler::set_response("https://my.api.com?user_id=123", response);
+    // Configure the test
+    make_request(user_json);
+
+    // Assert the key-value store was queried
+    let key_value_config = key_value::Store::open("cache").unwrap();
+    assert_eq!(
+        key_value_config.calls(),
+        vec![key_value::Call::Get("123".to_owned())]
+    );
+}
+
+/// Actually perform the request against Spin
+///
+/// Asserts a 200 status code and the user JSON in the response body
+fn make_request(user_json: &str) {
     // Perform the request
     let request = http::types::OutgoingRequest::new(http::types::Headers::new());
     request.set_path_with_query(Some("/?user_id=123")).unwrap();
-    let response = perform_request(request);
+    let response = spin_test_sdk::perform_request(request);
 
     // Assert response status and body
     assert_eq!(response.status(), 200);
-    let body = response.consume().unwrap().read_to_string().unwrap();
+    let body = response.body_as_string().unwrap();
     assert_eq!(body, user_json);
-
-    let calls = key_value_calls::calls()
-        .into_iter()
-        .find_map(|(key, value)| (key == "cache").then_some(value))
-        .unwrap_or_default();
-    assert_eq!(calls, vec![key_value_calls::Call::Get("123".to_owned())]);
 }
