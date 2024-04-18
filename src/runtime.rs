@@ -1,5 +1,6 @@
 use anyhow::{bail, Context};
 use tokio::sync::oneshot::error::TryRecvError;
+use wasmtime::component::Linker;
 use wasmtime_wasi_http::{
     bindings::http::{incoming_handler::IncomingRequest, types::Scheme},
     body::{HostIncomingBody, HyperOutgoingBody},
@@ -24,7 +25,8 @@ mod bindings {
 /// The `spin-test` runtime
 pub struct Runtime {
     store: wasmtime::Store<Data>,
-    runner: bindings::Runner,
+    linker: Linker<Data>,
+    component: wasmtime::component::Component,
 }
 
 impl Runtime {
@@ -34,12 +36,12 @@ impl Runtime {
             let _ = std::fs::write("composition.wasm", composed_component);
         }
         let engine = wasmtime::Engine::default();
-        let mut store = wasmtime::Store::new(&engine, Data::new(manifest));
+        let store = wasmtime::Store::new(&engine, Data::new(manifest));
 
         let component = wasmtime::component::Component::new(&engine, composed_component)
             .context("composed component was an invalid Wasm component")?;
 
-        let mut linker = wasmtime::component::Linker::new(&engine);
+        let mut linker: Linker<Data> = wasmtime::component::Linker::new(&engine);
         wasmtime_wasi::command::sync::add_to_linker(&mut linker)
             .context("failed to link to wasi")?;
         wasmtime_wasi_http::bindings::http::types::add_to_linker(&mut linker, |x| x)
@@ -47,14 +49,38 @@ impl Runtime {
         bindings::Runner::add_to_linker(&mut linker, |x| x)
             .context("failed to link to test runner world")?;
 
-        let (runner, _) = bindings::Runner::instantiate(&mut store, &component, &mut linker)
-            .context("failed to instantiate test runner world")?;
-        Ok(Self { store, runner })
+        Ok(Self {
+            component,
+            store,
+            linker,
+        })
     }
 
     /// Run the test component
-    pub fn run(&mut self) -> anyhow::Result<()> {
-        self.runner.call_run(&mut self.store)
+    pub fn run(&mut self, test_name: Option<&str>) -> anyhow::Result<()> {
+        match test_name {
+            Some(test_name) => {
+                let test_instance = self
+                    .linker
+                    .instantiate(&mut self.store, &self.component)
+                    .context("failed to instantiate test component")?;
+
+                let test_func = test_instance
+                    .get_typed_func::<(), ()>(&mut self.store, test_name)
+                    .context("failed to get typed test function")?;
+
+                test_func
+                    .call(&mut self.store, ())
+                    .context(format!("test '{test_name}' failed "))
+            }
+            None => {
+                let (runner, _) =
+                    bindings::Runner::instantiate(&mut self.store, &self.component, &self.linker)
+                        .context("failed to instantiate test runner world")?;
+
+                runner.call_run(&mut self.store)
+            }
+        }
     }
 }
 
