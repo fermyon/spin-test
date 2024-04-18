@@ -8,12 +8,12 @@ use std::{
 
 use bindings::exports::{
     fermyon::{
-        spin::{key_value, llm, mysql, postgres, redis, sqlite, variables},
+        spin::{key_value, llm, mqtt, mysql, postgres, redis, sqlite, variables},
         spin_test_virt::{http_handler, key_value_calls},
     },
     wasi::http::outgoing_handler,
 };
-use bindings::{exports::fermyon::spin::mqtt, wasi::http::types};
+use bindings::wasi::http::types::{self, OutgoingResponse};
 
 struct Component;
 
@@ -507,9 +507,8 @@ impl variables::Guest for Component {
     }
 }
 
-static RESPONSES: std::sync::OnceLock<
-    Mutex<HashMap<String, outgoing_handler::FutureIncomingResponse>>,
-> = std::sync::OnceLock::new();
+static RESPONSES: std::sync::OnceLock<Mutex<HashMap<String, OutgoingResponse>>> =
+    std::sync::OnceLock::new();
 
 impl outgoing_handler::Guest for Component {
     fn handle(
@@ -535,12 +534,12 @@ impl outgoing_handler::Guest for Component {
             return Err(outgoing_handler::ErrorCode::HttpRequestDenied);
         }
         let response = RESPONSES
-            .get_or_init(|| Default::default())
+            .get_or_init(Default::default)
             .lock()
             .unwrap()
             .remove(&url);
         match response {
-            Some(r) => Ok(r),
+            Some(r) => Ok(bindings::futurize_response(r)),
             None => Err(outgoing_handler::ErrorCode::InternalError(Some(format!(
                 "unrecognized url: {url}"
             )))),
@@ -549,9 +548,9 @@ impl outgoing_handler::Guest for Component {
 }
 
 impl http_handler::Guest for Component {
-    fn set_response(url: String, response: http_handler::FutureIncomingResponse) {
+    fn set_response(url: String, response: http_handler::OutgoingResponse) {
         RESPONSES
-            .get_or_init(|| Default::default())
+            .get_or_init(Default::default)
             .lock()
             .unwrap()
             .insert(url, response);

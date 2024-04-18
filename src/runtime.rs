@@ -1,11 +1,16 @@
+use std::time::Duration;
+
 use anyhow::{bail, Context};
 use tokio::sync::oneshot::error::TryRecvError;
 use wasmtime::component::Linker;
 use wasmtime_wasi_http::{
     bindings::http::{incoming_handler::IncomingRequest, types::Scheme},
     body::{HostIncomingBody, HyperOutgoingBody},
+    types::IncomingResponseInternal,
     WasiHttpView,
 };
+
+use self::bindings::FutureIncomingResponse;
 
 mod bindings {
     wasmtime::component::bindgen!({
@@ -63,20 +68,24 @@ impl Runtime {
                 let test_instance = self
                     .linker
                     .instantiate(&mut self.store, &self.component)
-                    .context("failed to instantiate test component")?;
+                    .context("failed to instantiate spin-test composition")
+                    .unwrap(); //?;
 
                 let test_func = test_instance
                     .get_typed_func::<(), ()>(&mut self.store, test_name)
-                    .context("failed to get typed test function")?;
+                    .with_context(|| format!("failed to get test function '{test_name}'"))?;
 
                 test_func
                     .call(&mut self.store, ())
                     .context(format!("test '{test_name}' failed "))
             }
             None => {
-                let (runner, _) =
-                    bindings::Runner::instantiate(&mut self.store, &self.component, &self.linker)
-                        .context("failed to instantiate test runner world")?;
+                let (runner, _) = bindings::Runner::instantiate(
+                    &mut self.store,
+                    &self.component,
+                    &self.linker,
+                )
+                .context("failed to instantiate spin-test composition as test runner world")?;
 
                 runner.call_run(&mut self.store)
             }
@@ -121,6 +130,33 @@ impl wasmtime_wasi_http::WasiHttpView for Data {
 impl bindings::RunnerImports for Data {
     fn get_manifest(&mut self) -> wasmtime::Result<String> {
         Ok(self.manifest.clone())
+    }
+
+    fn futurize_response(
+        &mut self,
+        response: wasmtime::component::Resource<bindings::OutgoingResponse>,
+    ) -> wasmtime::Result<wasmtime::component::Resource<FutureIncomingResponse>> {
+        let response = self.table().get_mut(&response)?;
+        let mut builder = hyper::Response::builder().status(response.status);
+        for (name, value) in response.headers.iter() {
+            builder = builder.header(name, value);
+        }
+        let response = builder
+            .body(response.body.take().unwrap_or_else(body::empty))
+            .unwrap();
+        let worker = std::sync::Arc::new(
+            tokio::runtime::Runtime::new()
+                .unwrap()
+                .spawn(async {})
+                .into(),
+        );
+        let response = IncomingResponseInternal {
+            resp: response,
+            worker,
+            between_bytes_timeout: Duration::from_secs(2),
+        };
+        let response = FutureIncomingResponse::Ready(Ok(Ok(response)));
+        Ok(self.table().push(response)?)
     }
 }
 

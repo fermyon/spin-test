@@ -22,11 +22,14 @@ world config {
     export http-handler;
     export key-value-calls;
     import get-manifest: func() -> string;
+
+    use wasi:http/types@0.2.0.{outgoing-response, future-incoming-response};
+    import futurize-response: func(response: outgoing-response) -> future-incoming-response;
 }
 
 interface http-handler {
-    use wasi:http/types@0.2.0.{future-incoming-response};
-    set-response: func(url: string, response: future-incoming-response);
+    use wasi:http/types@0.2.0.{outgoing-response};
+    set-response: func(url: string, response: outgoing-response);
 }
 
 interface key-value-calls {
