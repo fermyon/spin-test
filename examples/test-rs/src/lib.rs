@@ -1,48 +1,60 @@
 use spin_test_sdk::{
-    http::read_body,
-    incoming_handler, key_value, key_value_calls, new_request, new_response, spin_test,
-    wit::fermyon::{spin::sqlite::RowResult, spin_test_virt::sqlite},
-    Headers, OutgoingRequest,
+    bindings::{fermyon::spin_test_virt::http_handler, wasi::http},
+    key_value, spin_test,
 };
 
 #[spin_test]
-fn simple_kv_test1() {
-    // Configure the test
-    let user = r#"{"id":123,"name":"Ryan"}"#;
+fn cache_hit() {
+    let user_json = r#"{"id":123,"name":"Ryan"}"#;
 
+    // Configure the test
     let key_value_config = key_value::Store::open("cache").unwrap();
     // Set state of the key-value store
-    key_value_config.set("123", user.as_bytes()).unwrap();
-    key_value_calls::reset_calls();
-    sqlite::set_response(
-        "select name from users where user_id = ?;",
-        &[sqlite::Value::Integer(123)],
-        Ok(&sqlite::QueryResult {
-            columns: vec!["name".into()],
-            rows: vec![RowResult {
-                values: vec![sqlite::Value::Text("Ryan".into())],
-            }],
-        }),
+    key_value_config.set("123", user_json.as_bytes()).unwrap();
+    // Reset the call history
+    key_value_config.reset_calls();
+
+    make_request(user_json);
+
+    // Assert the key-value store was queried
+    assert_eq!(
+        key_value_config.calls(),
+        vec![key_value::Call::Get("123".to_owned())]
     );
+}
 
-    let request = OutgoingRequest::new(Headers::new());
+#[spin_test]
+fn cache_miss() {
+    let user_json = r#"{"id":123,"name":"Ryan"}"#;
+
+    let response = http::types::OutgoingResponse::new(http::types::Headers::new());
+    response.write_body(user_json.as_bytes());
+    http_handler::set_response("https://my.api.com?user_id=123", response);
+    // Configure the test
+    make_request(user_json);
+
+    // Assert the key-value store was queried
+    let key_value_config = key_value::Store::open("cache").unwrap();
+    assert_eq!(
+        key_value_config.calls(),
+        vec![
+            key_value::Call::Get("123".to_owned()),
+            key_value::Call::Set(("123".to_owned(), user_json.as_bytes().to_vec()))
+        ]
+    );
+}
+
+/// Actually perform the request against Spin
+///
+/// Asserts a 200 status code and the user JSON in the response body
+fn make_request(user_json: &str) {
+    // Perform the request
+    let request = http::types::OutgoingRequest::new(http::types::Headers::new());
     request.set_path_with_query(Some("/?user_id=123")).unwrap();
-    let request = new_request(request);
-    let (response_out, response_receiver) = new_response();
-    incoming_handler::handle(request, response_out);
-    let response = response_receiver.get().unwrap();
+    let response = spin_test_sdk::perform_request(request);
+
+    // Assert response status and body
     assert_eq!(response.status(), 200);
-
-    let mut body = String::new();
-    read_body(response.consume().unwrap(), |buffer| {
-        body.push_str(&String::from_utf8(buffer).unwrap())
-    })
-    .unwrap();
-    assert_eq!(body, user);
-
-    let calls = key_value_calls::calls()
-        .into_iter()
-        .find_map(|(key, value)| (key == "cache").then_some(value))
-        .unwrap_or_default();
-    assert_eq!(calls, vec![key_value_calls::Call::Get("123".to_owned())]);
+    let body = response.body_as_string().unwrap();
+    assert_eq!(body, user_json);
 }
