@@ -6,11 +6,9 @@ use wasmtime::component::Linker;
 use wasmtime_wasi_http::{
     bindings::http::{incoming_handler::IncomingRequest, types::Scheme},
     body::{HostIncomingBody, HyperOutgoingBody},
-    types::IncomingResponseInternal,
+    types::{HostFutureIncomingResponse, HostOutgoingResponse, IncomingResponseInternal},
     WasiHttpView,
 };
-
-use self::bindings::FutureIncomingResponse;
 
 mod bindings {
     wasmtime::component::bindgen!({
@@ -131,33 +129,6 @@ impl bindings::RunnerImports for Data {
     fn get_manifest(&mut self) -> wasmtime::Result<String> {
         Ok(self.manifest.clone())
     }
-
-    fn futurize_response(
-        &mut self,
-        response: wasmtime::component::Resource<bindings::OutgoingResponse>,
-    ) -> wasmtime::Result<wasmtime::component::Resource<FutureIncomingResponse>> {
-        let response = self.table().get_mut(&response)?;
-        let mut builder = hyper::Response::builder().status(response.status);
-        for (name, value) in response.headers.iter() {
-            builder = builder.header(name, value);
-        }
-        let response = builder
-            .body(response.body.take().unwrap_or_else(body::empty))
-            .unwrap();
-        let worker = std::sync::Arc::new(
-            tokio::runtime::Runtime::new()
-                .unwrap()
-                .spawn(async {})
-                .into(),
-        );
-        let response = IncomingResponseInternal {
-            resp: response,
-            worker,
-            between_bytes_timeout: Duration::from_secs(2),
-        };
-        let response = FutureIncomingResponse::Ready(Ok(Ok(response)));
-        Ok(self.table().push(response)?)
-    }
 }
 
 impl bindings::fermyon::spin_test::http_helper::Host for Data {
@@ -209,6 +180,33 @@ impl bindings::fermyon::spin_test::http_helper::Host for Data {
         let outparam = self.new_response_outparam(tx)?;
         let receiver = self.table.push(ResponseReceiver(rx))?;
         Ok((outparam, receiver))
+    }
+
+    fn futurize_response(
+        &mut self,
+        response: wasmtime::component::Resource<HostOutgoingResponse>,
+    ) -> wasmtime::Result<wasmtime::component::Resource<HostFutureIncomingResponse>> {
+        let response = self.table().get_mut(&response)?;
+        let mut builder = hyper::Response::builder().status(response.status);
+        for (name, value) in response.headers.iter() {
+            builder = builder.header(name, value);
+        }
+        let response = builder
+            .body(response.body.take().unwrap_or_else(body::empty))
+            .unwrap();
+        let worker = std::sync::Arc::new(
+            tokio::runtime::Runtime::new()
+                .unwrap()
+                .spawn(async {})
+                .into(),
+        );
+        let response = IncomingResponseInternal {
+            resp: response,
+            worker,
+            between_bytes_timeout: Duration::from_secs(2),
+        };
+        let response = HostFutureIncomingResponse::Ready(Ok(Ok(response)));
+        Ok(self.table().push(response)?)
     }
 }
 

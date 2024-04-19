@@ -1,9 +1,20 @@
-use std::{env, process};
+use std::{
+    env,
+    path::{Path, PathBuf},
+    process,
+};
 
 fn main() {
     check_cargo_component_installed();
     cargo_component_build("crates/router");
     cargo_component_build("crates/spin-test-virt");
+    copy_wit_to_out_dir();
+}
+
+/// Make the wit files available in the out director
+fn copy_wit_to_out_dir() {
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap()).join("wit");
+    copy_dir_all("host-wit", out_dir).unwrap();
 }
 
 fn check_cargo_component_installed() {
@@ -58,4 +69,18 @@ fn get_os_process() -> String {
     } else {
         String::from("bash")
     }
+}
+
+fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
+    std::fs::create_dir_all(&dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            std::fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
 }
