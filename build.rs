@@ -15,6 +15,7 @@ fn main() {
 fn copy_wit_to_out_dir() {
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap()).join("wit");
     copy_dir_all("host-wit", out_dir).unwrap();
+    println!("cargo:rerun-if-changed=host-wit");
 }
 
 fn check_cargo_component_installed() {

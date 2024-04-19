@@ -21,7 +21,7 @@ crate-type = ["cdylib"]
 package = "component:spin-test-virt"
 
 [package.metadata.component.target]
-world = "plug"
+world = "env"
 path = "../../host-wit/deps/spin-test-virt"
 
 [package.metadata.component.target.dependencies]
