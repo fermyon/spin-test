@@ -1,9 +1,8 @@
 package fermyon:spin-test;
 
 world test-imports {
-    import fermyon:spin/key-value@2.0.0;
     import fermyon:spin-test-virt/http-handler;
-    import fermyon:spin-test-virt/key-value-calls;
+    import fermyon:spin-test-virt/key-value;
     import fermyon:spin-test-virt/sqlite;
     import wasi:http/incoming-handler@0.2.0;
     import http-helper;

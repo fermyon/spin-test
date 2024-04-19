@@ -14246,13 +14246,155 @@ pub mod exports {
             }
 
             #[allow(dead_code, clippy::all)]
-            pub mod key_value_calls {
+            pub mod key_value {
                 #[used]
                 #[doc(hidden)]
                 #[cfg(target_arch = "wasm32")]
                 static __FORCE_SECTION_REF: fn() =
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
+                /// An open key-value store
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Store {
+                    handle: _rt::Resource<Store>,
+                }
+
+                type _StoreRep<T> = Option<T>;
+
+                impl Store {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Store`.
+                    pub fn new<T: GuestStore>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _StoreRep<T> = Some(val);
+                        let ptr: *mut _StoreRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestStore>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestStore>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestStore>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestStore` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _StoreRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestStore>(&self) -> *mut _StoreRep<T> {
+                        Store::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Store`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct StoreBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Store>,
+                }
+
+                impl<'a> StoreBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestStore>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _StoreRep<T> {
+                        Store::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Store {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin-test-virt/key-value")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]store"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
                 #[derive(Clone)]
                 pub enum Call {
                     Get(_rt::String),
@@ -14271,6 +14413,126 @@ pub mod exports {
                             Call::GetKeys => f.debug_tuple("Call::GetKeys").finish(),
                         }
                     }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_static_store_open_cabi<T: GuestStore>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                ) -> i32 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    let result1 = T::open(_rt::string_lift(bytes0));
+                    (result1).take_handle() as i32
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_store_label_cabi<T: GuestStore>(
+                    arg0: *mut u8,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let result0 = T::label(StoreBorrow::lift(arg0 as u32 as usize).get());
+                    let ptr1 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    let vec2 = (result0.into_bytes()).into_boxed_slice();
+                    let ptr2 = vec2.as_ptr().cast::<u8>();
+                    let len2 = vec2.len();
+                    ::core::mem::forget(vec2);
+                    *ptr1.add(4).cast::<usize>() = len2;
+                    *ptr1.add(0).cast::<*mut u8>() = ptr2.cast_mut();
+                    ptr1
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_store_label<T: GuestStore>(arg0: *mut u8) {
+                    let l0 = *arg0.add(0).cast::<*mut u8>();
+                    let l1 = *arg0.add(4).cast::<usize>();
+                    _rt::cabi_dealloc(l0, l1, 1);
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_store_get_cabi<T: GuestStore>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let result1 = T::get(
+                        StoreBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                    );
+                    let ptr2 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result1 {
+                        Some(e) => {
+                            *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+                            let vec3 = (e).into_boxed_slice();
+                            let ptr3 = vec3.as_ptr().cast::<u8>();
+                            let len3 = vec3.len();
+                            ::core::mem::forget(vec3);
+                            *ptr2.add(8).cast::<usize>() = len3;
+                            *ptr2.add(4).cast::<*mut u8>() = ptr3.cast_mut();
+                        }
+                        None => {
+                            *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+                        }
+                    };
+                    ptr2
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_store_get<T: GuestStore>(arg0: *mut u8) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = *arg0.add(4).cast::<*mut u8>();
+                            let l2 = *arg0.add(8).cast::<usize>();
+                            let base3 = l1;
+                            let len3 = l2;
+                            _rt::cabi_dealloc(base3, len3 * 1, 1);
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_store_set_cabi<T: GuestStore>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let len1 = arg4;
+                    T::set(
+                        StoreBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                        _rt::Vec::from_raw_parts(arg3.cast(), len1, len1),
+                    );
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_store_delete_cabi<T: GuestStore>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    T::delete(
+                        StoreBorrow::lift(arg0 as u32 as usize).get(),
+                        _rt::string_lift(bytes0),
+                    );
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -14444,33 +14706,132 @@ pub mod exports {
                     T::reset_calls();
                 }
                 pub trait Guest {
+                    type Store: GuestStore;
                     fn calls() -> _rt::Vec<(_rt::String, _rt::Vec<Call>)>;
                     fn reset_calls();
                 }
+                pub trait GuestStore: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin-test-virt/key-value")]
+                            extern "C" {
+                                #[link_name = "[resource-new]store"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin-test-virt/key-value")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]store"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    /// Open the store with the specified label.
+                    fn open(label: _rt::String) -> Store;
+                    /// Get this stores label
+                    fn label(&self) -> _rt::String;
+                    /// Get the value associated with the specified `key`
+                    ///
+                    /// Returns `ok(none)` if the key does not exist.
+                    fn get(&self, key: _rt::String) -> Option<_rt::Vec<u8>>;
+                    /// Set the `value` associated with the specified `key` overwriting any existing value.
+                    fn set(&self, key: _rt::String, value: _rt::Vec<u8>);
+                    /// Delete the tuple with the specified `key`
+                    fn delete(&self, key: _rt::String);
+                }
                 #[doc(hidden)]
 
-                macro_rules! __export_fermyon_spin_test_virt_key_value_calls_cabi{
+                macro_rules! __export_fermyon_spin_test_virt_key_value_cabi{
   ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-    #[export_name = "fermyon:spin-test-virt/key-value-calls#calls"]
+    #[export_name = "fermyon:spin-test-virt/key-value#[static]store.open"]
+    unsafe extern "C" fn export_static_store_open(arg0: *mut u8,arg1: usize,) -> i32 {
+      $($path_to_types)*::_export_static_store_open_cabi::<<$ty as $($path_to_types)*::Guest>::Store>(arg0, arg1)
+    }
+    #[export_name = "fermyon:spin-test-virt/key-value#[method]store.label"]
+    unsafe extern "C" fn export_method_store_label(arg0: *mut u8,) -> *mut u8 {
+      $($path_to_types)*::_export_method_store_label_cabi::<<$ty as $($path_to_types)*::Guest>::Store>(arg0)
+    }
+    #[export_name = "cabi_post_fermyon:spin-test-virt/key-value#[method]store.label"]
+    unsafe extern "C" fn _post_return_method_store_label(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_store_label::<<$ty as $($path_to_types)*::Guest>::Store>(arg0)
+    }
+    #[export_name = "fermyon:spin-test-virt/key-value#[method]store.get"]
+    unsafe extern "C" fn export_method_store_get(arg0: *mut u8,arg1: *mut u8,arg2: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_store_get_cabi::<<$ty as $($path_to_types)*::Guest>::Store>(arg0, arg1, arg2)
+    }
+    #[export_name = "cabi_post_fermyon:spin-test-virt/key-value#[method]store.get"]
+    unsafe extern "C" fn _post_return_method_store_get(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_store_get::<<$ty as $($path_to_types)*::Guest>::Store>(arg0)
+    }
+    #[export_name = "fermyon:spin-test-virt/key-value#[method]store.set"]
+    unsafe extern "C" fn export_method_store_set(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) {
+      $($path_to_types)*::_export_method_store_set_cabi::<<$ty as $($path_to_types)*::Guest>::Store>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "fermyon:spin-test-virt/key-value#[method]store.delete"]
+    unsafe extern "C" fn export_method_store_delete(arg0: *mut u8,arg1: *mut u8,arg2: usize,) {
+      $($path_to_types)*::_export_method_store_delete_cabi::<<$ty as $($path_to_types)*::Guest>::Store>(arg0, arg1, arg2)
+    }
+    #[export_name = "fermyon:spin-test-virt/key-value#calls"]
     unsafe extern "C" fn export_calls() -> *mut u8 {
       $($path_to_types)*::_export_calls_cabi::<$ty>()
     }
-    #[export_name = "cabi_post_fermyon:spin-test-virt/key-value-calls#calls"]
+    #[export_name = "cabi_post_fermyon:spin-test-virt/key-value#calls"]
     unsafe extern "C" fn _post_return_calls(arg0: *mut u8,) {
       $($path_to_types)*::__post_return_calls::<$ty>(arg0)
     }
-    #[export_name = "fermyon:spin-test-virt/key-value-calls#reset-calls"]
+    #[export_name = "fermyon:spin-test-virt/key-value#reset-calls"]
     unsafe extern "C" fn export_reset_calls() {
       $($path_to_types)*::_export_reset_calls_cabi::<$ty>()
     }
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "fermyon:spin-test-virt/key-value#[dtor]store"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Store::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Store
+        >(rep)
+      }
+    };
+
   };);
 }
                 #[doc(hidden)]
-                pub(crate) use __export_fermyon_spin_test_virt_key_value_calls_cabi;
+                pub(crate) use __export_fermyon_spin_test_virt_key_value_cabi;
                 #[repr(align(4))]
-                struct _RetArea([::core::mem::MaybeUninit<u8>; 8]);
-                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 12]);
             }
 
             #[allow(dead_code, clippy::all)]
@@ -15659,7 +16020,7 @@ macro_rules! __export_plug_impl {
                               $($path_to_types_root)*::exports::fermyon::spin::variables::__export_fermyon_spin_variables_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::variables);
                               $($path_to_types_root)*::exports::wasi::http::outgoing_handler::__export_wasi_http_outgoing_handler_0_2_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wasi::http::outgoing_handler);
                               $($path_to_types_root)*::exports::fermyon::spin_test_virt::http_handler::__export_fermyon_spin_test_virt_http_handler_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::http_handler);
-                              $($path_to_types_root)*::exports::fermyon::spin_test_virt::key_value_calls::__export_fermyon_spin_test_virt_key_value_calls_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::key_value_calls);
+                              $($path_to_types_root)*::exports::fermyon::spin_test_virt::key_value::__export_fermyon_spin_test_virt_key_value_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::key_value);
                               $($path_to_types_root)*::exports::fermyon::spin_test_virt::sqlite::__export_fermyon_spin_test_virt_sqlite_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_test_virt::sqlite);
                               )
                             }
@@ -15669,8 +16030,8 @@ pub(crate) use __export_plug_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.24.0:plug:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 11408] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x95X\x01A\x02\x01A@\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 11615] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe4Y\x01A\x02\x01A@\x01\
 B\x11\x01q\x05\x11connection-failed\x01s\0\x0dbad-parameter\x01s\0\x0cquery-fail\
 ed\x01s\0\x17value-conversion-failed\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\
 \0\x01m\x0e\x07boolean\x04int8\x05int16\x05int32\x05int64\x05uint8\x06uint16\x06\
@@ -15896,18 +16257,23 @@ oing-request\x03\0\0\x02\x03\x02\x01!\x04\0\x0frequest-options\x03\0\x02\x02\x03
 \x01@\x02\x07request\x08\x07options\x0a\0\x0c\x04\0\x06handle\x01\x0d\x04\x01\x20\
 wasi:http/outgoing-handler@0.2.0\x05#\x01B\x05\x02\x03\x02\x01\x0c\x04\0\x11outg\
 oing-response\x03\0\0\x01i\x01\x01@\x02\x03urls\x08response\x02\x01\0\x04\0\x0cs\
-et-response\x01\x03\x04\x01#fermyon:spin-test-virt/http-handler\x05$\x01B\x0b\x01\
-p}\x01o\x02s\0\x01q\x05\x03get\x01s\0\x03set\x01\x01\0\x06delete\x01s\0\x06exist\
-s\x01s\0\x08get-keys\0\0\x04\0\x04call\x03\0\x02\x01p\x03\x01o\x02s\x04\x01p\x05\
-\x01@\0\0\x06\x04\0\x05calls\x01\x07\x01@\0\x01\0\x04\0\x0breset-calls\x01\x08\x04\
-\x01&fermyon:spin-test-virt/key-value-calls\x05%\x02\x03\0\x0d\x05value\x02\x03\0\
-\x0d\x0cquery-result\x02\x03\0\x0d\x05error\x01B\x0a\x02\x03\x02\x01&\x04\0\x05v\
-alue\x03\0\0\x02\x03\x02\x01'\x04\0\x0cquery-result\x03\0\x02\x02\x03\x02\x01(\x04\
-\0\x05error\x03\0\x04\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x05querys\x06params\
-\x06\x08response\x07\x01\0\x04\0\x0cset-response\x01\x08\x04\x01\x1dfermyon:spin\
--test-virt/sqlite\x05)\x04\x01\x1bfermyon:spin-test-virt/plug\x04\0\x0b\x0a\x01\0\
-\x04plug\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.2\
-02.0\x10wit-bindgen-rust\x060.24.0";
+et-response\x01\x03\x04\x01#fermyon:spin-test-virt/http-handler\x05$\x01B\x19\x04\
+\0\x05store\x03\x01\x01p}\x01o\x02s\x01\x01q\x05\x03get\x01s\0\x03set\x01\x02\0\x06\
+delete\x01s\0\x06exists\x01s\0\x08get-keys\0\0\x04\0\x04call\x03\0\x03\x01i\0\x01\
+@\x01\x05labels\0\x05\x04\0\x12[static]store.open\x01\x06\x01h\0\x01@\x01\x04sel\
+f\x07\0s\x04\0\x13[method]store.label\x01\x08\x01k\x01\x01@\x02\x04self\x07\x03k\
+eys\0\x09\x04\0\x11[method]store.get\x01\x0a\x01@\x03\x04self\x07\x03keys\x05val\
+ue\x01\x01\0\x04\0\x11[method]store.set\x01\x0b\x01@\x02\x04self\x07\x03keys\x01\
+\0\x04\0\x14[method]store.delete\x01\x0c\x01p\x04\x01o\x02s\x0d\x01p\x0e\x01@\0\0\
+\x0f\x04\0\x05calls\x01\x10\x01@\0\x01\0\x04\0\x0breset-calls\x01\x11\x04\x01\x20\
+fermyon:spin-test-virt/key-value\x05%\x02\x03\0\x0d\x05value\x02\x03\0\x0d\x0cqu\
+ery-result\x02\x03\0\x0d\x05error\x01B\x0a\x02\x03\x02\x01&\x04\0\x05value\x03\0\
+\0\x02\x03\x02\x01'\x04\0\x0cquery-result\x03\0\x02\x02\x03\x02\x01(\x04\0\x05er\
+ror\x03\0\x04\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x05querys\x06params\x06\x08\
+response\x07\x01\0\x04\0\x0cset-response\x01\x08\x04\x01\x1dfermyon:spin-test-vi\
+rt/sqlite\x05)\x04\x01\x1bfermyon:spin-test-virt/plug\x04\0\x0b\x0a\x01\0\x04plu\
+g\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.202.0\x10\
+wit-bindgen-rust\x060.24.0";
 
 #[inline(never)]
 #[doc(hidden)]

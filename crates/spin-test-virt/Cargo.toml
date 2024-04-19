@@ -22,6 +22,7 @@ package = "component:spin-test-virt"
 
 [package.metadata.component.target]
 world = "plug"
+path = "../../host-wit/deps/spin-test-virt"
 
 [package.metadata.component.target.dependencies]
 "fermyon:spin" = { path = "../../host-wit/deps/fermyon" }

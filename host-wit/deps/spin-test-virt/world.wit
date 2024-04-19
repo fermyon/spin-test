@@ -20,7 +20,7 @@ world plug {
 world config {
     export fermyon:spin/key-value@2.0.0;
     export http-handler;
-    export key-value-calls;
+    export key-value;
     export sqlite;
     import get-manifest: func() -> string;
 
@@ -39,7 +39,27 @@ interface http-handler {
     set-response: func(url: string, response: outgoing-response);
 }
 
-interface key-value-calls {
+interface key-value {
+    /// An open key-value store
+    resource store {
+        /// Open the store with the specified label.
+        open: static func(label: string) -> store;
+
+        /// Get this stores label
+        label: func() -> string;
+
+        /// Get the value associated with the specified `key`
+        ///
+        /// Returns `ok(none)` if the key does not exist.
+        get: func(key: string) -> option<list<u8>>;
+
+        /// Set the `value` associated with the specified `key` overwriting any existing value.
+        set: func(key: string, value: list<u8>);
+
+        /// Delete the tuple with the specified `key`
+        delete: func(key: string); 
+    }
+
     calls: func() -> list<tuple<string, list<call>>>;
 
     variant call {

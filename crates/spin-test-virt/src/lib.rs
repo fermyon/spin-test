@@ -8,8 +8,8 @@ use std::{
 
 use bindings::exports::{
     fermyon::{
-        spin::{key_value, llm, mqtt, mysql, postgres, redis, sqlite, variables},
-        spin_test_virt::{self, http_handler, key_value_calls},
+        spin::{self, llm, mqtt, mysql, postgres, redis, sqlite, variables},
+        spin_test_virt::{self, http_handler, key_value as virt_key_value},
     },
     wasi::http::outgoing_handler,
 };
@@ -17,7 +17,7 @@ use bindings::wasi::http::types;
 
 struct Component;
 
-impl key_value::Guest for Component {
+impl spin::key_value::Guest for Component {
     type Store = KeyValueStore;
 }
 
@@ -41,7 +41,7 @@ struct KeyValueStore {
     /// The data stored in the key-value store.
     data: SharedHashMap<String, Vec<u8>>,
     /// The calls made to the key-value store.
-    calls: SharedHashMap<String, Vec<key_value_calls::Call>>,
+    calls: SharedHashMap<String, Vec<virt_key_value::Call>>,
 }
 
 type SharedHashMap<K, V> = Arc<RwLock<HashMap<K, V>>>;
@@ -57,34 +57,27 @@ impl KeyValueStore {
     }
 
     /// Get the value associated with a key.
-    fn get(&self, key: String) -> Option<Vec<u8>> {
-        let result = self.read_data().get(&key).cloned();
-        self.push_call(key_value_calls::Call::Get(key));
-        result
+    fn get(&self, key: &str) -> Option<Vec<u8>> {
+        self.read_data().get(key).cloned()
     }
 
     /// Set the value associated with a key.
     fn set(&self, key: String, value: Vec<u8>) {
         self.write_data().insert(key.clone(), value.clone());
-        self.push_call(key_value_calls::Call::Set((key, value)));
     }
 
     /// Delete the value associated with a key.
-    fn delete(&self, key: String) {
-        self.write_data().remove(&key);
-        self.push_call(key_value_calls::Call::Delete(key));
+    fn delete(&self, key: &str) {
+        self.write_data().remove(key);
     }
 
     /// Check if a key exists in the key-value store.
-    fn exists(&self, key: String) -> bool {
-        let result = self.read_data().contains_key(&key);
-        self.push_call(key_value_calls::Call::Exists(key));
-        result
+    fn exists(&self, key: &str) -> bool {
+        self.read_data().contains_key(key)
     }
 
     /// Get the keys in the key-value store.
     fn get_keys(&self) -> Vec<String> {
-        self.push_call(key_value_calls::Call::GetKeys);
         self.read_data().keys().cloned().collect()
     }
 
@@ -101,7 +94,7 @@ impl KeyValueStore {
         self.data.read().unwrap()
     }
 
-    fn push_call(&self, call: key_value_calls::Call) {
+    fn push_call(&self, call: virt_key_value::Call) {
         self.calls
             .write()
             .unwrap()
@@ -110,7 +103,7 @@ impl KeyValueStore {
             .push(call)
     }
 
-    fn read_calls(&self) -> Vec<key_value_calls::Call> {
+    fn read_calls(&self) -> Vec<virt_key_value::Call> {
         self.calls
             .read()
             .unwrap()
@@ -120,8 +113,8 @@ impl KeyValueStore {
     }
 }
 
-impl key_value::GuestStore for KeyValueStore {
-    fn open(label: String) -> Result<key_value::Store, key_value::Error> {
+impl spin::key_value::GuestStore for KeyValueStore {
+    fn open(label: String) -> Result<spin::key_value::Store, spin::key_value::Error> {
         if let Some(component) = manifest::AppManifest::get_component() {
             // Only allow opening stores that are defined in the manifest.
             // This check should only be done when we have a manifest.
@@ -130,7 +123,7 @@ impl key_value::GuestStore for KeyValueStore {
                 .into_iter()
                 .find(|store| store == &label);
             if store.is_none() {
-                return Err(key_value::Error::AccessDenied);
+                return Err(spin::key_value::Error::AccessDenied);
             }
         }
 
@@ -138,28 +131,35 @@ impl key_value::GuestStore for KeyValueStore {
         let key_value = stores
             .entry(label.clone())
             .or_insert_with(|| KeyValueStore::new(label));
-        Ok(key_value::Store::new(key_value.clone()))
+        Ok(spin::key_value::Store::new(key_value.clone()))
     }
 
-    fn get(&self, key: String) -> Result<Option<Vec<u8>>, key_value::Error> {
-        Ok(self.get(key))
+    fn get(&self, key: String) -> Result<Option<Vec<u8>>, spin::key_value::Error> {
+        let result = self.get(&key);
+        self.push_call(virt_key_value::Call::Get(key));
+        Ok(result)
     }
 
-    fn set(&self, key: String, value: Vec<u8>) -> Result<(), key_value::Error> {
-        self.set(key, value);
+    fn set(&self, key: String, value: Vec<u8>) -> Result<(), spin::key_value::Error> {
+        self.set(key.clone(), value.clone());
+        self.push_call(virt_key_value::Call::Set((key, value)));
         Ok(())
     }
 
-    fn delete(&self, key: String) -> Result<(), key_value::Error> {
-        self.delete(key);
+    fn delete(&self, key: String) -> Result<(), spin::key_value::Error> {
+        self.delete(&key);
+        self.push_call(virt_key_value::Call::Delete(key));
         Ok(())
     }
 
-    fn exists(&self, key: String) -> Result<bool, key_value::Error> {
-        Ok(self.exists(key))
+    fn exists(&self, key: String) -> Result<bool, spin::key_value::Error> {
+        let result = self.exists(&key);
+        self.push_call(virt_key_value::Call::Exists(key));
+        Ok(result)
     }
 
-    fn get_keys(&self) -> Result<Vec<String>, key_value::Error> {
+    fn get_keys(&self) -> Result<Vec<String>, spin::key_value::Error> {
+        self.push_call(virt_key_value::Call::GetKeys);
         Ok(self.get_keys())
     }
 }
@@ -612,8 +612,8 @@ impl http_handler::Guest for Component {
     }
 }
 
-impl key_value_calls::Guest for Component {
-    fn calls() -> Vec<(String, Vec<key_value_calls::Call>)> {
+impl virt_key_value::Guest for Component {
+    fn calls() -> Vec<(String, Vec<virt_key_value::Call>)> {
         Stores::get()
             .read()
             .unwrap()
@@ -626,6 +626,44 @@ impl key_value_calls::Guest for Component {
         for store in Stores::get().read().unwrap().values() {
             store.clear_calls();
         }
+    }
+
+    type Store = VirtKeyValueStore;
+}
+
+struct VirtKeyValueStore {
+    inner: KeyValueStore,
+}
+
+impl VirtKeyValueStore {
+    fn new(inner: KeyValueStore) -> Self {
+        Self { inner }
+    }
+}
+
+impl virt_key_value::GuestStore for VirtKeyValueStore {
+    fn open(label: String) -> spin_test_virt::key_value::Store {
+        let mut stores = Stores::get().write().unwrap();
+        let key_value = stores
+            .entry(label.clone())
+            .or_insert_with(|| KeyValueStore::new(label));
+        virt_key_value::Store::new(VirtKeyValueStore::new(key_value.clone()))
+    }
+
+    fn label(&self) -> String {
+        self.inner.label.clone()
+    }
+
+    fn get(&self, key: String) -> Option<Vec<u8>> {
+        self.inner.get(&key)
+    }
+
+    fn set(&self, key: String, value: Vec<u8>) {
+        self.inner.set(key, value);
+    }
+
+    fn delete(&self, key: String) {
+        self.inner.delete(&key);
     }
 }
 

@@ -1,7 +1,6 @@
-import { Store } from "fermyon:spin/key-value@2.0.0";
 import { newRequest, newResponse } from "fermyon:spin-test/http-helper";
 import { handle } from "wasi:http/incoming-handler@0.2.0"
-import { calls, resetCalls } from "fermyon:spin-test-virt/key-value-calls";
+import { calls, Store } from "fermyon:spin-test-virt/key-value";
 import { OutgoingRequest, Fields } from "wasi:http/types@0.2.0"
 
 export function run() {
@@ -10,7 +9,6 @@ export function run() {
   const cache = Store.open("cache");
   const textEncoder = new TextEncoder();
   cache.set("123", textEncoder.encode(user));
-  resetCalls();
 
   // Execute request
   let request = new OutgoingRequest(new Fields());
