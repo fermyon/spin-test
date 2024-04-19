@@ -130,8 +130,8 @@ pub fn encode_composition(
         })?;
 
     match &test_target {
-        TestTarget::AdHoc { prefixed } => {
-            for test_export in prefixed {
+        TestTarget::AdHoc { exports } => {
+            for test_export in exports {
                 let export = test
                     .export(test_export)
                     .context("failed to export '{test_export}' function from test component")?
@@ -171,7 +171,7 @@ pub enum TestTarget {
     /// to execute a suite of tests.
     AdHoc {
         /// The set of exports prefixed with `spin-test-*`.
-        prefixed: HashSet<String>,
+        exports: HashSet<String>,
     },
     /// The `TestWorld` target indicates the test component exports
     /// a singular `run` export to execute the test.
@@ -190,14 +190,14 @@ impl TestTarget {
         let world_id = resolve.select_world(package, None)?;
         let world = &resolve.worlds[world_id];
 
-        let mut prefixed = HashSet::new();
+        let mut exports = HashSet::new();
         let mut seen_run = false;
 
         for (export_key, _export_item) in world.exports.iter() {
             match resolve.name_world_key(export_key) {
                 name if name.starts_with(Self::SPIN_TEST_NAME_PREFIX) => {
                     // TODO: ensure export_item is a freestanding function?
-                    assert!(prefixed.insert(name));
+                    assert!(exports.insert(name));
                 }
                 name if name == Self::RUN_EXPORT => seen_run = true,
                 _ => {}
@@ -207,15 +207,15 @@ impl TestTarget {
         // Ensure we are either dealing with a test component that exports `run` OR
         // exports the specially prefixed ad-hoc test exports.
         if seen_run {
-            if !prefixed.is_empty() {
+            if !exports.is_empty() {
                 anyhow::bail!("expected ad hoc `spin-test-*` exports or `run`; found both");
             }
             Ok(TestTarget::TestWorld)
         } else {
-            if prefixed.is_empty() {
+            if exports.is_empty() {
                 anyhow::bail!("expected ad hoc `spin-test-*` exports or `run`; found neither");
             }
-            Ok(TestTarget::AdHoc { prefixed })
+            Ok(TestTarget::AdHoc { exports })
         }
     }
 }

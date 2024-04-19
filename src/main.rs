@@ -70,7 +70,7 @@ fn _main() -> anyhow::Result<()> {
     )
     .context("failed to compose Spin app, test, and virtualized Spin environment")?;
 
-    let tests = run_tests(&test_name, test_target, raw_manifest, encoded)?;
+    let tests = run_tests(test_name, test_target, raw_manifest, encoded)?;
     let _ = libtest_mimic::run(&libtest_mimic::Arguments::default(), tests);
 
     Ok(())
@@ -99,8 +99,8 @@ fn run_tests(
     let mut trials = vec![];
 
     match test_target {
-        spin_test::TestTarget::AdHoc { prefixed } => {
-            for test_export in prefixed {
+        spin_test::TestTarget::AdHoc { exports } => {
+            for test_export in exports {
                 let test_name = test_export
                     .strip_prefix(TestTarget::SPIN_TEST_NAME_PREFIX)
                     .unwrap()
