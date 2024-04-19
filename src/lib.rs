@@ -97,7 +97,7 @@ pub fn encode_composition(
         ),
         ("fermyon:spin/key-value@2.0.0", &virt, "`spin-test-virt`"),
         (
-            "fermyon:spin-test-virt/key-value-calls",
+            "fermyon:spin-test-virt/key-value",
             &virt,
             "`spin-test-virt`",
         ),

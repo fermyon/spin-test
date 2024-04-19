@@ -1,8 +1,11 @@
-use crate::{bindings::fermyon::spin_test_virt, bindings::wasi::http, bindings::wasi::io::streams};
+use crate::bindings::{
+    fermyon::spin_test_virt,
+    wasi::{http, io::streams},
+};
 
-impl PartialEq for spin_test_virt::key_value_calls::Call {
+impl PartialEq for spin_test_virt::key_value::Call {
     fn eq(&self, other: &Self) -> bool {
-        use spin_test_virt::key_value_calls::Call::*;
+        use spin_test_virt::key_value::Call::*;
         match (self, other) {
             (Get(a), Get(b)) => a == b,
             (Set(a), Set(b)) => a == b,
@@ -111,5 +114,15 @@ impl http::types::OutgoingBody {
         pair.stream().flush().unwrap();
         // Block until the stream is finished
         pollable.block();
+    }
+}
+
+impl spin_test_virt::key_value::Store {
+    pub fn calls(&self) -> Vec<spin_test_virt::key_value::Call> {
+        spin_test_virt::key_value::calls()
+            .iter()
+            .find(|(store, _)| store == &self.label())
+            .map(|(_, calls)| calls.clone())
+            .unwrap_or_default()
     }
 }

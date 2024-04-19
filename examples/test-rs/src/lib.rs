@@ -1,6 +1,9 @@
 use spin_test_sdk::{
-    bindings::{fermyon::spin_test_virt::http_handler, wasi::http},
-    key_value, spin_test,
+    bindings::{
+        fermyon::spin_test_virt::{http_handler, key_value},
+        wasi::http,
+    },
+    spin_test,
 };
 
 #[spin_test]
@@ -8,17 +11,15 @@ fn cache_hit() {
     let user_json = r#"{"id":123,"name":"Ryan"}"#;
 
     // Configure the test
-    let key_value_config = key_value::Store::open("cache").unwrap();
+    let key_value = key_value::Store::open("cache");
     // Set state of the key-value store
-    key_value_config.set("123", user_json.as_bytes()).unwrap();
-    // Reset the call history
-    key_value_config.reset_calls();
+    key_value.set("123", user_json.as_bytes());
 
     make_request(user_json);
 
     // Assert the key-value store was queried
     assert_eq!(
-        key_value_config.calls(),
+        key_value.calls(),
         vec![key_value::Call::Get("123".to_owned())]
     );
 }
@@ -34,13 +35,17 @@ fn cache_miss() {
     make_request(user_json);
 
     // Assert the key-value store was queried
-    let key_value_config = key_value::Store::open("cache").unwrap();
+    let key_value_config = key_value::Store::open("cache");
     assert_eq!(
         key_value_config.calls(),
         vec![
             key_value::Call::Get("123".to_owned()),
             key_value::Call::Set(("123".to_owned(), user_json.as_bytes().to_vec()))
         ]
+    );
+    assert_eq!(
+        key_value_config.get("123").as_deref(),
+        Some(user_json.as_bytes())
     );
 }
 
