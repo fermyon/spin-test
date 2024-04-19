@@ -16,17 +16,19 @@ world test {
 world runner {
     import get-manifest: func() -> string;
     import http-helper;
-    use wasi:http/types@0.2.0.{outgoing-response, future-incoming-response};
-    import futurize-response: func(response: outgoing-response) -> future-incoming-response;
     
     export run: func();
 }
 
 interface http-helper {
-    use wasi:http/types@0.2.0.{incoming-request, response-outparam, incoming-response, outgoing-request};
+    use wasi:http/types@0.2.0.{
+        incoming-request, incoming-response, outgoing-response,
+        outgoing-request, response-outparam, future-incoming-response
+    };
     resource response-receiver {
         get: func() -> option<incoming-response>;
     }
     new-request: func(request: outgoing-request) -> incoming-request;
     new-response: func() -> tuple<response-outparam, response-receiver>;
+    futurize-response: func(response: outgoing-response) -> future-incoming-response;
 }

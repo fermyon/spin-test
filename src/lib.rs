@@ -4,6 +4,7 @@ pub mod runtime;
 use std::{collections::HashSet, path::PathBuf};
 
 use anyhow::Context as _;
+pub use composition::Composition;
 
 /// The built `spin-test-virt` component
 const SPIN_TEST_VIRT: &[u8] = include_bytes!(concat!(
@@ -12,6 +13,8 @@ const SPIN_TEST_VIRT: &[u8] = include_bytes!(concat!(
 ));
 /// The built `router` component
 const ROUTER: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/wasm32-wasi/release/router.wasm"));
+/// The wit package for `spin-test`
+const WIT: &str = concat!(env!("OUT_DIR"), "/wit");
 
 /// A Wasm component
 pub struct Component {
@@ -40,11 +43,42 @@ pub fn encode_composition(
 ) -> anyhow::Result<(Vec<u8>, TestTarget)> {
     let test_target = TestTarget::from_component(&test_component)?;
 
-    let composition = composition::Composition::new();
+    let composition = Composition::new();
+
+    // Get definition of the `fermyon:spin-test/http-helper` instance from the wit package
+    // The instance is buried in an `http-helper` component export.
+    let mut resolve = wit_parser::Resolve::new();
+    let (pkg, _) = resolve
+        .push_dir(&std::path::Path::new(WIT))
+        .expect("failed to push host-wit directory");
+    let wit_bytes = wit_component::encode(Some(true), &resolve, pkg).unwrap();
+    let wit = composition.register_package("wit", &wit_bytes)?;
+    let http_helper = wit
+        .get_export("http-helper")
+        .expect("internal error: no 'http-helper' component export found in wit package'")
+        .as_component()
+        .expect("'http-helper' export was not a component");
+    let http_helper = http_helper
+        .get_export("fermyon:spin-test/http-helper")
+        .expect(
+            "internal error: `fermyon:spin-test/http-helper` not found in 'http-helper' component",
+        )
+        .as_instance()
+        .expect("internal error: `fermyon:spin-test/http-helper` is not an instance");
+
+    // Import the `fermyon:spin-test/http-helper` instance into the composition
+    let http_helper = composition.import_instance("fermyon:spin-test/http-helper", http_helper)?;
+
+    // Instantiate the `spin-test-virt` component with the `futurize-response` export from the `http-helper` instance
+    let futurize_response = http_helper
+        .export("futurize-response")?
+        .expect("internal error: `futurize-response` not found");
+    let virt_args = vec![("futurize-response", Box::new(futurize_response) as Box<_>)];
     let virt = composition
-        .instantiate("virt", SPIN_TEST_VIRT, Vec::new())
+        .instantiate("virt", SPIN_TEST_VIRT, virt_args)
         .context("fatal error: could not instantiate spin-test-virt")?;
 
+    // Instantiate the `app` component with various exports from `spin-test-virt` instance
     let app_args = [
         "fermyon:spin/key-value@2.0.0",
         "fermyon:spin/llm@2.0.0",
@@ -60,9 +94,11 @@ pub fn encode_composition(
     .map(|k| {
         Ok((
             k,
-            virt.export(k)
-                .with_context(|| format!("failed to export '{k}' from `spin-test-virt`"))?
-                .with_context(|| format!("`spin-test-virt` does not export '{k}'"))?,
+            Box::new(
+                virt.export(k)
+                    .with_context(|| format!("failed to export '{k}' from `spin-test-virt`"))?
+                    .with_context(|| format!("`spin-test-virt` does not export '{k}'"))?,
+            ) as Box<_>,
         ))
     })
     .collect::<anyhow::Result<Vec<_>>>()?;
@@ -70,6 +106,7 @@ pub fn encode_composition(
         .instantiate("app", &app_component.bytes, app_args)
         .context("failed to instantiate Spin app")?;
 
+    // Instantiate the `router` component with various exports from `spin-test-virt` and `app` instances
     let router_args = [
         ("set-component-id", &virt, "`spin-test-virt`"),
         ("wasi:http/incoming-handler@0.2.0", &app, "the Spin app"),
@@ -78,9 +115,11 @@ pub fn encode_composition(
     .map(|(k, v, name)| {
         Ok((
             k,
-            v.export(k)
-                .with_context(|| format!("failed to export '{k}' from {name}"))?
-                .with_context(|| format!("{name} does not export '{k}'"))?,
+            Box::new(
+                v.export(k)
+                    .with_context(|| format!("failed to export '{k}' from {name}"))?
+                    .with_context(|| format!("{name} does not export '{k}'"))?,
+            ) as _,
         ))
     })
     .collect::<anyhow::Result<Vec<_>>>()?;
@@ -88,7 +127,8 @@ pub fn encode_composition(
         .instantiate("router", ROUTER, router_args)
         .context("failed to instantiate router")?;
 
-    let test_args = vec![
+    // Instantiate the `test` component
+    let mut test_args = vec![
         ("wasi:http/incoming-handler@0.2.0", &router, "the router"),
         (
             "wasi:http/outgoing-handler@0.2.0",
@@ -114,12 +154,20 @@ pub fn encode_composition(
     .map(|(k, v, name)| {
         Ok((
             k,
-            v.export(k)
-                .with_context(|| format!("failed to export '{k}' from {name}"))?
-                .with_context(|| format!("{name} does not export '{k}'"))?,
+            Box::new(
+                v.export(k)
+                    .with_context(|| format!("failed to export '{k}' from {name}"))?
+                    .with_context(|| format!("{name} does not export '{k}'"))?,
+            ) as Box<_>,
         ))
     })
     .collect::<anyhow::Result<Vec<_>>>()?;
+    // Explicitly import the `fermyon:spin-test/http-helper` instance into the
+    // `test` component from the top-level composition's import
+    test_args.push((
+        "fermyon:spin-test/http-helper",
+        Box::new(http_helper) as Box<_>,
+    ));
     let test = composition
         .instantiate("test", &test_component.bytes, test_args)
         .with_context(|| {
