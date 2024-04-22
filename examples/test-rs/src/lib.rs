@@ -8,6 +8,7 @@ use spin_test_sdk::{
 
 #[spin_test]
 fn cache_hit() {
+    println!("In TEST: ENV_VAR={:?}", std::env::var("ENV_VAR"));
     let user_json = r#"{"id":123,"name":"Ryan"}"#;
 
     // Configure the test
