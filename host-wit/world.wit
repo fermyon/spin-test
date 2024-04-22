@@ -1,5 +1,6 @@
 package fermyon:spin-test;
 
+/// All the imports supplied to a `spin-test` compliant test
 world test-imports {
     import fermyon:spin-test-virt/http-handler;
     import fermyon:spin-test-virt/key-value;
@@ -8,27 +9,37 @@ world test-imports {
     import http-helper;
 }
 
+/// A `spin-test` compliant test
 world test {
     include test-imports;
     export run: func();
 }
 
+/// A test runner that can run a `spin-test` test composition
 world runner {
+    /// Supply the `spin.toml` manifest
     import get-manifest: func() -> string;
+    /// Provided helpers for http that must be supplied by a host
     import http-helper;
     
+    /// Run the test
     export run: func();
 }
 
+/// Helpers for overcoming the limitations of `wasi:http@0.2.0`
 interface http-helper {
     use wasi:http/types@0.2.0.{
         incoming-request, incoming-response, outgoing-response,
         outgoing-request, response-outparam, future-incoming-response
     };
+    /// A receiver of an `incoming-response`
     resource response-receiver {
         get: func() -> option<incoming-response>;
     }
+    /// Create an `incoming-request` from an `outgoing-request`
     new-request: func(request: outgoing-request) -> incoming-request;
+    /// Get a pair of a `response-outparam` and a `response-receiver`
     new-response: func() -> tuple<response-outparam, response-receiver>;
+    /// Create a `future-incoming-response` from an `outgoing-response`
     futurize-response: func(response: outgoing-response) -> future-incoming-response;
 }

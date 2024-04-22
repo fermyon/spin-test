@@ -7650,20 +7650,20 @@ mod _rt {
 #[allow(unused_macros)]
 #[doc(hidden)]
 
-macro_rules! __export_example_impl {
+macro_rules! __export_router_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
   $($path_to_types_root)*::exports::wasi::http::incoming_handler::__export_wasi_http_incoming_handler_0_2_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wasi::http::incoming_handler);
   )
 }
 #[doc(inline)]
-pub(crate) use __export_example_impl as export;
+pub(crate) use __export_router_impl as export;
 
 #[cfg(target_arch = "wasm32")]
-#[link_section = "component-type:wit-bindgen:0.24.0:example:encoded world"]
+#[link_section = "component-type:wit-bindgen:0.24.0:router:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6525] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xff1\x01A\x02\x01A\x19\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6523] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xfe1\x01A\x02\x01A\x19\
 \x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[\
 method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollab\
 le.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\
@@ -7790,9 +7790,9 @@ ndle\x01\x06\x03\x01\x20wasi:http/incoming-handler@0.2.0\x05\x0c\x01@\0\0s\x03\0
 id\x01\x0e\x01B\x08\x02\x03\x02\x01\x0a\x04\0\x10incoming-request\x03\0\0\x02\x03\
 \x02\x01\x0b\x04\0\x11response-outparam\x03\0\x02\x01i\x01\x01i\x03\x01@\x02\x07\
 request\x04\x0cresponse-out\x05\x01\0\x04\0\x06handle\x01\x06\x04\x01\x20wasi:ht\
-tp/incoming-handler@0.2.0\x05\x0f\x04\x01\x16fermyon:router/example\x04\0\x0b\x0d\
-\x01\0\x07example\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-compone\
-nt\x070.202.0\x10wit-bindgen-rust\x060.24.0";
+tp/incoming-handler@0.2.0\x05\x0f\x04\x01\x15fermyon:router/router\x04\0\x0b\x0c\
+\x01\0\x06router\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-componen\
+t\x070.202.0\x10wit-bindgen-rust\x060.24.0";
 
 #[inline(never)]
 #[doc(hidden)]

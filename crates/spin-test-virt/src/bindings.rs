@@ -56,11 +56,12 @@ pub unsafe fn _export_set_component_id_cabi<T: Guest>(arg0: *mut u8, arg1: usize
     T::set_component_id(_rt::string_lift(bytes0));
 }
 pub trait Guest {
+    /// Helper functions
     fn set_component_id(component_id: _rt::String);
 }
 #[doc(hidden)]
 
-macro_rules! __export_world_plug_cabi{
+macro_rules! __export_world_env_cabi{
   ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
     #[export_name = "set-component-id"]
@@ -70,7 +71,7 @@ macro_rules! __export_world_plug_cabi{
   };);
 }
 #[doc(hidden)]
-pub(crate) use __export_world_plug_cabi;
+pub(crate) use __export_world_env_cabi;
 #[allow(dead_code)]
 pub mod fermyon {
     #[allow(dead_code)]
@@ -324,471 +325,6 @@ pub mod fermyon {
                         .field("columns", &self.columns)
                         .field("rows", &self.rows)
                         .finish()
-                }
-            }
-        }
-
-        #[allow(dead_code, clippy::all)]
-        pub mod sqlite {
-            #[used]
-            #[doc(hidden)]
-            #[cfg(target_arch = "wasm32")]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
-            use super::super::super::_rt;
-            /// A handle to an open sqlite instance
-
-            #[derive(Debug)]
-            #[repr(transparent)]
-            pub struct Connection {
-                handle: _rt::Resource<Connection>,
-            }
-
-            impl Connection {
-                #[doc(hidden)]
-                pub unsafe fn from_handle(handle: u32) -> Self {
-                    Self {
-                        handle: _rt::Resource::from_handle(handle),
-                    }
-                }
-
-                #[doc(hidden)]
-                pub fn take_handle(&self) -> u32 {
-                    _rt::Resource::take_handle(&self.handle)
-                }
-
-                #[doc(hidden)]
-                pub fn handle(&self) -> u32 {
-                    _rt::Resource::handle(&self.handle)
-                }
-            }
-
-            unsafe impl _rt::WasmResource for Connection {
-                #[inline]
-                unsafe fn drop(_handle: u32) {
-                    #[cfg(not(target_arch = "wasm32"))]
-                    unreachable!();
-
-                    #[cfg(target_arch = "wasm32")]
-                    {
-                        #[link(wasm_import_module = "fermyon:spin/sqlite@2.0.0")]
-                        extern "C" {
-                            #[link_name = "[resource-drop]connection"]
-                            fn drop(_: u32);
-                        }
-
-                        drop(_handle);
-                    }
-                }
-            }
-
-            /// The set of errors which may be raised by functions in this interface
-            #[derive(Clone)]
-            pub enum Error {
-                /// The host does not recognize the database name requested.
-                NoSuchDatabase,
-                /// The requesting component does not have access to the specified database (which may or may not exist).
-                AccessDenied,
-                /// The provided connection is not valid
-                InvalidConnection,
-                /// The database has reached its capacity
-                DatabaseFull,
-                /// Some implementation-specific error has occurred (e.g. I/O)
-                Io(_rt::String),
-            }
-            impl ::core::fmt::Debug for Error {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    match self {
-                        Error::NoSuchDatabase => f.debug_tuple("Error::NoSuchDatabase").finish(),
-                        Error::AccessDenied => f.debug_tuple("Error::AccessDenied").finish(),
-                        Error::InvalidConnection => {
-                            f.debug_tuple("Error::InvalidConnection").finish()
-                        }
-                        Error::DatabaseFull => f.debug_tuple("Error::DatabaseFull").finish(),
-                        Error::Io(e) => f.debug_tuple("Error::Io").field(e).finish(),
-                    }
-                }
-            }
-            impl ::core::fmt::Display for Error {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    write!(f, "{:?}", self)
-                }
-            }
-
-            impl std::error::Error for Error {}
-            /// A single column's result from a database query
-            #[derive(Clone)]
-            pub enum Value {
-                Integer(i64),
-                Real(f64),
-                Text(_rt::String),
-                Blob(_rt::Vec<u8>),
-                Null,
-            }
-            impl ::core::fmt::Debug for Value {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    match self {
-                        Value::Integer(e) => f.debug_tuple("Value::Integer").field(e).finish(),
-                        Value::Real(e) => f.debug_tuple("Value::Real").field(e).finish(),
-                        Value::Text(e) => f.debug_tuple("Value::Text").field(e).finish(),
-                        Value::Blob(e) => f.debug_tuple("Value::Blob").field(e).finish(),
-                        Value::Null => f.debug_tuple("Value::Null").finish(),
-                    }
-                }
-            }
-            /// A set of values for each of the columns in a query-result
-            #[derive(Clone)]
-            pub struct RowResult {
-                pub values: _rt::Vec<Value>,
-            }
-            impl ::core::fmt::Debug for RowResult {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("RowResult")
-                        .field("values", &self.values)
-                        .finish()
-                }
-            }
-            /// A result of a query
-            #[derive(Clone)]
-            pub struct QueryResult {
-                /// The names of the columns retrieved in the query
-                pub columns: _rt::Vec<_rt::String>,
-                /// the row results each containing the values for all the columns for a given row
-                pub rows: _rt::Vec<RowResult>,
-            }
-            impl ::core::fmt::Debug for QueryResult {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("QueryResult")
-                        .field("columns", &self.columns)
-                        .field("rows", &self.rows)
-                        .finish()
-                }
-            }
-            impl Connection {
-                #[allow(unused_unsafe, clippy::all)]
-                /// Open a connection to a named database instance.
-                ///
-                /// If `database` is "default", the default instance is opened.
-                ///
-                /// `error::no-such-database` will be raised if the `name` is not recognized.
-                pub fn open(database: &str) -> Result<Connection, Error> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
-                        let vec0 = database;
-                        let ptr0 = vec0.as_ptr().cast::<u8>();
-                        let len0 = vec0.len();
-                        let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "fermyon:spin/sqlite@2.0.0")]
-                        extern "C" {
-                            #[link_name = "[static]connection.open"]
-                            fn wit_import(_: *mut u8, _: usize, _: *mut u8);
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(_: *mut u8, _: usize, _: *mut u8) {
-                            unreachable!()
-                        }
-                        wit_import(ptr0.cast_mut(), len0, ptr1);
-                        let l2 = i32::from(*ptr1.add(0).cast::<u8>());
-                        match l2 {
-                            0 => {
-                                let e = {
-                                    let l3 = *ptr1.add(4).cast::<i32>();
-
-                                    Connection::from_handle(l3 as u32)
-                                };
-                                Ok(e)
-                            }
-                            1 => {
-                                let e = {
-                                    let l4 = i32::from(*ptr1.add(4).cast::<u8>());
-                                    let v8 = match l4 {
-                                        0 => Error::NoSuchDatabase,
-                                        1 => Error::AccessDenied,
-                                        2 => Error::InvalidConnection,
-                                        3 => Error::DatabaseFull,
-                                        n => {
-                                            debug_assert_eq!(n, 4, "invalid enum discriminant");
-                                            let e8 = {
-                                                let l5 = *ptr1.add(8).cast::<*mut u8>();
-                                                let l6 = *ptr1.add(12).cast::<usize>();
-                                                let len7 = l6;
-                                                let bytes7 =
-                                                    _rt::Vec::from_raw_parts(l5.cast(), len7, len7);
-
-                                                _rt::string_lift(bytes7)
-                                            };
-                                            Error::Io(e8)
-                                        }
-                                    };
-
-                                    v8
-                                };
-                                Err(e)
-                            }
-                            _ => _rt::invalid_enum_discriminant(),
-                        }
-                    }
-                }
-            }
-            impl Connection {
-                #[allow(unused_unsafe, clippy::all)]
-                /// Execute a statement returning back data if there is any
-                pub fn execute(
-                    &self,
-                    statement: &str,
-                    parameters: &[Value],
-                ) -> Result<QueryResult, Error> {
-                    unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 20]);
-                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 20]);
-                        let vec0 = statement;
-                        let ptr0 = vec0.as_ptr().cast::<u8>();
-                        let len0 = vec0.len();
-                        let vec3 = parameters;
-                        let len3 = vec3.len();
-                        let layout3 =
-                            _rt::alloc::Layout::from_size_align_unchecked(vec3.len() * 16, 8);
-                        let result3 = if layout3.size() != 0 {
-                            let ptr = _rt::alloc::alloc(layout3).cast::<u8>();
-                            if ptr.is_null() {
-                                _rt::alloc::handle_alloc_error(layout3);
-                            }
-                            ptr
-                        } else {
-                            {
-                                ::core::ptr::null_mut()
-                            }
-                        };
-                        for (i, e) in vec3.into_iter().enumerate() {
-                            let base = result3.add(i * 16);
-                            {
-                                match e {
-                                    Value::Integer(e) => {
-                                        *base.add(0).cast::<u8>() = (0i32) as u8;
-                                        *base.add(8).cast::<i64>() = _rt::as_i64(e);
-                                    }
-                                    Value::Real(e) => {
-                                        *base.add(0).cast::<u8>() = (1i32) as u8;
-                                        *base.add(8).cast::<f64>() = _rt::as_f64(e);
-                                    }
-                                    Value::Text(e) => {
-                                        *base.add(0).cast::<u8>() = (2i32) as u8;
-                                        let vec1 = e;
-                                        let ptr1 = vec1.as_ptr().cast::<u8>();
-                                        let len1 = vec1.len();
-                                        *base.add(12).cast::<usize>() = len1;
-                                        *base.add(8).cast::<*mut u8>() = ptr1.cast_mut();
-                                    }
-                                    Value::Blob(e) => {
-                                        *base.add(0).cast::<u8>() = (3i32) as u8;
-                                        let vec2 = e;
-                                        let ptr2 = vec2.as_ptr().cast::<u8>();
-                                        let len2 = vec2.len();
-                                        *base.add(12).cast::<usize>() = len2;
-                                        *base.add(8).cast::<*mut u8>() = ptr2.cast_mut();
-                                    }
-                                    Value::Null => {
-                                        *base.add(0).cast::<u8>() = (4i32) as u8;
-                                    }
-                                }
-                            }
-                        }
-                        let ptr4 = ret_area.0.as_mut_ptr().cast::<u8>();
-                        #[cfg(target_arch = "wasm32")]
-                        #[link(wasm_import_module = "fermyon:spin/sqlite@2.0.0")]
-                        extern "C" {
-                            #[link_name = "[method]connection.execute"]
-                            fn wit_import(
-                                _: i32,
-                                _: *mut u8,
-                                _: usize,
-                                _: *mut u8,
-                                _: usize,
-                                _: *mut u8,
-                            );
-                        }
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        fn wit_import(
-                            _: i32,
-                            _: *mut u8,
-                            _: usize,
-                            _: *mut u8,
-                            _: usize,
-                            _: *mut u8,
-                        ) {
-                            unreachable!()
-                        }
-                        wit_import(
-                            (self).handle() as i32,
-                            ptr0.cast_mut(),
-                            len0,
-                            result3,
-                            len3,
-                            ptr4,
-                        );
-                        let l5 = i32::from(*ptr4.add(0).cast::<u8>());
-                        if layout3.size() != 0 {
-                            _rt::alloc::dealloc(result3.cast(), layout3);
-                        }
-                        match l5 {
-                            0 => {
-                                let e = {
-                                    let l6 = *ptr4.add(4).cast::<*mut u8>();
-                                    let l7 = *ptr4.add(8).cast::<usize>();
-                                    let base11 = l6;
-                                    let len11 = l7;
-                                    let mut result11 = _rt::Vec::with_capacity(len11);
-                                    for i in 0..len11 {
-                                        let base = base11.add(i * 8);
-                                        let e11 = {
-                                            let l8 = *base.add(0).cast::<*mut u8>();
-                                            let l9 = *base.add(4).cast::<usize>();
-                                            let len10 = l9;
-                                            let bytes10 =
-                                                _rt::Vec::from_raw_parts(l8.cast(), len10, len10);
-
-                                            _rt::string_lift(bytes10)
-                                        };
-                                        result11.push(e11);
-                                    }
-                                    _rt::cabi_dealloc(base11, len11 * 8, 4);
-                                    let l12 = *ptr4.add(12).cast::<*mut u8>();
-                                    let l13 = *ptr4.add(16).cast::<usize>();
-                                    let base27 = l12;
-                                    let len27 = l13;
-                                    let mut result27 = _rt::Vec::with_capacity(len27);
-                                    for i in 0..len27 {
-                                        let base = base27.add(i * 8);
-                                        let e27 = {
-                                            let l14 = *base.add(0).cast::<*mut u8>();
-                                            let l15 = *base.add(4).cast::<usize>();
-                                            let base26 = l14;
-                                            let len26 = l15;
-                                            let mut result26 = _rt::Vec::with_capacity(len26);
-                                            for i in 0..len26 {
-                                                let base = base26.add(i * 16);
-                                                let e26 = {
-                                                    let l16 = i32::from(*base.add(0).cast::<u8>());
-                                                    let v25 = match l16 {
-                                                        0 => {
-                                                            let e25 = {
-                                                                let l17 =
-                                                                    *base.add(8).cast::<i64>();
-
-                                                                l17
-                                                            };
-                                                            Value::Integer(e25)
-                                                        }
-                                                        1 => {
-                                                            let e25 = {
-                                                                let l18 =
-                                                                    *base.add(8).cast::<f64>();
-
-                                                                l18
-                                                            };
-                                                            Value::Real(e25)
-                                                        }
-                                                        2 => {
-                                                            let e25 = {
-                                                                let l19 =
-                                                                    *base.add(8).cast::<*mut u8>();
-                                                                let l20 =
-                                                                    *base.add(12).cast::<usize>();
-                                                                let len21 = l20;
-                                                                let bytes21 =
-                                                                    _rt::Vec::from_raw_parts(
-                                                                        l19.cast(),
-                                                                        len21,
-                                                                        len21,
-                                                                    );
-
-                                                                _rt::string_lift(bytes21)
-                                                            };
-                                                            Value::Text(e25)
-                                                        }
-                                                        3 => {
-                                                            let e25 = {
-                                                                let l22 =
-                                                                    *base.add(8).cast::<*mut u8>();
-                                                                let l23 =
-                                                                    *base.add(12).cast::<usize>();
-                                                                let len24 = l23;
-
-                                                                _rt::Vec::from_raw_parts(
-                                                                    l22.cast(),
-                                                                    len24,
-                                                                    len24,
-                                                                )
-                                                            };
-                                                            Value::Blob(e25)
-                                                        }
-                                                        n => {
-                                                            debug_assert_eq!(
-                                                                n, 4,
-                                                                "invalid enum discriminant"
-                                                            );
-                                                            Value::Null
-                                                        }
-                                                    };
-
-                                                    v25
-                                                };
-                                                result26.push(e26);
-                                            }
-                                            _rt::cabi_dealloc(base26, len26 * 16, 8);
-
-                                            RowResult { values: result26 }
-                                        };
-                                        result27.push(e27);
-                                    }
-                                    _rt::cabi_dealloc(base27, len27 * 8, 4);
-
-                                    QueryResult {
-                                        columns: result11,
-                                        rows: result27,
-                                    }
-                                };
-                                Ok(e)
-                            }
-                            1 => {
-                                let e = {
-                                    let l28 = i32::from(*ptr4.add(4).cast::<u8>());
-                                    let v32 = match l28 {
-                                        0 => Error::NoSuchDatabase,
-                                        1 => Error::AccessDenied,
-                                        2 => Error::InvalidConnection,
-                                        3 => Error::DatabaseFull,
-                                        n => {
-                                            debug_assert_eq!(n, 4, "invalid enum discriminant");
-                                            let e32 = {
-                                                let l29 = *ptr4.add(8).cast::<*mut u8>();
-                                                let l30 = *ptr4.add(12).cast::<usize>();
-                                                let len31 = l30;
-                                                let bytes31 = _rt::Vec::from_raw_parts(
-                                                    l29.cast(),
-                                                    len31,
-                                                    len31,
-                                                );
-
-                                                _rt::string_lift(bytes31)
-                                            };
-                                            Error::Io(e32)
-                                        }
-                                    };
-
-                                    v32
-                                };
-                                Err(e)
-                            }
-                            _ => _rt::invalid_enum_discriminant(),
-                        }
-                    }
                 }
             }
         }
@@ -14228,6 +13764,7 @@ pub mod exports {
                     T::set_response(_rt::string_lift(bytes0), super::super::super::super::wasi::http::types::OutgoingResponse::from_handle(arg2 as u32));
                 }
                 pub trait Guest {
+                    /// Set a response for a given url
                     fn set_response(url: _rt::String, response: OutgoingResponse);
                 }
                 #[doc(hidden)]
@@ -14395,6 +13932,7 @@ pub mod exports {
                     }
                 }
 
+                /// A call to the key-value interface
                 #[derive(Clone)]
                 pub enum Call {
                     Get(_rt::String),
@@ -14707,7 +14245,9 @@ pub mod exports {
                 }
                 pub trait Guest {
                     type Store: GuestStore;
+                    /// Get the recorded calls to the key-value interface
                     fn calls() -> _rt::Vec<(_rt::String, _rt::Vec<Call>)>;
+                    /// Reset the state of the call tracking
                     fn reset_calls();
                 }
                 pub trait GuestStore: 'static {
@@ -15076,6 +14616,7 @@ pub mod exports {
                     );
                 }
                 pub trait Guest {
+                    /// Set a response for a given query and set of params
                     fn set_response(
                         query: _rt::String,
                         params: _rt::Vec<Value>,
@@ -15709,8 +15250,6 @@ pub mod exports {
     }
 }
 mod _rt {
-    pub use alloc_crate::string::String;
-    pub use alloc_crate::vec::Vec;
 
     use core::fmt;
     use core::marker;
@@ -15817,6 +15356,7 @@ mod _rt {
         }
     }
     pub use alloc_crate::alloc;
+    pub use alloc_crate::vec::Vec;
 
     pub fn as_i64<T: AsI64>(t: T) -> i64 {
         t.as_i64()
@@ -15845,6 +15385,7 @@ mod _rt {
             self as i64
         }
     }
+    pub use alloc_crate::string::String;
     pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
         if cfg!(debug_assertions) {
             String::from_utf8(bytes).unwrap()
@@ -15937,27 +15478,6 @@ mod _rt {
         }
     }
 
-    pub fn as_f64<T: AsF64>(t: T) -> f64 {
-        t.as_f64()
-    }
-
-    pub trait AsF64 {
-        fn as_f64(self) -> f64;
-    }
-
-    impl<'a, T: Copy + AsF64> AsF64 for &'a T {
-        fn as_f64(self) -> f64 {
-            (*self).as_f64()
-        }
-    }
-
-    impl AsF64 for f64 {
-        #[inline]
-        fn as_f64(self) -> f64 {
-            self as f64
-        }
-    }
-
     #[cfg(target_arch = "wasm32")]
     pub fn run_ctors_once() {
         wit_bindgen_rt::run_ctors_once();
@@ -15984,6 +15504,27 @@ mod _rt {
             self as f32
         }
     }
+
+    pub fn as_f64<T: AsF64>(t: T) -> f64 {
+        t.as_f64()
+    }
+
+    pub trait AsF64 {
+        fn as_f64(self) -> f64;
+    }
+
+    impl<'a, T: Copy + AsF64> AsF64 for &'a T {
+        fn as_f64(self) -> f64 {
+            (*self).as_f64()
+        }
+    }
+
+    impl AsF64 for f64 {
+        #[inline]
+        fn as_f64(self) -> f64 {
+            self as f64
+        }
+    }
     extern crate alloc as alloc_crate;
 }
 
@@ -16006,10 +15547,10 @@ mod _rt {
 #[allow(unused_macros)]
 #[doc(hidden)]
 
-macro_rules! __export_plug_impl {
+macro_rules! __export_env_impl {
                               ($ty:ident) => (self::export!($ty with_types_in self););
                               ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
-                              $($path_to_types_root)*::__export_world_plug_cabi!($ty with_types_in $($path_to_types_root)*);
+                              $($path_to_types_root)*::__export_world_env_cabi!($ty with_types_in $($path_to_types_root)*);
                               $($path_to_types_root)*::exports::fermyon::spin::key_value::__export_fermyon_spin_key_value_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::key_value);
                               $($path_to_types_root)*::exports::fermyon::spin::llm::__export_fermyon_spin_llm_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::llm);
                               $($path_to_types_root)*::exports::fermyon::spin::redis::__export_fermyon_spin_redis_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::redis);
@@ -16025,106 +15566,92 @@ macro_rules! __export_plug_impl {
                               )
                             }
 #[doc(inline)]
-pub(crate) use __export_plug_impl as export;
+pub(crate) use __export_env_impl as export;
 
 #[cfg(target_arch = "wasm32")]
-#[link_section = "component-type:wit-bindgen:0.24.0:plug:encoded world"]
+#[link_section = "component-type:wit-bindgen:0.24.0:env:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 11615] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe4Y\x01A\x02\x01A@\x01\
-B\x11\x01q\x05\x11connection-failed\x01s\0\x0dbad-parameter\x01s\0\x0cquery-fail\
-ed\x01s\0\x17value-conversion-failed\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\
-\0\x01m\x0e\x07boolean\x04int8\x05int16\x05int32\x05int64\x05uint8\x06uint16\x06\
-uint32\x06uint64\x0afloating32\x0afloating64\x03str\x06binary\x05other\x04\0\x0c\
-db-data-type\x03\0\x02\x01p}\x01q\x0f\x07boolean\x01\x7f\0\x04int8\x01~\0\x05int\
-16\x01|\0\x05int32\x01z\0\x05int64\x01x\0\x05uint8\x01}\0\x06uint16\x01{\0\x06ui\
-nt32\x01y\0\x06uint64\x01w\0\x0afloating32\x01v\0\x0afloating64\x01u\0\x03str\x01\
-s\0\x06binary\x01\x04\0\x07db-null\0\0\x0bunsupported\0\0\x04\0\x08db-value\x03\0\
-\x05\x01q\x0e\x07boolean\x01\x7f\0\x04int8\x01~\0\x05int16\x01|\0\x05int32\x01z\0\
-\x05int64\x01x\0\x05uint8\x01}\0\x06uint16\x01{\0\x06uint32\x01y\0\x06uint64\x01\
-w\0\x0afloating32\x01v\0\x0afloating64\x01u\0\x03str\x01s\0\x06binary\x01\x04\0\x07\
-db-null\0\0\x04\0\x0fparameter-value\x03\0\x07\x01r\x02\x04names\x09data-type\x03\
-\x04\0\x06column\x03\0\x09\x01p\x06\x04\0\x03row\x03\0\x0b\x01p\x0a\x01p\x0c\x01\
-r\x02\x07columns\x0d\x04rows\x0e\x04\0\x07row-set\x03\0\x0f\x03\x01\x1efermyon:s\
-pin/rdbms-types@2.0.0\x05\0\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04\
-self\x01\0\x7f\x04\0\x16[method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\
-\x04\0\x16[method]pollable.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\
-\x04\0\x04poll\x01\x06\x03\x01\x12wasi:io/poll@0.2.0\x05\x01\x02\x03\0\x01\x08po\
-llable\x01B\x0f\x02\x03\x02\x01\x02\x04\0\x08pollable\x03\0\0\x01w\x04\0\x07inst\
-ant\x03\0\x02\x01w\x04\0\x08duration\x03\0\x04\x01@\0\0\x03\x04\0\x03now\x01\x06\
-\x01@\0\0\x05\x04\0\x0aresolution\x01\x07\x01i\x01\x01@\x01\x04when\x03\0\x08\x04\
-\0\x11subscribe-instant\x01\x09\x01@\x01\x04when\x05\0\x08\x04\0\x12subscribe-du\
-ration\x01\x0a\x03\x01!wasi:clocks/monotonic-clock@0.2.0\x05\x03\x01B\x04\x04\0\x05\
-error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\0\x1d[method]error.to-debug-str\
-ing\x01\x02\x03\x01\x13wasi:io/error@0.2.0\x05\x04\x02\x03\0\x03\x05error\x01B(\x02\
-\x03\x02\x01\x05\x04\0\x05error\x03\0\0\x02\x03\x02\x01\x02\x04\0\x08pollable\x03\
-\0\x02\x01i\x01\x01q\x02\x15last-operation-failed\x01\x04\0\x06closed\0\0\x04\0\x0c\
-stream-error\x03\0\x05\x04\0\x0cinput-stream\x03\x01\x04\0\x0doutput-stream\x03\x01\
-\x01h\x07\x01p}\x01j\x01\x0a\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19\
-[method]input-stream.read\x01\x0c\x04\0\"[method]input-stream.blocking-read\x01\x0c\
-\x01j\x01w\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0d\x04\0\x19[method]input-str\
-eam.skip\x01\x0e\x04\0\"[method]input-stream.blocking-skip\x01\x0e\x01i\x03\x01@\
-\x01\x04self\x09\0\x0f\x04\0\x1e[method]input-stream.subscribe\x01\x10\x01h\x08\x01\
-@\x01\x04self\x11\0\x0d\x04\0![method]output-stream.check-write\x01\x12\x01j\0\x01\
-\x06\x01@\x02\x04self\x11\x08contents\x0a\0\x13\x04\0\x1b[method]output-stream.w\
-rite\x01\x14\x04\0.[method]output-stream.blocking-write-and-flush\x01\x14\x01@\x01\
-\x04self\x11\0\x13\x04\0\x1b[method]output-stream.flush\x01\x15\x04\0$[method]ou\
-tput-stream.blocking-flush\x01\x15\x01@\x01\x04self\x11\0\x0f\x04\0\x1f[method]o\
-utput-stream.subscribe\x01\x16\x01@\x02\x04self\x11\x03lenw\0\x13\x04\0\"[method\
-]output-stream.write-zeroes\x01\x17\x04\05[method]output-stream.blocking-write-z\
-eroes-and-flush\x01\x17\x01@\x03\x04self\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[\
-method]output-stream.splice\x01\x18\x04\0%[method]output-stream.blocking-splice\x01\
-\x18\x03\x01\x15wasi:io/streams@0.2.0\x05\x06\x02\x03\0\x02\x08duration\x02\x03\0\
-\x04\x0cinput-stream\x02\x03\0\x04\x0doutput-stream\x01B\xc0\x01\x02\x03\x02\x01\
-\x07\x04\0\x08duration\x03\0\0\x02\x03\x02\x01\x08\x04\0\x0cinput-stream\x03\0\x02\
-\x02\x03\x02\x01\x09\x04\0\x0doutput-stream\x03\0\x04\x02\x03\x02\x01\x05\x04\0\x08\
-io-error\x03\0\x06\x02\x03\x02\x01\x02\x04\0\x08pollable\x03\0\x08\x01q\x0a\x03g\
-et\0\0\x04head\0\0\x04post\0\0\x03put\0\0\x06delete\0\0\x07connect\0\0\x07option\
-s\0\0\x05trace\0\0\x05patch\0\0\x05other\x01s\0\x04\0\x06method\x03\0\x0a\x01q\x03\
-\x04HTTP\0\0\x05HTTPS\0\0\x05other\x01s\0\x04\0\x06scheme\x03\0\x0c\x01ks\x01k{\x01\
-r\x02\x05rcode\x0e\x09info-code\x0f\x04\0\x11DNS-error-payload\x03\0\x10\x01k}\x01\
-r\x02\x08alert-id\x12\x0dalert-message\x0e\x04\0\x1aTLS-alert-received-payload\x03\
-\0\x13\x01ky\x01r\x02\x0afield-name\x0e\x0afield-size\x15\x04\0\x12field-size-pa\
-yload\x03\0\x16\x01kw\x01k\x17\x01q'\x0bDNS-timeout\0\0\x09DNS-error\x01\x11\0\x15\
-destination-not-found\0\0\x17destination-unavailable\0\0\x19destination-IP-prohi\
-bited\0\0\x19destination-IP-unroutable\0\0\x12connection-refused\0\0\x15connecti\
-on-terminated\0\0\x12connection-timeout\0\0\x17connection-read-timeout\0\0\x18co\
-nnection-write-timeout\0\0\x18connection-limit-reached\0\0\x12TLS-protocol-error\
-\0\0\x15TLS-certificate-error\0\0\x12TLS-alert-received\x01\x14\0\x13HTTP-reques\
-t-denied\0\0\x1cHTTP-request-length-required\0\0\x16HTTP-request-body-size\x01\x18\
-\0\x1bHTTP-request-method-invalid\0\0\x18HTTP-request-URI-invalid\0\0\x19HTTP-re\
-quest-URI-too-long\0\0\x20HTTP-request-header-section-size\x01\x15\0\x18HTTP-req\
-uest-header-size\x01\x19\0!HTTP-request-trailer-section-size\x01\x15\0\x19HTTP-r\
-equest-trailer-size\x01\x17\0\x18HTTP-response-incomplete\0\0!HTTP-response-head\
-er-section-size\x01\x15\0\x19HTTP-response-header-size\x01\x17\0\x17HTTP-respons\
-e-body-size\x01\x18\0\"HTTP-response-trailer-section-size\x01\x15\0\x1aHTTP-resp\
-onse-trailer-size\x01\x17\0\x1dHTTP-response-transfer-coding\x01\x0e\0\x1cHTTP-r\
-esponse-content-coding\x01\x0e\0\x15HTTP-response-timeout\0\0\x13HTTP-upgrade-fa\
-iled\0\0\x13HTTP-protocol-error\0\0\x0dloop-detected\0\0\x13configuration-error\0\
-\0\x0einternal-error\x01\x0e\0\x04\0\x0aerror-code\x03\0\x1a\x01q\x03\x0einvalid\
--syntax\0\0\x09forbidden\0\0\x09immutable\0\0\x04\0\x0cheader-error\x03\0\x1c\x01\
-s\x04\0\x09field-key\x03\0\x1e\x01p}\x04\0\x0bfield-value\x03\0\x20\x04\0\x06fie\
-lds\x03\x01\x04\0\x07headers\x03\0\"\x04\0\x08trailers\x03\0\"\x04\0\x10incoming\
--request\x03\x01\x04\0\x10outgoing-request\x03\x01\x04\0\x0frequest-options\x03\x01\
-\x04\0\x11response-outparam\x03\x01\x01{\x04\0\x0bstatus-code\x03\0)\x04\0\x11in\
-coming-response\x03\x01\x04\0\x0dincoming-body\x03\x01\x04\0\x0ffuture-trailers\x03\
-\x01\x04\0\x11outgoing-response\x03\x01\x04\0\x0doutgoing-body\x03\x01\x04\0\x18\
-future-incoming-response\x03\x01\x01i\"\x01@\0\01\x04\0\x13[constructor]fields\x01\
-2\x01o\x02\x1f!\x01p3\x01j\x011\x01\x1d\x01@\x01\x07entries4\05\x04\0\x18[static\
-]fields.from-list\x016\x01h\"\x01p!\x01@\x02\x04self7\x04name\x1f\08\x04\0\x12[m\
-ethod]fields.get\x019\x01@\x02\x04self7\x04name\x1f\0\x7f\x04\0\x12[method]field\
-s.has\x01:\x01j\0\x01\x1d\x01@\x03\x04self7\x04name\x1f\x05value8\0;\x04\0\x12[m\
-ethod]fields.set\x01<\x01@\x02\x04self7\x04name\x1f\0;\x04\0\x15[method]fields.d\
-elete\x01=\x01@\x03\x04self7\x04name\x1f\x05value!\0;\x04\0\x15[method]fields.ap\
-pend\x01>\x01@\x01\x04self7\04\x04\0\x16[method]fields.entries\x01?\x01@\x01\x04\
-self7\01\x04\0\x14[method]fields.clone\x01@\x01h%\x01@\x01\x04self\xc1\0\0\x0b\x04\
-\0\x1f[method]incoming-request.method\x01B\x01@\x01\x04self\xc1\0\0\x0e\x04\0([m\
-ethod]incoming-request.path-with-query\x01C\x01k\x0d\x01@\x01\x04self\xc1\0\0\xc4\
-\0\x04\0\x1f[method]incoming-request.scheme\x01E\x04\0\"[method]incoming-request\
-.authority\x01C\x01i#\x01@\x01\x04self\xc1\0\0\xc6\0\x04\0\x20[method]incoming-r\
-equest.headers\x01G\x01i,\x01j\x01\xc8\0\0\x01@\x01\x04self\xc1\0\0\xc9\0\x04\0\x20\
-[method]incoming-request.consume\x01J\x01i&\x01@\x01\x07headers\xc6\0\0\xcb\0\x04\
-\0\x1d[constructor]outgoing-request\x01L\x01h&\x01i/\x01j\x01\xce\0\0\x01@\x01\x04\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 11216] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd6V\x01A\x02\x01A>\x01\
+B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[meth\
+od]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollable.b\
+lock\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\x01\
+\x12wasi:io/poll@0.2.0\x05\0\x02\x03\0\0\x08pollable\x01B\x0f\x02\x03\x02\x01\x01\
+\x04\0\x08pollable\x03\0\0\x01w\x04\0\x07instant\x03\0\x02\x01w\x04\0\x08duratio\
+n\x03\0\x04\x01@\0\0\x03\x04\0\x03now\x01\x06\x01@\0\0\x05\x04\0\x0aresolution\x01\
+\x07\x01i\x01\x01@\x01\x04when\x03\0\x08\x04\0\x11subscribe-instant\x01\x09\x01@\
+\x01\x04when\x05\0\x08\x04\0\x12subscribe-duration\x01\x0a\x03\x01!wasi:clocks/m\
+onotonic-clock@0.2.0\x05\x02\x01B\x04\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04\
+self\x01\0s\x04\0\x1d[method]error.to-debug-string\x01\x02\x03\x01\x13wasi:io/er\
+ror@0.2.0\x05\x03\x02\x03\0\x02\x05error\x01B(\x02\x03\x02\x01\x04\x04\0\x05erro\
+r\x03\0\0\x02\x03\x02\x01\x01\x04\0\x08pollable\x03\0\x02\x01i\x01\x01q\x02\x15l\
+ast-operation-failed\x01\x04\0\x06closed\0\0\x04\0\x0cstream-error\x03\0\x05\x04\
+\0\x0cinput-stream\x03\x01\x04\0\x0doutput-stream\x03\x01\x01h\x07\x01p}\x01j\x01\
+\x0a\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19[method]input-stream.re\
+ad\x01\x0c\x04\0\"[method]input-stream.blocking-read\x01\x0c\x01j\x01w\x01\x06\x01\
+@\x02\x04self\x09\x03lenw\0\x0d\x04\0\x19[method]input-stream.skip\x01\x0e\x04\0\
+\"[method]input-stream.blocking-skip\x01\x0e\x01i\x03\x01@\x01\x04self\x09\0\x0f\
+\x04\0\x1e[method]input-stream.subscribe\x01\x10\x01h\x08\x01@\x01\x04self\x11\0\
+\x0d\x04\0![method]output-stream.check-write\x01\x12\x01j\0\x01\x06\x01@\x02\x04\
+self\x11\x08contents\x0a\0\x13\x04\0\x1b[method]output-stream.write\x01\x14\x04\0\
+.[method]output-stream.blocking-write-and-flush\x01\x14\x01@\x01\x04self\x11\0\x13\
+\x04\0\x1b[method]output-stream.flush\x01\x15\x04\0$[method]output-stream.blocki\
+ng-flush\x01\x15\x01@\x01\x04self\x11\0\x0f\x04\0\x1f[method]output-stream.subsc\
+ribe\x01\x16\x01@\x02\x04self\x11\x03lenw\0\x13\x04\0\"[method]output-stream.wri\
+te-zeroes\x01\x17\x04\05[method]output-stream.blocking-write-zeroes-and-flush\x01\
+\x17\x01@\x03\x04self\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[method]output-strea\
+m.splice\x01\x18\x04\0%[method]output-stream.blocking-splice\x01\x18\x03\x01\x15\
+wasi:io/streams@0.2.0\x05\x05\x02\x03\0\x01\x08duration\x02\x03\0\x03\x0cinput-s\
+tream\x02\x03\0\x03\x0doutput-stream\x01B\xc0\x01\x02\x03\x02\x01\x06\x04\0\x08d\
+uration\x03\0\0\x02\x03\x02\x01\x07\x04\0\x0cinput-stream\x03\0\x02\x02\x03\x02\x01\
+\x08\x04\0\x0doutput-stream\x03\0\x04\x02\x03\x02\x01\x04\x04\0\x08io-error\x03\0\
+\x06\x02\x03\x02\x01\x01\x04\0\x08pollable\x03\0\x08\x01q\x0a\x03get\0\0\x04head\
+\0\0\x04post\0\0\x03put\0\0\x06delete\0\0\x07connect\0\0\x07options\0\0\x05trace\
+\0\0\x05patch\0\0\x05other\x01s\0\x04\0\x06method\x03\0\x0a\x01q\x03\x04HTTP\0\0\
+\x05HTTPS\0\0\x05other\x01s\0\x04\0\x06scheme\x03\0\x0c\x01ks\x01k{\x01r\x02\x05\
+rcode\x0e\x09info-code\x0f\x04\0\x11DNS-error-payload\x03\0\x10\x01k}\x01r\x02\x08\
+alert-id\x12\x0dalert-message\x0e\x04\0\x1aTLS-alert-received-payload\x03\0\x13\x01\
+ky\x01r\x02\x0afield-name\x0e\x0afield-size\x15\x04\0\x12field-size-payload\x03\0\
+\x16\x01kw\x01k\x17\x01q'\x0bDNS-timeout\0\0\x09DNS-error\x01\x11\0\x15destinati\
+on-not-found\0\0\x17destination-unavailable\0\0\x19destination-IP-prohibited\0\0\
+\x19destination-IP-unroutable\0\0\x12connection-refused\0\0\x15connection-termin\
+ated\0\0\x12connection-timeout\0\0\x17connection-read-timeout\0\0\x18connection-\
+write-timeout\0\0\x18connection-limit-reached\0\0\x12TLS-protocol-error\0\0\x15T\
+LS-certificate-error\0\0\x12TLS-alert-received\x01\x14\0\x13HTTP-request-denied\0\
+\0\x1cHTTP-request-length-required\0\0\x16HTTP-request-body-size\x01\x18\0\x1bHT\
+TP-request-method-invalid\0\0\x18HTTP-request-URI-invalid\0\0\x19HTTP-request-UR\
+I-too-long\0\0\x20HTTP-request-header-section-size\x01\x15\0\x18HTTP-request-hea\
+der-size\x01\x19\0!HTTP-request-trailer-section-size\x01\x15\0\x19HTTP-request-t\
+railer-size\x01\x17\0\x18HTTP-response-incomplete\0\0!HTTP-response-header-secti\
+on-size\x01\x15\0\x19HTTP-response-header-size\x01\x17\0\x17HTTP-response-body-s\
+ize\x01\x18\0\"HTTP-response-trailer-section-size\x01\x15\0\x1aHTTP-response-tra\
+iler-size\x01\x17\0\x1dHTTP-response-transfer-coding\x01\x0e\0\x1cHTTP-response-\
+content-coding\x01\x0e\0\x15HTTP-response-timeout\0\0\x13HTTP-upgrade-failed\0\0\
+\x13HTTP-protocol-error\0\0\x0dloop-detected\0\0\x13configuration-error\0\0\x0ei\
+nternal-error\x01\x0e\0\x04\0\x0aerror-code\x03\0\x1a\x01q\x03\x0einvalid-syntax\
+\0\0\x09forbidden\0\0\x09immutable\0\0\x04\0\x0cheader-error\x03\0\x1c\x01s\x04\0\
+\x09field-key\x03\0\x1e\x01p}\x04\0\x0bfield-value\x03\0\x20\x04\0\x06fields\x03\
+\x01\x04\0\x07headers\x03\0\"\x04\0\x08trailers\x03\0\"\x04\0\x10incoming-reques\
+t\x03\x01\x04\0\x10outgoing-request\x03\x01\x04\0\x0frequest-options\x03\x01\x04\
+\0\x11response-outparam\x03\x01\x01{\x04\0\x0bstatus-code\x03\0)\x04\0\x11incomi\
+ng-response\x03\x01\x04\0\x0dincoming-body\x03\x01\x04\0\x0ffuture-trailers\x03\x01\
+\x04\0\x11outgoing-response\x03\x01\x04\0\x0doutgoing-body\x03\x01\x04\0\x18futu\
+re-incoming-response\x03\x01\x01i\"\x01@\0\01\x04\0\x13[constructor]fields\x012\x01\
+o\x02\x1f!\x01p3\x01j\x011\x01\x1d\x01@\x01\x07entries4\05\x04\0\x18[static]fiel\
+ds.from-list\x016\x01h\"\x01p!\x01@\x02\x04self7\x04name\x1f\08\x04\0\x12[method\
+]fields.get\x019\x01@\x02\x04self7\x04name\x1f\0\x7f\x04\0\x12[method]fields.has\
+\x01:\x01j\0\x01\x1d\x01@\x03\x04self7\x04name\x1f\x05value8\0;\x04\0\x12[method\
+]fields.set\x01<\x01@\x02\x04self7\x04name\x1f\0;\x04\0\x15[method]fields.delete\
+\x01=\x01@\x03\x04self7\x04name\x1f\x05value!\0;\x04\0\x15[method]fields.append\x01\
+>\x01@\x01\x04self7\04\x04\0\x16[method]fields.entries\x01?\x01@\x01\x04self7\01\
+\x04\0\x14[method]fields.clone\x01@\x01h%\x01@\x01\x04self\xc1\0\0\x0b\x04\0\x1f\
+[method]incoming-request.method\x01B\x01@\x01\x04self\xc1\0\0\x0e\x04\0([method]\
+incoming-request.path-with-query\x01C\x01k\x0d\x01@\x01\x04self\xc1\0\0\xc4\0\x04\
+\0\x1f[method]incoming-request.scheme\x01E\x04\0\"[method]incoming-request.autho\
+rity\x01C\x01i#\x01@\x01\x04self\xc1\0\0\xc6\0\x04\0\x20[method]incoming-request\
+.headers\x01G\x01i,\x01j\x01\xc8\0\0\x01@\x01\x04self\xc1\0\0\xc9\0\x04\0\x20[me\
+thod]incoming-request.consume\x01J\x01i&\x01@\x01\x07headers\xc6\0\0\xcb\0\x04\0\
+\x1d[constructor]outgoing-request\x01L\x01h&\x01i/\x01j\x01\xce\0\0\x01@\x01\x04\
 self\xcd\0\0\xcf\0\x04\0\x1d[method]outgoing-request.body\x01P\x01@\x01\x04self\xcd\
 \0\0\x0b\x04\0\x1f[method]outgoing-request.method\x01Q\x01j\0\0\x01@\x02\x04self\
 \xcd\0\x06method\x0b\0\xd2\0\x04\0#[method]outgoing-request.set-method\x01S\x01@\
@@ -16163,117 +15690,122 @@ trailers\xf2\0\0\x81\x01\x04\0\x1c[static]outgoing-body.finish\x01\x82\x01\x01h0
 be\x01\x84\x01\x01i+\x01j\x01\x85\x01\x01\x1b\x01j\x01\x86\x01\0\x01k\x87\x01\x01\
 @\x01\x04self\x83\x01\0\x88\x01\x04\0$[method]future-incoming-response.get\x01\x89\
 \x01\x01h\x07\x01k\x1b\x01@\x01\x03err\x8a\x01\0\x8b\x01\x04\0\x0fhttp-error-cod\
-e\x01\x8c\x01\x03\x01\x15wasi:http/types@0.2.0\x05\x0a\x01B\x15\x04\0\x0aconnect\
-ion\x03\x01\x01q\x05\x10no-such-database\0\0\x0daccess-denied\0\0\x12invalid-con\
-nection\0\0\x0ddatabase-full\0\0\x02io\x01s\0\x04\0\x05error\x03\0\x01\x01p}\x01\
-q\x05\x07integer\x01x\0\x04real\x01u\0\x04text\x01s\0\x04blob\x01\x03\0\x04null\0\
-\0\x04\0\x05value\x03\0\x04\x01p\x05\x01r\x01\x06values\x06\x04\0\x0arow-result\x03\
-\0\x07\x01ps\x01p\x08\x01r\x02\x07columns\x09\x04rows\x0a\x04\0\x0cquery-result\x03\
-\0\x0b\x01i\0\x01j\x01\x0d\x01\x02\x01@\x01\x08databases\0\x0e\x04\0\x17[static]\
-connection.open\x01\x0f\x01h\0\x01j\x01\x0c\x01\x02\x01@\x03\x04self\x10\x09stat\
-ements\x0aparameters\x06\0\x11\x04\0\x1a[method]connection.execute\x01\x12\x03\x01\
-\x19fermyon:spin/sqlite@2.0.0\x05\x0b\x02\x03\0\x05\x11outgoing-response\x03\0\x11\
-outgoing-response\x03\0\x0c\x02\x03\0\x05\x18future-incoming-response\x03\0\x18f\
-uture-incoming-response\x03\0\x0e\x01@\0\0s\x03\0\x0cget-manifest\x01\x10\x01i\x0d\
-\x01i\x0f\x01@\x01\x08response\x11\0\x12\x03\0\x11futurize-response\x01\x13\x01@\
-\x01\x0ccomponent-ids\x01\0\x04\0\x10set-component-id\x01\x14\x01B\x19\x04\0\x05\
-store\x03\x01\x01q\x04\x10store-table-full\0\0\x0dno-such-store\0\0\x0daccess-de\
-nied\0\0\x05other\x01s\0\x04\0\x05error\x03\0\x01\x01i\0\x01j\x01\x03\x01\x02\x01\
-@\x01\x05labels\0\x04\x04\0\x12[static]store.open\x01\x05\x01h\0\x01p}\x01k\x07\x01\
-j\x01\x08\x01\x02\x01@\x02\x04self\x06\x03keys\0\x09\x04\0\x11[method]store.get\x01\
-\x0a\x01j\0\x01\x02\x01@\x03\x04self\x06\x03keys\x05value\x07\0\x0b\x04\0\x11[me\
-thod]store.set\x01\x0c\x01@\x02\x04self\x06\x03keys\0\x0b\x04\0\x14[method]store\
-.delete\x01\x0d\x01j\x01\x7f\x01\x02\x01@\x02\x04self\x06\x03keys\0\x0e\x04\0\x14\
-[method]store.exists\x01\x0f\x01ps\x01j\x01\x10\x01\x02\x01@\x01\x04self\x06\0\x11\
-\x04\0\x16[method]store.get-keys\x01\x12\x04\x01\x1cfermyon:spin/key-value@2.0.0\
-\x05\x15\x01B\x1a\x01s\x04\0\x11inferencing-model\x03\0\0\x01r\x06\x0amax-tokens\
-y\x0erepeat-penaltyv!repeat-penalty-last-n-token-county\x0btemperaturev\x05top-k\
-y\x05top-pv\x04\0\x12inferencing-params\x03\0\x02\x01q\x03\x13model-not-supporte\
-d\0\0\x0druntime-error\x01s\0\x0dinvalid-input\x01s\0\x04\0\x05error\x03\0\x04\x01\
-r\x02\x12prompt-token-county\x15generated-token-county\x04\0\x11inferencing-usag\
-e\x03\0\x06\x01r\x02\x04texts\x05usage\x07\x04\0\x12inferencing-result\x03\0\x08\
-\x01s\x04\0\x0fembedding-model\x03\0\x0a\x01r\x01\x12prompt-token-county\x04\0\x10\
-embeddings-usage\x03\0\x0c\x01pv\x01p\x0e\x01r\x02\x0aembeddings\x0f\x05usage\x0d\
-\x04\0\x11embeddings-result\x03\0\x10\x01k\x03\x01j\x01\x09\x01\x05\x01@\x03\x05\
-model\x01\x06prompts\x06params\x12\0\x13\x04\0\x05infer\x01\x14\x01ps\x01j\x01\x11\
-\x01\x05\x01@\x02\x05model\x0b\x04text\x15\0\x16\x04\0\x13generate-embeddings\x01\
-\x17\x04\x01\x16fermyon:spin/llm@2.0.0\x05\x16\x01B)\x01q\x04\x0finvalid-address\
-\0\0\x14too-many-connections\0\0\x0atype-error\0\0\x05other\x01s\0\x04\0\x05erro\
-r\x03\0\0\x04\0\x0aconnection\x03\x01\x01p}\x04\0\x07payload\x03\0\x03\x01q\x02\x05\
-int64\x01x\0\x06binary\x01\x04\0\x04\0\x0fredis-parameter\x03\0\x05\x01q\x04\x03\
-nil\0\0\x06status\x01s\0\x05int64\x01x\0\x06binary\x01\x04\0\x04\0\x0credis-resu\
-lt\x03\0\x07\x01i\x02\x01j\x01\x09\x01\x01\x01@\x01\x07addresss\0\x0a\x04\0\x17[\
-static]connection.open\x01\x0b\x01h\x02\x01j\0\x01\x01\x01@\x03\x04self\x0c\x07c\
-hannels\x07payload\x04\0\x0d\x04\0\x1a[method]connection.publish\x01\x0e\x01k\x04\
-\x01j\x01\x0f\x01\x01\x01@\x02\x04self\x0c\x03keys\0\x10\x04\0\x16[method]connec\
-tion.get\x01\x11\x01@\x03\x04self\x0c\x03keys\x05value\x04\0\x0d\x04\0\x16[metho\
-d]connection.set\x01\x12\x01j\x01x\x01\x01\x01@\x02\x04self\x0c\x03keys\0\x13\x04\
-\0\x17[method]connection.incr\x01\x14\x01ps\x01j\x01y\x01\x01\x01@\x02\x04self\x0c\
-\x04keys\x15\0\x16\x04\0\x16[method]connection.del\x01\x17\x01@\x03\x04self\x0c\x03\
-keys\x06values\x15\0\x16\x04\0\x17[method]connection.sadd\x01\x18\x01j\x01\x15\x01\
-\x01\x01@\x02\x04self\x0c\x03keys\0\x19\x04\0\x1b[method]connection.smembers\x01\
-\x1a\x04\0\x17[method]connection.srem\x01\x18\x01p\x06\x01p\x08\x01j\x01\x1c\x01\
-\x01\x01@\x03\x04self\x0c\x07commands\x09arguments\x1b\0\x1d\x04\0\x1a[method]co\
-nnection.execute\x01\x1e\x04\x01\x18fermyon:spin/redis@2.0.0\x05\x17\x02\x03\0\0\
-\x0fparameter-value\x02\x03\0\0\x07row-set\x02\x03\0\0\x05error\x01B\x13\x02\x03\
-\x02\x01\x18\x04\0\x0fparameter-value\x03\0\0\x02\x03\x02\x01\x19\x04\0\x07row-s\
-et\x03\0\x02\x02\x03\x02\x01\x1a\x04\0\x05error\x03\0\x04\x04\0\x0aconnection\x03\
-\x01\x01i\x06\x01j\x01\x07\x01\x05\x01@\x01\x07addresss\0\x08\x04\0\x17[static]c\
-onnection.open\x01\x09\x01h\x06\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x04self\x0a\
-\x09statements\x06params\x0b\0\x0c\x04\0\x18[method]connection.query\x01\x0d\x01\
-j\x01w\x01\x05\x01@\x03\x04self\x0a\x09statements\x06params\x0b\0\x0e\x04\0\x1a[\
-method]connection.execute\x01\x0f\x04\x01\x1bfermyon:spin/postgres@2.0.0\x05\x1b\
-\x01B\x0f\x01q\x04\x0finvalid-address\0\0\x14too-many-connections\0\0\x11connect\
-ion-failed\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x01m\x03\x0cat-most-onc\
-e\x0dat-least-once\x0cexactly-once\x04\0\x03qos\x03\0\x02\x04\0\x0aconnection\x03\
-\x01\x01p}\x04\0\x07payload\x03\0\x05\x01i\x04\x01j\x01\x07\x01\x01\x01@\x04\x07\
-addresss\x08usernames\x08passwords\x1bkeep-alive-interval-in-secsw\0\x08\x04\0\x17\
-[static]connection.open\x01\x09\x01h\x04\x01j\0\x01\x01\x01@\x04\x04self\x0a\x05\
-topics\x07payload\x06\x03qos\x03\0\x0b\x04\0\x1a[method]connection.publish\x01\x0c\
-\x04\x01\x17fermyon:spin/mqtt@2.0.0\x05\x1c\x01B\x13\x02\x03\x02\x01\x18\x04\0\x0f\
-parameter-value\x03\0\0\x02\x03\x02\x01\x19\x04\0\x07row-set\x03\0\x02\x02\x03\x02\
-\x01\x1a\x04\0\x05error\x03\0\x04\x04\0\x0aconnection\x03\x01\x01i\x06\x01j\x01\x07\
-\x01\x05\x01@\x01\x07addresss\0\x08\x04\0\x17[static]connection.open\x01\x09\x01\
-h\x06\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x04self\x0a\x09statements\x06params\
-\x0b\0\x0c\x04\0\x18[method]connection.query\x01\x0d\x01j\0\x01\x05\x01@\x03\x04\
-self\x0a\x09statements\x06params\x0b\0\x0e\x04\0\x1a[method]connection.execute\x01\
-\x0f\x04\x01\x18fermyon:spin/mysql@2.0.0\x05\x1d\x01B\x15\x04\0\x0aconnection\x03\
-\x01\x01q\x05\x10no-such-database\0\0\x0daccess-denied\0\0\x12invalid-connection\
-\0\0\x0ddatabase-full\0\0\x02io\x01s\0\x04\0\x05error\x03\0\x01\x01p}\x01q\x05\x07\
-integer\x01x\0\x04real\x01u\0\x04text\x01s\0\x04blob\x01\x03\0\x04null\0\0\x04\0\
-\x05value\x03\0\x04\x01p\x05\x01r\x01\x06values\x06\x04\0\x0arow-result\x03\0\x07\
-\x01ps\x01p\x08\x01r\x02\x07columns\x09\x04rows\x0a\x04\0\x0cquery-result\x03\0\x0b\
-\x01i\0\x01j\x01\x0d\x01\x02\x01@\x01\x08databases\0\x0e\x04\0\x17[static]connec\
-tion.open\x01\x0f\x01h\0\x01j\x01\x0c\x01\x02\x01@\x03\x04self\x10\x09statements\
-\x0aparameters\x06\0\x11\x04\0\x1a[method]connection.execute\x01\x12\x04\x01\x19\
-fermyon:spin/sqlite@2.0.0\x05\x1e\x01B\x05\x01q\x04\x0cinvalid-name\x01s\0\x09un\
-defined\x01s\0\x08provider\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x01j\x01\
-s\x01\x01\x01@\x01\x04names\0\x02\x04\0\x03get\x01\x03\x04\x01\x1cfermyon:spin/v\
-ariables@2.0.0\x05\x1f\x02\x03\0\x05\x10outgoing-request\x02\x03\0\x05\x0freques\
-t-options\x02\x03\0\x05\x0aerror-code\x01B\x0f\x02\x03\x02\x01\x20\x04\0\x10outg\
-oing-request\x03\0\0\x02\x03\x02\x01!\x04\0\x0frequest-options\x03\0\x02\x02\x03\
-\x02\x01\x0e\x04\0\x18future-incoming-response\x03\0\x04\x02\x03\x02\x01\"\x04\0\
-\x0aerror-code\x03\0\x06\x01i\x01\x01i\x03\x01k\x09\x01i\x05\x01j\x01\x0b\x01\x07\
-\x01@\x02\x07request\x08\x07options\x0a\0\x0c\x04\0\x06handle\x01\x0d\x04\x01\x20\
-wasi:http/outgoing-handler@0.2.0\x05#\x01B\x05\x02\x03\x02\x01\x0c\x04\0\x11outg\
-oing-response\x03\0\0\x01i\x01\x01@\x02\x03urls\x08response\x02\x01\0\x04\0\x0cs\
-et-response\x01\x03\x04\x01#fermyon:spin-test-virt/http-handler\x05$\x01B\x19\x04\
-\0\x05store\x03\x01\x01p}\x01o\x02s\x01\x01q\x05\x03get\x01s\0\x03set\x01\x02\0\x06\
-delete\x01s\0\x06exists\x01s\0\x08get-keys\0\0\x04\0\x04call\x03\0\x03\x01i\0\x01\
-@\x01\x05labels\0\x05\x04\0\x12[static]store.open\x01\x06\x01h\0\x01@\x01\x04sel\
-f\x07\0s\x04\0\x13[method]store.label\x01\x08\x01k\x01\x01@\x02\x04self\x07\x03k\
-eys\0\x09\x04\0\x11[method]store.get\x01\x0a\x01@\x03\x04self\x07\x03keys\x05val\
-ue\x01\x01\0\x04\0\x11[method]store.set\x01\x0b\x01@\x02\x04self\x07\x03keys\x01\
-\0\x04\0\x14[method]store.delete\x01\x0c\x01p\x04\x01o\x02s\x0d\x01p\x0e\x01@\0\0\
-\x0f\x04\0\x05calls\x01\x10\x01@\0\x01\0\x04\0\x0breset-calls\x01\x11\x04\x01\x20\
-fermyon:spin-test-virt/key-value\x05%\x02\x03\0\x0d\x05value\x02\x03\0\x0d\x0cqu\
-ery-result\x02\x03\0\x0d\x05error\x01B\x0a\x02\x03\x02\x01&\x04\0\x05value\x03\0\
-\0\x02\x03\x02\x01'\x04\0\x0cquery-result\x03\0\x02\x02\x03\x02\x01(\x04\0\x05er\
-ror\x03\0\x04\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x05querys\x06params\x06\x08\
-response\x07\x01\0\x04\0\x0cset-response\x01\x08\x04\x01\x1dfermyon:spin-test-vi\
-rt/sqlite\x05)\x04\x01\x1bfermyon:spin-test-virt/plug\x04\0\x0b\x0a\x01\0\x04plu\
-g\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.202.0\x10\
-wit-bindgen-rust\x060.24.0";
+e\x01\x8c\x01\x03\x01\x15wasi:http/types@0.2.0\x05\x09\x01B\x11\x01q\x05\x11conn\
+ection-failed\x01s\0\x0dbad-parameter\x01s\0\x0cquery-failed\x01s\0\x17value-con\
+version-failed\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x01m\x0e\x07boolean\
+\x04int8\x05int16\x05int32\x05int64\x05uint8\x06uint16\x06uint32\x06uint64\x0afl\
+oating32\x0afloating64\x03str\x06binary\x05other\x04\0\x0cdb-data-type\x03\0\x02\
+\x01p}\x01q\x0f\x07boolean\x01\x7f\0\x04int8\x01~\0\x05int16\x01|\0\x05int32\x01\
+z\0\x05int64\x01x\0\x05uint8\x01}\0\x06uint16\x01{\0\x06uint32\x01y\0\x06uint64\x01\
+w\0\x0afloating32\x01v\0\x0afloating64\x01u\0\x03str\x01s\0\x06binary\x01\x04\0\x07\
+db-null\0\0\x0bunsupported\0\0\x04\0\x08db-value\x03\0\x05\x01q\x0e\x07boolean\x01\
+\x7f\0\x04int8\x01~\0\x05int16\x01|\0\x05int32\x01z\0\x05int64\x01x\0\x05uint8\x01\
+}\0\x06uint16\x01{\0\x06uint32\x01y\0\x06uint64\x01w\0\x0afloating32\x01v\0\x0af\
+loating64\x01u\0\x03str\x01s\0\x06binary\x01\x04\0\x07db-null\0\0\x04\0\x0fparam\
+eter-value\x03\0\x07\x01r\x02\x04names\x09data-type\x03\x04\0\x06column\x03\0\x09\
+\x01p\x06\x04\0\x03row\x03\0\x0b\x01p\x0a\x01p\x0c\x01r\x02\x07columns\x0d\x04ro\
+ws\x0e\x04\0\x07row-set\x03\0\x0f\x03\x01\x1efermyon:spin/rdbms-types@2.0.0\x05\x0a\
+\x02\x03\0\x04\x11outgoing-response\x03\0\x11outgoing-response\x03\0\x0b\x02\x03\
+\0\x04\x18future-incoming-response\x03\0\x18future-incoming-response\x03\0\x0d\x01\
+@\0\0s\x03\0\x0cget-manifest\x01\x0f\x01i\x0c\x01i\x0e\x01@\x01\x08response\x10\0\
+\x11\x03\0\x11futurize-response\x01\x12\x01@\x01\x0ccomponent-ids\x01\0\x04\0\x10\
+set-component-id\x01\x13\x01B\x19\x04\0\x05store\x03\x01\x01q\x04\x10store-table\
+-full\0\0\x0dno-such-store\0\0\x0daccess-denied\0\0\x05other\x01s\0\x04\0\x05err\
+or\x03\0\x01\x01i\0\x01j\x01\x03\x01\x02\x01@\x01\x05labels\0\x04\x04\0\x12[stat\
+ic]store.open\x01\x05\x01h\0\x01p}\x01k\x07\x01j\x01\x08\x01\x02\x01@\x02\x04sel\
+f\x06\x03keys\0\x09\x04\0\x11[method]store.get\x01\x0a\x01j\0\x01\x02\x01@\x03\x04\
+self\x06\x03keys\x05value\x07\0\x0b\x04\0\x11[method]store.set\x01\x0c\x01@\x02\x04\
+self\x06\x03keys\0\x0b\x04\0\x14[method]store.delete\x01\x0d\x01j\x01\x7f\x01\x02\
+\x01@\x02\x04self\x06\x03keys\0\x0e\x04\0\x14[method]store.exists\x01\x0f\x01ps\x01\
+j\x01\x10\x01\x02\x01@\x01\x04self\x06\0\x11\x04\0\x16[method]store.get-keys\x01\
+\x12\x04\x01\x1cfermyon:spin/key-value@2.0.0\x05\x14\x01B\x1a\x01s\x04\0\x11infe\
+rencing-model\x03\0\0\x01r\x06\x0amax-tokensy\x0erepeat-penaltyv!repeat-penalty-\
+last-n-token-county\x0btemperaturev\x05top-ky\x05top-pv\x04\0\x12inferencing-par\
+ams\x03\0\x02\x01q\x03\x13model-not-supported\0\0\x0druntime-error\x01s\0\x0dinv\
+alid-input\x01s\0\x04\0\x05error\x03\0\x04\x01r\x02\x12prompt-token-county\x15ge\
+nerated-token-county\x04\0\x11inferencing-usage\x03\0\x06\x01r\x02\x04texts\x05u\
+sage\x07\x04\0\x12inferencing-result\x03\0\x08\x01s\x04\0\x0fembedding-model\x03\
+\0\x0a\x01r\x01\x12prompt-token-county\x04\0\x10embeddings-usage\x03\0\x0c\x01pv\
+\x01p\x0e\x01r\x02\x0aembeddings\x0f\x05usage\x0d\x04\0\x11embeddings-result\x03\
+\0\x10\x01k\x03\x01j\x01\x09\x01\x05\x01@\x03\x05model\x01\x06prompts\x06params\x12\
+\0\x13\x04\0\x05infer\x01\x14\x01ps\x01j\x01\x11\x01\x05\x01@\x02\x05model\x0b\x04\
+text\x15\0\x16\x04\0\x13generate-embeddings\x01\x17\x04\x01\x16fermyon:spin/llm@\
+2.0.0\x05\x15\x01B)\x01q\x04\x0finvalid-address\0\0\x14too-many-connections\0\0\x0a\
+type-error\0\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x04\0\x0aconnection\x03\x01\
+\x01p}\x04\0\x07payload\x03\0\x03\x01q\x02\x05int64\x01x\0\x06binary\x01\x04\0\x04\
+\0\x0fredis-parameter\x03\0\x05\x01q\x04\x03nil\0\0\x06status\x01s\0\x05int64\x01\
+x\0\x06binary\x01\x04\0\x04\0\x0credis-result\x03\0\x07\x01i\x02\x01j\x01\x09\x01\
+\x01\x01@\x01\x07addresss\0\x0a\x04\0\x17[static]connection.open\x01\x0b\x01h\x02\
+\x01j\0\x01\x01\x01@\x03\x04self\x0c\x07channels\x07payload\x04\0\x0d\x04\0\x1a[\
+method]connection.publish\x01\x0e\x01k\x04\x01j\x01\x0f\x01\x01\x01@\x02\x04self\
+\x0c\x03keys\0\x10\x04\0\x16[method]connection.get\x01\x11\x01@\x03\x04self\x0c\x03\
+keys\x05value\x04\0\x0d\x04\0\x16[method]connection.set\x01\x12\x01j\x01x\x01\x01\
+\x01@\x02\x04self\x0c\x03keys\0\x13\x04\0\x17[method]connection.incr\x01\x14\x01\
+ps\x01j\x01y\x01\x01\x01@\x02\x04self\x0c\x04keys\x15\0\x16\x04\0\x16[method]con\
+nection.del\x01\x17\x01@\x03\x04self\x0c\x03keys\x06values\x15\0\x16\x04\0\x17[m\
+ethod]connection.sadd\x01\x18\x01j\x01\x15\x01\x01\x01@\x02\x04self\x0c\x03keys\0\
+\x19\x04\0\x1b[method]connection.smembers\x01\x1a\x04\0\x17[method]connection.sr\
+em\x01\x18\x01p\x06\x01p\x08\x01j\x01\x1c\x01\x01\x01@\x03\x04self\x0c\x07comman\
+ds\x09arguments\x1b\0\x1d\x04\0\x1a[method]connection.execute\x01\x1e\x04\x01\x18\
+fermyon:spin/redis@2.0.0\x05\x16\x02\x03\0\x05\x0fparameter-value\x02\x03\0\x05\x07\
+row-set\x02\x03\0\x05\x05error\x01B\x13\x02\x03\x02\x01\x17\x04\0\x0fparameter-v\
+alue\x03\0\0\x02\x03\x02\x01\x18\x04\0\x07row-set\x03\0\x02\x02\x03\x02\x01\x19\x04\
+\0\x05error\x03\0\x04\x04\0\x0aconnection\x03\x01\x01i\x06\x01j\x01\x07\x01\x05\x01\
+@\x01\x07addresss\0\x08\x04\0\x17[static]connection.open\x01\x09\x01h\x06\x01p\x01\
+\x01j\x01\x03\x01\x05\x01@\x03\x04self\x0a\x09statements\x06params\x0b\0\x0c\x04\
+\0\x18[method]connection.query\x01\x0d\x01j\x01w\x01\x05\x01@\x03\x04self\x0a\x09\
+statements\x06params\x0b\0\x0e\x04\0\x1a[method]connection.execute\x01\x0f\x04\x01\
+\x1bfermyon:spin/postgres@2.0.0\x05\x1a\x01B\x0f\x01q\x04\x0finvalid-address\0\0\
+\x14too-many-connections\0\0\x11connection-failed\x01s\0\x05other\x01s\0\x04\0\x05\
+error\x03\0\0\x01m\x03\x0cat-most-once\x0dat-least-once\x0cexactly-once\x04\0\x03\
+qos\x03\0\x02\x04\0\x0aconnection\x03\x01\x01p}\x04\0\x07payload\x03\0\x05\x01i\x04\
+\x01j\x01\x07\x01\x01\x01@\x04\x07addresss\x08usernames\x08passwords\x1bkeep-ali\
+ve-interval-in-secsw\0\x08\x04\0\x17[static]connection.open\x01\x09\x01h\x04\x01\
+j\0\x01\x01\x01@\x04\x04self\x0a\x05topics\x07payload\x06\x03qos\x03\0\x0b\x04\0\
+\x1a[method]connection.publish\x01\x0c\x04\x01\x17fermyon:spin/mqtt@2.0.0\x05\x1b\
+\x01B\x13\x02\x03\x02\x01\x17\x04\0\x0fparameter-value\x03\0\0\x02\x03\x02\x01\x18\
+\x04\0\x07row-set\x03\0\x02\x02\x03\x02\x01\x19\x04\0\x05error\x03\0\x04\x04\0\x0a\
+connection\x03\x01\x01i\x06\x01j\x01\x07\x01\x05\x01@\x01\x07addresss\0\x08\x04\0\
+\x17[static]connection.open\x01\x09\x01h\x06\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\
+\x04self\x0a\x09statements\x06params\x0b\0\x0c\x04\0\x18[method]connection.query\
+\x01\x0d\x01j\0\x01\x05\x01@\x03\x04self\x0a\x09statements\x06params\x0b\0\x0e\x04\
+\0\x1a[method]connection.execute\x01\x0f\x04\x01\x18fermyon:spin/mysql@2.0.0\x05\
+\x1c\x01B\x15\x04\0\x0aconnection\x03\x01\x01q\x05\x10no-such-database\0\0\x0dac\
+cess-denied\0\0\x12invalid-connection\0\0\x0ddatabase-full\0\0\x02io\x01s\0\x04\0\
+\x05error\x03\0\x01\x01p}\x01q\x05\x07integer\x01x\0\x04real\x01u\0\x04text\x01s\
+\0\x04blob\x01\x03\0\x04null\0\0\x04\0\x05value\x03\0\x04\x01p\x05\x01r\x01\x06v\
+alues\x06\x04\0\x0arow-result\x03\0\x07\x01ps\x01p\x08\x01r\x02\x07columns\x09\x04\
+rows\x0a\x04\0\x0cquery-result\x03\0\x0b\x01i\0\x01j\x01\x0d\x01\x02\x01@\x01\x08\
+databases\0\x0e\x04\0\x17[static]connection.open\x01\x0f\x01h\0\x01j\x01\x0c\x01\
+\x02\x01@\x03\x04self\x10\x09statements\x0aparameters\x06\0\x11\x04\0\x1a[method\
+]connection.execute\x01\x12\x04\x01\x19fermyon:spin/sqlite@2.0.0\x05\x1d\x01B\x05\
+\x01q\x04\x0cinvalid-name\x01s\0\x09undefined\x01s\0\x08provider\x01s\0\x05other\
+\x01s\0\x04\0\x05error\x03\0\0\x01j\x01s\x01\x01\x01@\x01\x04names\0\x02\x04\0\x03\
+get\x01\x03\x04\x01\x1cfermyon:spin/variables@2.0.0\x05\x1e\x02\x03\0\x04\x10out\
+going-request\x02\x03\0\x04\x0frequest-options\x02\x03\0\x04\x0aerror-code\x01B\x0f\
+\x02\x03\x02\x01\x1f\x04\0\x10outgoing-request\x03\0\0\x02\x03\x02\x01\x20\x04\0\
+\x0frequest-options\x03\0\x02\x02\x03\x02\x01\x0d\x04\0\x18future-incoming-respo\
+nse\x03\0\x04\x02\x03\x02\x01!\x04\0\x0aerror-code\x03\0\x06\x01i\x01\x01i\x03\x01\
+k\x09\x01i\x05\x01j\x01\x0b\x01\x07\x01@\x02\x07request\x08\x07options\x0a\0\x0c\
+\x04\0\x06handle\x01\x0d\x04\x01\x20wasi:http/outgoing-handler@0.2.0\x05\"\x01B\x05\
+\x02\x03\x02\x01\x0b\x04\0\x11outgoing-response\x03\0\0\x01i\x01\x01@\x02\x03url\
+s\x08response\x02\x01\0\x04\0\x0cset-response\x01\x03\x04\x01#fermyon:spin-test-\
+virt/http-handler\x05#\x01B\x19\x04\0\x05store\x03\x01\x01p}\x01o\x02s\x01\x01q\x05\
+\x03get\x01s\0\x03set\x01\x02\0\x06delete\x01s\0\x06exists\x01s\0\x08get-keys\0\0\
+\x04\0\x04call\x03\0\x03\x01i\0\x01@\x01\x05labels\0\x05\x04\0\x12[static]store.\
+open\x01\x06\x01h\0\x01@\x01\x04self\x07\0s\x04\0\x13[method]store.label\x01\x08\
+\x01k\x01\x01@\x02\x04self\x07\x03keys\0\x09\x04\0\x11[method]store.get\x01\x0a\x01\
+@\x03\x04self\x07\x03keys\x05value\x01\x01\0\x04\0\x11[method]store.set\x01\x0b\x01\
+@\x02\x04self\x07\x03keys\x01\0\x04\0\x14[method]store.delete\x01\x0c\x01p\x04\x01\
+o\x02s\x0d\x01p\x0e\x01@\0\0\x0f\x04\0\x05calls\x01\x10\x01@\0\x01\0\x04\0\x0bre\
+set-calls\x01\x11\x04\x01\x20fermyon:spin-test-virt/key-value\x05$\x02\x03\0\x0c\
+\x05value\x02\x03\0\x0c\x0cquery-result\x02\x03\0\x0c\x05error\x01B\x0a\x02\x03\x02\
+\x01%\x04\0\x05value\x03\0\0\x02\x03\x02\x01&\x04\0\x0cquery-result\x03\0\x02\x02\
+\x03\x02\x01'\x04\0\x05error\x03\0\x04\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x05\
+querys\x06params\x06\x08response\x07\x01\0\x04\0\x0cset-response\x01\x08\x04\x01\
+\x1dfermyon:spin-test-virt/sqlite\x05(\x04\x01\x1afermyon:spin-test-virt/env\x04\
+\0\x0b\x09\x01\0\x03env\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-c\
+omponent\x070.202.0\x10wit-bindgen-rust\x060.24.0";
 
 #[inline(never)]
 #[doc(hidden)]
