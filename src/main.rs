@@ -2,14 +2,10 @@ use anyhow::{bail, Context};
 use clap::Parser;
 use owo_colors::OwoColorize as _;
 use spin_test::{Component, TestTarget};
-use std::path::PathBuf;
 
 #[derive(clap::Parser)]
 #[command(version, about, long_about = None)]
-struct Cli {
-    /// Path to test wasm
-    test_path: PathBuf,
-}
+struct Cli {}
 
 fn main() {
     env_logger::init();
@@ -26,8 +22,7 @@ fn main() {
 }
 
 fn _main() -> anyhow::Result<()> {
-    let cli = Cli::parse();
-    let test_path = cli.test_path;
+    let _ = Cli::parse();
     let manifest_path =
         spin_common::paths::resolve_manifest_file_path(spin_common::paths::DEFAULT_MANIFEST_FILE)
             .context("failed to find spin.toml manifest file")?;
@@ -46,19 +41,38 @@ fn _main() -> anyhow::Result<()> {
     if manifest.components.len() > 1 {
         bail!("Spin applications with more than one component are not yet supported by `spin-test`")
     }
-    let app_path = match &manifest
+    let component = manifest
         .components
         .values()
         .next()
-        .context("spin.toml did not contain any components")?
-        .source
-    {
+        .context("spin.toml did not contain any components")?;
+    let app_path = match &component.source {
         spin_manifest::schema::v2::ComponentSource::Local(path) => path,
         spin_manifest::schema::v2::ComponentSource::Remote { .. } => {
             bail!("components with remote sources are not yet supported by `spin-test`")
         }
     };
+    let spin_test_config = component
+        .tool
+        .get("spin-test")
+        .context("component did not have a `spin-test` tool configuration")?;
 
+    if let Some(build) = spin_test_config.get("build").and_then(|b| b.as_str()) {
+        let dir = spin_test_config.get("dir").and_then(|d| d.as_str());
+        let mut cmd = std::process::Command::new("/bin/sh");
+        if let Some(dir) = dir {
+            cmd.current_dir(dir);
+        }
+        cmd.args(&["-c", build])
+            .status()
+            .context("failed to build component")?;
+    }
+    let test_source = spin_test_config
+        .get("source")
+        .context("component did not have a `spin-test.source` configuration")?
+        .as_str()
+        .context("component `spin-test.source` was not a string")?;
+    let test_path = std::path::Path::new(test_source);
     let test_name = test_path
         .file_name()
         .and_then(|n| n.to_str())
@@ -66,7 +80,7 @@ fn _main() -> anyhow::Result<()> {
 
     let (encoded, test_target) = spin_test::encode_composition(
         Component::from_file(app_path.into())?,
-        Component::from_file(test_path.clone())?,
+        Component::from_file(test_path.to_owned())?,
     )
     .context("failed to compose Spin app, test, and virtualized Spin environment")?;
 
