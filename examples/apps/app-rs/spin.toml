@@ -23,3 +23,7 @@ command = "cargo build --target wasm32-wasi --release"
 watch = ["src/**/*.rs", "Cargo.toml"]
 [component.my-app.variables]
 cache_name = "cache"
+[component.my-app.tool.spin-test]
+source = "../../test-rs/target/wasm32-wasi/release/wasm_test.wasm"
+build = "cargo component build --release --target-dir=target"
+dir = "../../test-rs"
