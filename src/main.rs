@@ -6,16 +6,25 @@ use owo_colors::OwoColorize as _;
 use spin_test::{Component, TestTarget};
 
 #[derive(clap::Parser)]
-#[command(version, about, long_about = None)]
+#[command(version, about)]
+/// Run tests against a Spin application.
+///
+/// By default `spin-test` will invoke the `run` subcommand.
 struct Cli {
     #[clap(subcommand)]
-    subcommand: Subcommand,
+    subcommand: Option<Subcommand>,
 }
 
 #[derive(clap::Parser)]
 enum Subcommand {
     /// Run a test suite against a Spin application
     Run(Run),
+}
+
+impl Default for Subcommand {
+    fn default() -> Self {
+        Self::Run(Run::parse())
+    }
 }
 
 fn main() {
@@ -33,7 +42,7 @@ fn main() {
 }
 
 fn _main() -> anyhow::Result<()> {
-    match Cli::parse().subcommand {
+    match Cli::parse().subcommand.unwrap_or_default() {
         Subcommand::Run(r) => r.exec(),
     }
 }
