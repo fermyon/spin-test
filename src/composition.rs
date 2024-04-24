@@ -1,6 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 /// A composition of components
+#[derive(Default)]
 pub struct Composition {
     graph: Rc<RefCell<wac_graph::CompositionGraph>>,
 }
@@ -8,9 +9,7 @@ pub struct Composition {
 impl Composition {
     /// Create a new composition
     pub fn new() -> Self {
-        Self {
-            graph: Rc::new(RefCell::new(wac_graph::CompositionGraph::new())),
-        }
+        Self::default()
     }
 
     /// Instantiate a component in the composition

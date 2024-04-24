@@ -17,9 +17,9 @@ async fn handle_example(req: Request) -> anyhow::Result<impl IntoResponse> {
     let user: User = match cache {
         Some(hit) => serde_json::from_slice(&hit)?,
         None => {
-            let req = Request::get(&format!("https://my.api.com?user_id={}", query.user_id));
+            let req = Request::get(format!("https://my.api.com?user_id={}", query.user_id));
             let response: Response = send(req).await?;
-            let user = serde_json::from_slice(&response.body())?;
+            let user = serde_json::from_slice(response.body())?;
             store.set(&query.user_id.to_string(), &serde_json::to_vec(&user)?)?;
             user
         }
