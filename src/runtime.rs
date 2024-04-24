@@ -105,6 +105,7 @@ impl Data {
         let ctx = wasmtime_wasi::WasiCtxBuilder::new()
             .inherit_stdout()
             .inherit_stderr()
+            .inherit_env()
             .build();
         Self {
             table,

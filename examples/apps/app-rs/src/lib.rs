@@ -4,6 +4,7 @@ use spin_sdk::{http_component, key_value, redis, variables};
 /// A simple Spin HTTP component.
 #[http_component]
 async fn handle_example(req: Request) -> anyhow::Result<impl IntoResponse> {
+    println!("IN APP: ENV_VAR={:?}", std::env::var("ENV_VAR"));
     let redis = redis::Connection::open("redis://redis:6379")?;
     redis.set("key", &"value".to_owned().into_bytes())?;
     println!("Redis Value: {:?}", redis.get("key")?);
