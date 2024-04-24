@@ -33,7 +33,7 @@ jobs:
               arch: "amd64",
               wasiSDK: "linux",
               extension: "",
-              buildArgs: "--features openssl/vendored",
+              buildArgs: "",
               target: "",
               targetDir: "target/release",
             }
@@ -42,7 +42,7 @@ jobs:
             arch: "aarch64",
             wasiSDK: "linux",
             extension: "",
-            buildArgs: "--features openssl/vendored --target aarch64-unknown-linux-gnu",
+            buildArgs: "--target aarch64-unknown-linux-gnu",
             target: "aarch64-unknown-linux-gnu",
             targetDir: "target/aarch64-unknown-linux-gnu/release",
           }
@@ -78,7 +78,7 @@ jobs:
       - name: Install Rust toolchain
         shell: bash
         run: |
-          rustup toolchain install ${{ env.RUST_VERSION }}
+          rustup toolchain install ${{ env.RUST_VERSION }} --component rustfmt
           rustup default ${{ env.RUST_VERSION }}
 
       - name: Install target
