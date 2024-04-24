@@ -1,11 +1,31 @@
+use std::path::PathBuf;
+
 use anyhow::{bail, Context};
 use clap::Parser;
 use owo_colors::OwoColorize as _;
 use spin_test::{Component, TestTarget};
 
 #[derive(clap::Parser)]
-#[command(version, about, long_about = None)]
-struct Cli {}
+#[command(version, about)]
+/// Run tests against a Spin application.
+///
+/// By default `spin-test` will invoke the `run` subcommand.
+struct Cli {
+    #[clap(subcommand)]
+    subcommand: Option<Subcommand>,
+}
+
+#[derive(clap::Parser)]
+enum Subcommand {
+    /// Run a test suite against a Spin application
+    Run(Run),
+}
+
+impl Default for Subcommand {
+    fn default() -> Self {
+        Self::Run(Run::parse())
+    }
+}
 
 fn main() {
     env_logger::init();
@@ -22,72 +42,93 @@ fn main() {
 }
 
 fn _main() -> anyhow::Result<()> {
-    let _ = Cli::parse();
-    let manifest_path =
-        spin_common::paths::resolve_manifest_file_path(spin_common::paths::DEFAULT_MANIFEST_FILE)
+    match Cli::parse().subcommand.unwrap_or_default() {
+        Subcommand::Run(r) => r.exec(),
+    }
+}
+
+#[derive(clap::Parser)]
+struct Run {
+    /// The manifest (spin.toml) file for the application under test.
+    ///
+    /// This may be a manifest file or a directory containing a spin.toml file.
+    #[clap(
+        name = "APP_MANIFEST_FILE",
+        short = 'f',
+        long = "from",
+        alias = "file",
+        default_value = spin_common::paths::DEFAULT_MANIFEST_FILE,
+    )]
+    pub app_source: PathBuf,
+}
+
+impl Run {
+    fn exec(self) -> anyhow::Result<()> {
+        let manifest_path = spin_common::paths::resolve_manifest_file_path(self.app_source)
             .context("failed to find spin.toml manifest file")?;
-    let raw_manifest = std::fs::read_to_string(&manifest_path).with_context(|| {
-        format!(
-            "failed to read spin.toml manifest at {}",
-            manifest_path.display()
-        )
-    })?;
-    let manifest = spin_manifest::manifest_from_str(&raw_manifest).with_context(|| {
-        format!(
-            "failed to deserialize spin.toml manifest at {}",
-            manifest_path.display()
-        )
-    })?;
-    if manifest.components.len() > 1 {
-        bail!("Spin applications with more than one component are not yet supported by `spin-test`")
-    }
-    let component = manifest
-        .components
-        .values()
-        .next()
-        .context("spin.toml did not contain any components")?;
-    let app_path = match &component.source {
-        spin_manifest::schema::v2::ComponentSource::Local(path) => path,
-        spin_manifest::schema::v2::ComponentSource::Remote { .. } => {
-            bail!("components with remote sources are not yet supported by `spin-test`")
+        let raw_manifest = std::fs::read_to_string(&manifest_path).with_context(|| {
+            format!(
+                "failed to read spin.toml manifest at {}",
+                manifest_path.display()
+            )
+        })?;
+        let manifest = spin_manifest::manifest_from_str(&raw_manifest).with_context(|| {
+            format!(
+                "failed to deserialize spin.toml manifest at {}",
+                manifest_path.display()
+            )
+        })?;
+        if manifest.components.len() > 1 {
+            bail!("Spin applications with more than one component are not yet supported by `spin-test`")
         }
-    };
-    let spin_test_config = component
-        .tool
-        .get("spin-test")
-        .context("component did not have a `spin-test` tool configuration")?;
+        let component = manifest
+            .components
+            .values()
+            .next()
+            .context("spin.toml did not contain any components")?;
+        let app_path = match &component.source {
+            spin_manifest::schema::v2::ComponentSource::Local(path) => path,
+            spin_manifest::schema::v2::ComponentSource::Remote { .. } => {
+                bail!("components with remote sources are not yet supported by `spin-test`")
+            }
+        };
+        let spin_test_config = component
+            .tool
+            .get("spin-test")
+            .context("component did not have a `spin-test` tool configuration")?;
 
-    if let Some(build) = spin_test_config.get("build").and_then(|b| b.as_str()) {
-        let dir = spin_test_config.get("dir").and_then(|d| d.as_str());
-        let mut cmd = std::process::Command::new("/bin/sh");
-        if let Some(dir) = dir {
-            cmd.current_dir(dir);
+        if let Some(build) = spin_test_config.get("build").and_then(|b| b.as_str()) {
+            let dir = spin_test_config.get("dir").and_then(|d| d.as_str());
+            let mut cmd = std::process::Command::new("/bin/sh");
+            if let Some(dir) = dir {
+                cmd.current_dir(dir);
+            }
+            cmd.args(&["-c", build])
+                .status()
+                .context("failed to build component")?;
         }
-        cmd.args(&["-c", build])
-            .status()
-            .context("failed to build component")?;
+        let test_source = spin_test_config
+            .get("source")
+            .context("component did not have a `spin-test.source` configuration")?
+            .as_str()
+            .context("component `spin-test.source` was not a string")?;
+        let test_path = std::path::Path::new(test_source);
+        let test_name = test_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("test");
+
+        let (encoded, test_target) = spin_test::encode_composition(
+            Component::from_file(app_path.into())?,
+            Component::from_file(test_path.to_owned())?,
+        )
+        .context("failed to compose Spin app, test, and virtualized Spin environment")?;
+
+        let tests = run_tests(test_name, test_target, raw_manifest, encoded)?;
+        let _ = libtest_mimic::run(&libtest_mimic::Arguments::default(), tests);
+
+        Ok(())
     }
-    let test_source = spin_test_config
-        .get("source")
-        .context("component did not have a `spin-test.source` configuration")?
-        .as_str()
-        .context("component `spin-test.source` was not a string")?;
-    let test_path = std::path::Path::new(test_source);
-    let test_name = test_path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("test");
-
-    let (encoded, test_target) = spin_test::encode_composition(
-        Component::from_file(app_path.into())?,
-        Component::from_file(test_path.to_owned())?,
-    )
-    .context("failed to compose Spin app, test, and virtualized Spin environment")?;
-
-    let tests = run_tests(test_name, test_target, raw_manifest, encoded)?;
-    let _ = libtest_mimic::run(&libtest_mimic::Arguments::default(), tests);
-
-    Ok(())
 }
 
 fn print_error_chain(err: anyhow::Error) {
