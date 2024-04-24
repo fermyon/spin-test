@@ -4,6 +4,7 @@ mod type_extensions;
 
 /// Raw bindings to everything available to the test.
 pub mod bindings {
+    #![allow(clippy::all)]
     wit_bindgen::generate!({
         world: "test-imports",
         path: "../../host-wit",

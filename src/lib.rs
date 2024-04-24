@@ -54,7 +54,7 @@ pub fn encode_composition(
     // The instance is buried in an `http-helper` component export.
     let mut resolve = wit_parser::Resolve::new();
     let (pkg, _) = resolve
-        .push_dir(&std::path::Path::new(WIT))
+        .push_dir(std::path::Path::new(WIT))
         .expect("failed to push host-wit directory");
     let wit_bytes = wit_component::encode(Some(true), &resolve, pkg).unwrap();
     let wit = composition.register_package("wit", &wit_bytes)?;

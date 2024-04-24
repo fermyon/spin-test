@@ -103,7 +103,7 @@ impl Run {
             if let Some(dir) = dir {
                 cmd.current_dir(dir);
             }
-            cmd.args(&["-c", build])
+            cmd.args(["-c", build])
                 .status()
                 .context("failed to build component")?;
         }

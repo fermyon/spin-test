@@ -1,3 +1,4 @@
+#[allow(clippy::all)]
 mod bindings;
 mod manifest;
 
@@ -335,7 +336,7 @@ impl redis::GuestConnection for RedisConnection {
     fn incr(&self, key: String) -> Result<i64, redis::Error> {
         let value = self
             .get_payload(key)?
-            .map(|v| String::from_utf8(v))
+            .map(String::from_utf8)
             .transpose()
             .map_err(|_| redis::Error::TypeError)?;
         let result = value
@@ -406,9 +407,10 @@ impl sqlite::GuestConnection for SqliteConnection {
     }
 }
 
-static SQLITE_RESPONSES: std::sync::OnceLock<
-    Mutex<HashMap<(String, Vec<sqlite::Value>), Result<sqlite::QueryResult, sqlite::Error>>>,
-> = std::sync::OnceLock::new();
+type SqliteResponses =
+    HashMap<(String, Vec<sqlite::Value>), Result<sqlite::QueryResult, sqlite::Error>>;
+static SQLITE_RESPONSES: std::sync::OnceLock<Mutex<SqliteResponses>> = std::sync::OnceLock::new();
+
 impl spin_test_virt::sqlite::Guest for Component {
     fn set_response(
         query: String,
@@ -555,7 +557,7 @@ impl variables::Guest for Component {
             manifest::AppManifest::get()
                 .variables
                 .into_iter()
-                .find_map(|(k, v)| (k == name).then(|| v.default))
+                .find_map(|(k, v)| (k == name).then_some(v.default))
                 .flatten()
         });
         variable.ok_or_else(|| variables::Error::Undefined(name.to_string()))
