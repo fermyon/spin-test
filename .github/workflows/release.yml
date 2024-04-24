@@ -90,7 +90,9 @@ jobs:
         run: rustup target add wasm32-wasi --toolchain ${{ env.RUST_VERSION }} && rustup target add wasm32-unknown-unknown --toolchain ${{ env.RUST_VERSION }}
 
       - name: Install cargo-component
-        run: cargo install cargo-component
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo-component
 
       - name: set the release version (main)
         shell: bash
