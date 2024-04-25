@@ -18,8 +18,8 @@ const SPIN_WASI_VIRT: &[u8] = include_bytes!(concat!(
 ));
 /// The built `router` component
 const ROUTER: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/wasm32-wasi/release/router.wasm"));
-/// The wit package for `spin-test`
-const WIT: &str = concat!(env!("OUT_DIR"), "/wit");
+/// The wit package for `spin-test` (packed into a single file)
+const PACKED_WIT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/world.wit"));
 
 /// A Wasm component
 pub struct Component {
@@ -50,26 +50,9 @@ pub fn encode_composition(
 
     let composition = Composition::new();
 
-    // Get definition of the `fermyon:spin-test/http-helper` instance from the wit package
-    // The instance is buried in an `http-helper` component export.
-    let mut resolve = wit_parser::Resolve::new();
-    let (pkg, _) = resolve
-        .push_dir(std::path::Path::new(WIT))
-        .expect("failed to push host-wit directory");
-    let wit_bytes = wit_component::encode(Some(true), &resolve, pkg).unwrap();
-    let wit = composition.register_package("wit", &wit_bytes)?;
-    let http_helper = wit
-        .get_export("http-helper")
-        .expect("internal error: no 'http-helper' component export found in wit package'")
-        .as_component()
-        .expect("'http-helper' export was not a component");
-    let http_helper = http_helper
-        .get_export("fermyon:spin-test/http-helper")
-        .expect(
-            "internal error: `fermyon:spin-test/http-helper` not found in 'http-helper' component",
-        )
-        .as_instance()
-        .expect("internal error: `fermyon:spin-test/http-helper` is not an instance");
+    // Get definition of the `fermyon:spin-test/http-helper` instance from the embedded wit package
+    let http_helper = get_http_helper_instance(&composition)
+        .context("internal error: failed to get `fermyon:spin-test/http-helper` instance from embedded wit package")?;
 
     // Import the `fermyon:spin-test/http-helper` instance into the composition
     let http_helper = composition.import_instance("fermyon:spin-test/http-helper", http_helper)?;
@@ -249,6 +232,67 @@ pub fn encode_composition(
         .context("failed to encode composition")?;
 
     Ok((bytes, test_target))
+}
+
+fn get_http_helper_instance(
+    composition: &Composition,
+) -> anyhow::Result<composition::InstanceItem> {
+    let wit_bytes =
+        read_embedded_wit_package().context("failed to read embedded `spin-test` wit package")?;
+    let wit = composition.register_package("wit", &wit_bytes)?;
+    // The instance is buried in an `http-helper` component export.
+    let http_helper = wit
+        .get_export("http-helper")
+        .context("no 'http-helper' component export found in wit package'")?
+        .as_component()
+        .context("'http-helper' export was not a component")?;
+    let http_helper = http_helper
+        .get_export("fermyon:spin-test/http-helper")
+        .context("`fermyon:spin-test/http-helper` not found in 'http-helper' component")?
+        .as_instance()
+        .context("`fermyon:spin-test/http-helper` is not an instance")?;
+    Ok(http_helper)
+}
+
+fn read_embedded_wit_package() -> anyhow::Result<Vec<u8>> {
+    let mut resolve = wit_parser::Resolve::new();
+    let temp = temp_dir::TempDir::new()?;
+    unpack_packed_wit(temp.path()).context("failed to unpack wit package from binary")?;
+    let (pkg, _) = resolve
+        .push_dir(temp.path())
+        .context("failed to push host-wit directory")?;
+    Ok(wit_component::encode(Some(true), &resolve, pkg)?)
+}
+
+/// Unpack the packed wit file into a directory structure
+fn unpack_packed_wit(dst: &std::path::Path) -> anyhow::Result<()> {
+    let mut index = 0;
+    while PACKED_WIT.len() > index {
+        let path_length = u16::from_be_bytes([PACKED_WIT[index], PACKED_WIT[index + 1]]) as usize;
+        let path = std::path::Path::new(
+            std::str::from_utf8(&PACKED_WIT[index + 2..index + 2 + path_length])
+                .context("failed to read packed wit file's path")?,
+        );
+        let path = path
+            .strip_prefix("host-wit")
+            .context("packed wit file's path did not begin with `host-wit`")?;
+        let file_length = u64::from_be_bytes(
+            PACKED_WIT[index + 2 + path_length..index + 2 + path_length + 8].try_into()?,
+        ) as usize;
+
+        let file_start = index + 2 + path_length + 8;
+        log::debug!(
+            "writing unpacked wit file '{}' to '{}'",
+            path.display(),
+            dst.join(path).display()
+        );
+        std::fs::create_dir_all(dst.join(path).parent().unwrap())
+            .context("failed to create unpacked wit directory structure")?;
+        std::fs::write(dst.join(path), &PACKED_WIT[file_start..][..file_length])
+            .context("failed to write packed wit file to temporary directory")?;
+        index = index + 2 + path_length + 8 + file_length;
+    }
+    Ok(())
 }
 
 /// Represents the target type of the test component.

@@ -1919,10 +1919,12 @@ dependencies = [
  "http-body-util",
  "hyper",
  "libtest-mimic",
+ "log",
  "owo-colors",
  "spin-common",
  "spin-componentize",
  "spin-manifest",
+ "temp-dir",
  "tokio",
  "wac-graph",
  "wasmtime",
@@ -2050,6 +2052,12 @@ name = "target-lexicon"
 version = "0.12.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1fc403891a21bcfb7c37834ba66a547a8f402146eba7265b5a6d88059c9ff2f"
+
+[[package]]
+name = "temp-dir"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f227968ec00f0e5322f9b8173c7a0cbcff6181a0a5b28e9892491c286277231"
 
 [[package]]
 name = "tempfile"

@@ -1,5 +1,6 @@
 use std::{
     env,
+    io::{BufRead, Write},
     path::{Path, PathBuf},
     process,
 };
@@ -12,10 +13,16 @@ fn main() {
     copy_wit_to_out_dir();
 }
 
-/// Make the wit files available in the out director
+/// Make the wit files available in the out directory
 fn copy_wit_to_out_dir() {
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap()).join("wit");
-    copy_dir_all("host-wit", out_dir).unwrap();
+    let out = PathBuf::from(env::var("OUT_DIR").unwrap()).join("world.wit");
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(out)
+        .unwrap();
+    pack_dir_all("host-wit", &mut file).unwrap();
     println!("cargo:rerun-if-changed=host-wit");
 }
 
@@ -73,15 +80,36 @@ fn get_os_process() -> String {
     }
 }
 
-fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
-    std::fs::create_dir_all(&dst)?;
+/// Copy the contents of a `src` directory to a single `dst` file
+///
+/// Each file in `src` is written to `dst` in the following format:
+/// * Path length (u16, big-endian)
+/// * Path (utf-8)
+/// * File length (u64, big-endian)
+/// * File contents
+fn pack_dir_all(src: impl AsRef<Path>, dst: &mut std::fs::File) -> std::io::Result<()> {
     for entry in std::fs::read_dir(src)? {
         let entry = entry?;
         let ty = entry.file_type()?;
         if ty.is_dir() {
-            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+            pack_dir_all(entry.path(), dst)?;
         } else {
-            std::fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+            let path = entry.path().display().to_string();
+            dst.write_all(&(path.len() as u16).to_be_bytes())?;
+            write!(dst, "{path}")?;
+            dst.write_all(&(entry.metadata()?.len() as u64).to_be_bytes())?;
+            let mut reader =
+                std::io::BufReader::with_capacity(1024 * 128, std::fs::File::open(entry.path())?);
+            loop {
+                let buffer = reader.fill_buf()?;
+                let length = buffer.len();
+                if length == 0 {
+                    break;
+                } else {
+                    dst.write_all(buffer)?;
+                }
+                reader.consume(length);
+            }
         }
     }
     Ok(())

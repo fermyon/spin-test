@@ -9,10 +9,13 @@ clap = { version = "4.5", features = ["derive"] }
 env_logger = "0.11"
 http-body-util = "0.1.1"
 hyper = "1.0"
+libtest-mimic = "0.7"
+log = "0.4"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 spin-common = { git = "https://github.com/fermyon/spin" }
 spin-componentize = { git = "https://github.com/fermyon/spin" }
 spin-manifest = { workspace = true }
+temp-dir = "0.1.13"
 tokio = "1.0"
 wac-graph = "0.1"
 wasmtime = "19.0.1"
@@ -20,7 +23,6 @@ wasmtime-wasi = "19.0.1"
 wasmtime-wasi-http = "19.0.1"
 wit-component = "0.203.0"
 wit-parser = "0.203.0"
-libtest-mimic = "0.7"
 
 [workspace]
 members = ["crates/*", "examples/test-rs", "examples/apps/app-rs"]

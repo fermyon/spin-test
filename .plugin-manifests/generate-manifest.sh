@@ -32,7 +32,7 @@ WINDOWS_AMD=$(cat $2 | grep "windows-amd64" | awk '{print $1}')
 # Dump out the json manifest
 cat <<EOF 
 {
-  "name": "spin-test",
+  "name": "test",
   "description": "A utility for testing Spin applications",
   "homepage": "https://github.com/${REPO_OWNER}/spin-test",
   "version": "${VERSION//v}",
