@@ -261,7 +261,7 @@ fn read_embedded_wit_package() -> anyhow::Result<Vec<u8>> {
     let (pkg, _) = resolve
         .push_dir(temp.path())
         .context("failed to push host-wit directory")?;
-    Ok(wit_component::encode(Some(true), &resolve, pkg)?)
+    wit_component::encode(Some(true), &resolve, pkg)
 }
 
 /// Unpack the packed wit file into a directory structure

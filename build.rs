@@ -97,7 +97,7 @@ fn pack_dir_all(src: impl AsRef<Path>, dst: &mut std::fs::File) -> std::io::Resu
             let path = entry.path().display().to_string();
             dst.write_all(&(path.len() as u16).to_be_bytes())?;
             write!(dst, "{path}")?;
-            dst.write_all(&(entry.metadata()?.len() as u64).to_be_bytes())?;
+            dst.write_all(&entry.metadata()?.len().to_be_bytes())?;
             let mut reader =
                 std::io::BufReader::with_capacity(1024 * 128, std::fs::File::open(entry.path())?);
             loop {
