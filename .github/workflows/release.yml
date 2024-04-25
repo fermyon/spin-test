@@ -126,10 +126,10 @@ jobs:
         shell: bash
         run: |
           mkdir -v _dist
-          cp ${{ matrix.config.targetDir }}/spin-test${{ matrix.config.extension }} _dist/spin-test${{ matrix.config.extension }}
+          cp ${{ matrix.config.targetDir }}/spin-test${{ matrix.config.extension }} _dist/test${{ matrix.config.extension }}
           cp  LICENSE _dist/spin-test.license
           cd _dist
-          tar czf spin-test-${{ env.RELEASE_VERSION }}-${{ env.RUNNER_OS }}-${{ matrix.config.arch }}.tar.gz spin-test.license spin-test${{ matrix.config.extension }}
+          tar czf spin-test-${{ env.RELEASE_VERSION }}-${{ env.RUNNER_OS }}-${{ matrix.config.arch }}.tar.gz spin-test.license test${{ matrix.config.extension }}
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
