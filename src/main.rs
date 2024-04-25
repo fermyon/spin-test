@@ -152,6 +152,7 @@ fn run_tests(
     encoded: Vec<u8>,
 ) -> anyhow::Result<Vec<libtest_mimic::Trial>> {
     let mut trials = vec![];
+    let encoded = std::sync::Arc::new(encoded);
 
     match test_target {
         spin_test::TestTarget::AdHoc { exports } => {
