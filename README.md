@@ -4,6 +4,26 @@
 
 ## Usage
 
+`spin-test` can be used as a stand alone binary or as a plugin for Spin.
+
+### Install `spin test` (plugin)
+
+To install the `spin test` plugin canary release, run the following:
+
+```
+spin plugin install -u https://github.com/fermyon/spin-test/releases/download/canary/spin-test.json
+```
+
+This will install the plugin which can be invoked with `spin test`.
+
+In the future, stable, non-canary releases will also be made available.
+
+### Install `spin-test` (stand alone)
+
+Alternatively, to install `spin-test` as a stand alone binary, run `cargo build --release` from this directory and ensure that the resulting binary is located on your path.
+
+If you'd rather not build from source, you can find a pre-built binary inside the plugin tarballs included in [any release](https://github.com/fermyon/spin-test/releases). In the latest stable release or in the canary release, find the tarball asset corresponding to the appropriate machine architecture, download the tarball, unarchive it, and retrieve the `test` binary inside it. Place this binary somewhere on your path as `spin-test` and invoke by running `spin-test`.
+
 ### Create a Spin App
 
 `spin-test` runs tests against a Spin application. As such, you'll need a Spin app to test against. You can find more information on creating Spin applications [here](https://developer.fermyon.com/spin/v2/quickstart).
