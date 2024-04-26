@@ -4,10 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = { workspace = true }
 bitflags = "2.5.0"
 wit-bindgen-rt = "0.24.0"
 toml = { workspace = true }
 spin-manifest = { workspace = true }
+spin-http = { git = "https://github.com/fermyon/spin", default-features = false }
 
 [lib]
 crate-type = ["cdylib"]

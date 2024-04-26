@@ -16,7 +16,7 @@ use bindings::wasi::http;
 
 /// Make a request to the Spin app and return the response.
 pub fn perform_request(request: http::types::OutgoingRequest) -> http::types::IncomingResponse {
-    let request = spin_test::http_helper::new_request(request);
+    let request = spin_test::http_helper::new_request(request, None);
     let (response_out, response_receiver) = spin_test::http_helper::new_response();
     http::incoming_handler::handle(request, response_out);
     response_receiver.get().unwrap()

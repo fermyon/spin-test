@@ -6,4 +6,8 @@ world router {
     import wasi:http/incoming-handler@0.2.0;
     import get-manifest: func() -> string;
     import set-component-id: func(component-id: string);
+
+    use wasi:http/types@0.2.0.{outgoing-request, incoming-request, incoming-body};
+    /// See `fermyon:spin-test/http-helper/new-request` for documentation on this function
+    import new-request: func(request: outgoing-request, incoming-body: option<incoming-body>) -> incoming-request;
 }
