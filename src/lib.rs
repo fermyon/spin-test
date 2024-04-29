@@ -75,8 +75,7 @@ pub fn encode_composition(
         "fermyon:spin/key-value@2.0.0",
         "fermyon:spin/llm@2.0.0",
         "fermyon:spin/redis@2.0.0",
-        // TODO: pass this once `spin-test-virt` exports it
-        // "fermyon:spin/rdms-types@2.0.0",
+        "fermyon:spin/rdbms-types@2.0.0",
         "fermyon:spin/mysql@2.0.0",
         "fermyon:spin/postgres@2.0.0",
         "fermyon:spin/sqlite@2.0.0",
