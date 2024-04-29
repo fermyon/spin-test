@@ -2,9 +2,9 @@ package fermyon:spin-test;
 
 /// All the imports supplied to a `spin-test` compliant test
 world test-imports {
-    import fermyon:spin-test-virt/http-handler;
     import fermyon:spin-test-virt/key-value;
     import fermyon:spin-test-virt/sqlite;
+    import fermyon:spin-wasi-virt/http-handler;
     import wasi:http/incoming-handler@0.2.0;
     import http-helper;
 }
@@ -19,8 +19,6 @@ world test {
 world runner {
     /// Supply the `spin.toml` manifest
     import get-manifest: func() -> string;
-    /// Provided helpers for http that must be supplied by a host
-    import http-helper;
     
     /// Run the test
     export run: func();
@@ -44,6 +42,4 @@ interface http-helper {
     new-request: func(request: outgoing-request, incoming-body: option<incoming-body>) -> incoming-request;
     /// Get a pair of a `response-outparam` and a `response-receiver`
     new-response: func() -> tuple<response-outparam, response-receiver>;
-    /// Create a `future-incoming-response` from an `outgoing-response`
-    futurize-response: func(response: outgoing-response) -> future-incoming-response;
 }

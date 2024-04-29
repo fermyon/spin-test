@@ -166,10 +166,9 @@ fn run_tests(
 
                 trials.push(libtest_mimic::Trial::test(test_name, move || {
                     let mut runtime =
-                        spin_test::runtime::Runtime::instantiate(raw_manifest, &encoded)
-                            .context("failed to create `spin-test` runtime")?;
+                        spin_test::runtime::Runtime::instantiate(raw_manifest, &encoded)?;
 
-                    Ok(runtime.run(Some(&test_export))?)
+                    Ok(runtime.run(Some(&test_export)).map_err(FullError::from)?)
                 }));
             }
         }
@@ -178,10 +177,30 @@ fn run_tests(
                 let mut runtime = spin_test::runtime::Runtime::instantiate(raw_manifest, &encoded)
                     .context("failed to create `spin-test` runtime")?;
 
-                Ok(runtime.run(None)?)
+                Ok(runtime.run(None).map_err(FullError::from)?)
             }));
         }
     }
 
     Ok(trials)
+}
+
+struct FullError {
+    error: anyhow::Error,
+}
+
+impl From<anyhow::Error> for FullError {
+    fn from(error: anyhow::Error) -> Self {
+        Self { error }
+    }
+}
+
+impl std::fmt::Display for FullError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.error)?;
+        for cause in self.error.chain().skip(1) {
+            write!(f, "\nCaused by: {}", cause)?;
+        }
+        Ok(())
+    }
 }

@@ -17,12 +17,11 @@ spin-componentize = { git = "https://github.com/fermyon/spin" }
 spin-manifest = { workspace = true }
 temp-dir = "0.1.13"
 tokio = "1.0"
-wac-graph = "0.1"
+wac-graph = { path = "../wac/crates/wac-graph" }
 wasmtime = "19.0.1"
 wasmtime-wasi = "19.0.1"
-wasmtime-wasi-http = "19.0.1"
-wit-component = "0.203.0"
-wit-parser = "0.203.0"
+wit-component = "0.206.0"
+wit-parser = "0.206.0"
 
 [workspace]
 members = ["crates/*", "examples/test-rs", "examples/apps/app-rs"]
