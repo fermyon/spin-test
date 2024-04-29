@@ -6,7 +6,10 @@ use wasmtime::component::Linker;
 use wasmtime_wasi_http::{
     bindings::http::{incoming_handler::IncomingRequest, types::Scheme},
     body::{HostIncomingBody, HyperOutgoingBody},
-    types::{HostFutureIncomingResponse, HostOutgoingResponse, IncomingResponseInternal},
+    types::{
+        HostFutureIncomingResponse, HostIncomingRequest, HostOutgoingResponse,
+        IncomingResponseInternal,
+    },
     WasiHttpView,
 };
 
@@ -136,6 +139,7 @@ impl bindings::fermyon::spin_test::http_helper::Host for Data {
     fn new_request(
         &mut self,
         request: wasmtime::component::Resource<wasmtime_wasi_http::types::HostOutgoingRequest>,
+        incoming_body: Option<wasmtime::component::Resource<HostIncomingBody>>,
     ) -> wasmtime::Result<wasmtime::component::Resource<IncomingRequest>> {
         let req = self.table.get_mut(&request)?;
         use wasmtime_wasi_http::bindings::http::types::Method;
@@ -168,7 +172,15 @@ impl bindings::fermyon::spin_test::http_helper::Host for Data {
         let req = builder
             .body(req.body.take().unwrap_or_else(body::empty))
             .unwrap();
-        self.new_incoming_request(req)
+        let (parts, body) = req.into_parts();
+        let body = incoming_body
+            .map(|b| self.table.delete(b))
+            .transpose()?
+            .unwrap_or_else(|| {
+                HostIncomingBody::new(body, std::time::Duration::from_millis(600 * 1000))
+            });
+        let incoming_req = HostIncomingRequest::new(self, parts, Some(body));
+        Ok(self.table().push(incoming_req)?)
     }
 
     fn new_response(

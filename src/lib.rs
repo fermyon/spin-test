@@ -129,6 +129,9 @@ pub fn encode_composition(
         .instantiate("app", &app_component.bytes, app_args)
         .context("failed to instantiate Spin app")?;
 
+    let new_request = http_helper
+        .export("new-request")?
+        .expect("internal error: `new-request` not found");
     // Instantiate the `router` component with various exports from `spin-test-virt` and `app` instances
     let router_args = [
         ("set-component-id", &virt, "`spin-test-virt`"),
@@ -145,6 +148,7 @@ pub fn encode_composition(
             ) as _,
         ))
     })
+    .chain([Ok(("new-request", Box::new(new_request) as _))])
     .collect::<anyhow::Result<Vec<_>>>()?;
     let router = composition
         .instantiate("router", ROUTER, router_args)

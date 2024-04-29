@@ -30,14 +30,18 @@ world runner {
 interface http-helper {
     use wasi:http/types@0.2.0.{
         incoming-request, incoming-response, outgoing-response,
-        outgoing-request, response-outparam, future-incoming-response
+        outgoing-request, response-outparam, future-incoming-response,
+        incoming-body
     };
     /// A receiver of an `incoming-response`
     resource response-receiver {
         get: func() -> option<incoming-response>;
     }
     /// Create an `incoming-request` from an `outgoing-request`
-    new-request: func(request: outgoing-request) -> incoming-request;
+    ///
+    /// An optional `incoming-body` can also be supplied which will be
+    /// used instead of the body of the `outgoing-request`.
+    new-request: func(request: outgoing-request, incoming-body: option<incoming-body>) -> incoming-request;
     /// Get a pair of a `response-outparam` and a `response-receiver`
     new-response: func() -> tuple<response-outparam, response-receiver>;
     /// Create a `future-incoming-response` from an `outgoing-response`
