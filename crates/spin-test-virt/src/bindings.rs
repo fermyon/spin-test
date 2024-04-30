@@ -73,264 +73,6 @@ macro_rules! __export_world_env_cabi{
 #[doc(hidden)]
 pub(crate) use __export_world_env_cabi;
 #[allow(dead_code)]
-pub mod fermyon {
-    #[allow(dead_code)]
-    pub mod spin {
-        #[allow(dead_code, clippy::all)]
-        pub mod rdbms_types {
-            #[used]
-            #[doc(hidden)]
-            #[cfg(target_arch = "wasm32")]
-            static __FORCE_SECTION_REF: fn() =
-                super::super::super::__link_custom_section_describing_imports;
-            use super::super::super::_rt;
-            /// Errors related to interacting with a database.
-            #[derive(Clone)]
-            pub enum Error {
-                ConnectionFailed(_rt::String),
-                BadParameter(_rt::String),
-                QueryFailed(_rt::String),
-                ValueConversionFailed(_rt::String),
-                Other(_rt::String),
-            }
-            impl ::core::fmt::Debug for Error {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    match self {
-                        Error::ConnectionFailed(e) => {
-                            f.debug_tuple("Error::ConnectionFailed").field(e).finish()
-                        }
-                        Error::BadParameter(e) => {
-                            f.debug_tuple("Error::BadParameter").field(e).finish()
-                        }
-                        Error::QueryFailed(e) => {
-                            f.debug_tuple("Error::QueryFailed").field(e).finish()
-                        }
-                        Error::ValueConversionFailed(e) => f
-                            .debug_tuple("Error::ValueConversionFailed")
-                            .field(e)
-                            .finish(),
-                        Error::Other(e) => f.debug_tuple("Error::Other").field(e).finish(),
-                    }
-                }
-            }
-            impl ::core::fmt::Display for Error {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    write!(f, "{:?}", self)
-                }
-            }
-
-            impl std::error::Error for Error {}
-            /// Data types for a database column
-            #[repr(u8)]
-            #[derive(Clone, Copy, Eq, PartialEq)]
-            pub enum DbDataType {
-                Boolean,
-                Int8,
-                Int16,
-                Int32,
-                Int64,
-                Uint8,
-                Uint16,
-                Uint32,
-                Uint64,
-                Floating32,
-                Floating64,
-                Str,
-                Binary,
-                Other,
-            }
-            impl ::core::fmt::Debug for DbDataType {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    match self {
-                        DbDataType::Boolean => f.debug_tuple("DbDataType::Boolean").finish(),
-                        DbDataType::Int8 => f.debug_tuple("DbDataType::Int8").finish(),
-                        DbDataType::Int16 => f.debug_tuple("DbDataType::Int16").finish(),
-                        DbDataType::Int32 => f.debug_tuple("DbDataType::Int32").finish(),
-                        DbDataType::Int64 => f.debug_tuple("DbDataType::Int64").finish(),
-                        DbDataType::Uint8 => f.debug_tuple("DbDataType::Uint8").finish(),
-                        DbDataType::Uint16 => f.debug_tuple("DbDataType::Uint16").finish(),
-                        DbDataType::Uint32 => f.debug_tuple("DbDataType::Uint32").finish(),
-                        DbDataType::Uint64 => f.debug_tuple("DbDataType::Uint64").finish(),
-                        DbDataType::Floating32 => f.debug_tuple("DbDataType::Floating32").finish(),
-                        DbDataType::Floating64 => f.debug_tuple("DbDataType::Floating64").finish(),
-                        DbDataType::Str => f.debug_tuple("DbDataType::Str").finish(),
-                        DbDataType::Binary => f.debug_tuple("DbDataType::Binary").finish(),
-                        DbDataType::Other => f.debug_tuple("DbDataType::Other").finish(),
-                    }
-                }
-            }
-
-            impl DbDataType {
-                pub(crate) unsafe fn _lift(val: u8) -> DbDataType {
-                    if !cfg!(debug_assertions) {
-                        return ::core::mem::transmute(val);
-                    }
-
-                    match val {
-                        0 => DbDataType::Boolean,
-                        1 => DbDataType::Int8,
-                        2 => DbDataType::Int16,
-                        3 => DbDataType::Int32,
-                        4 => DbDataType::Int64,
-                        5 => DbDataType::Uint8,
-                        6 => DbDataType::Uint16,
-                        7 => DbDataType::Uint32,
-                        8 => DbDataType::Uint64,
-                        9 => DbDataType::Floating32,
-                        10 => DbDataType::Floating64,
-                        11 => DbDataType::Str,
-                        12 => DbDataType::Binary,
-                        13 => DbDataType::Other,
-
-                        _ => panic!("invalid enum discriminant"),
-                    }
-                }
-            }
-
-            /// Database values
-            #[derive(Clone)]
-            pub enum DbValue {
-                Boolean(bool),
-                Int8(i8),
-                Int16(i16),
-                Int32(i32),
-                Int64(i64),
-                Uint8(u8),
-                Uint16(u16),
-                Uint32(u32),
-                Uint64(u64),
-                Floating32(f32),
-                Floating64(f64),
-                Str(_rt::String),
-                Binary(_rt::Vec<u8>),
-                DbNull,
-                Unsupported,
-            }
-            impl ::core::fmt::Debug for DbValue {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    match self {
-                        DbValue::Boolean(e) => f.debug_tuple("DbValue::Boolean").field(e).finish(),
-                        DbValue::Int8(e) => f.debug_tuple("DbValue::Int8").field(e).finish(),
-                        DbValue::Int16(e) => f.debug_tuple("DbValue::Int16").field(e).finish(),
-                        DbValue::Int32(e) => f.debug_tuple("DbValue::Int32").field(e).finish(),
-                        DbValue::Int64(e) => f.debug_tuple("DbValue::Int64").field(e).finish(),
-                        DbValue::Uint8(e) => f.debug_tuple("DbValue::Uint8").field(e).finish(),
-                        DbValue::Uint16(e) => f.debug_tuple("DbValue::Uint16").field(e).finish(),
-                        DbValue::Uint32(e) => f.debug_tuple("DbValue::Uint32").field(e).finish(),
-                        DbValue::Uint64(e) => f.debug_tuple("DbValue::Uint64").field(e).finish(),
-                        DbValue::Floating32(e) => {
-                            f.debug_tuple("DbValue::Floating32").field(e).finish()
-                        }
-                        DbValue::Floating64(e) => {
-                            f.debug_tuple("DbValue::Floating64").field(e).finish()
-                        }
-                        DbValue::Str(e) => f.debug_tuple("DbValue::Str").field(e).finish(),
-                        DbValue::Binary(e) => f.debug_tuple("DbValue::Binary").field(e).finish(),
-                        DbValue::DbNull => f.debug_tuple("DbValue::DbNull").finish(),
-                        DbValue::Unsupported => f.debug_tuple("DbValue::Unsupported").finish(),
-                    }
-                }
-            }
-            /// Values used in parameterized queries
-            #[derive(Clone)]
-            pub enum ParameterValue {
-                Boolean(bool),
-                Int8(i8),
-                Int16(i16),
-                Int32(i32),
-                Int64(i64),
-                Uint8(u8),
-                Uint16(u16),
-                Uint32(u32),
-                Uint64(u64),
-                Floating32(f32),
-                Floating64(f64),
-                Str(_rt::String),
-                Binary(_rt::Vec<u8>),
-                DbNull,
-            }
-            impl ::core::fmt::Debug for ParameterValue {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    match self {
-                        ParameterValue::Boolean(e) => {
-                            f.debug_tuple("ParameterValue::Boolean").field(e).finish()
-                        }
-                        ParameterValue::Int8(e) => {
-                            f.debug_tuple("ParameterValue::Int8").field(e).finish()
-                        }
-                        ParameterValue::Int16(e) => {
-                            f.debug_tuple("ParameterValue::Int16").field(e).finish()
-                        }
-                        ParameterValue::Int32(e) => {
-                            f.debug_tuple("ParameterValue::Int32").field(e).finish()
-                        }
-                        ParameterValue::Int64(e) => {
-                            f.debug_tuple("ParameterValue::Int64").field(e).finish()
-                        }
-                        ParameterValue::Uint8(e) => {
-                            f.debug_tuple("ParameterValue::Uint8").field(e).finish()
-                        }
-                        ParameterValue::Uint16(e) => {
-                            f.debug_tuple("ParameterValue::Uint16").field(e).finish()
-                        }
-                        ParameterValue::Uint32(e) => {
-                            f.debug_tuple("ParameterValue::Uint32").field(e).finish()
-                        }
-                        ParameterValue::Uint64(e) => {
-                            f.debug_tuple("ParameterValue::Uint64").field(e).finish()
-                        }
-                        ParameterValue::Floating32(e) => f
-                            .debug_tuple("ParameterValue::Floating32")
-                            .field(e)
-                            .finish(),
-                        ParameterValue::Floating64(e) => f
-                            .debug_tuple("ParameterValue::Floating64")
-                            .field(e)
-                            .finish(),
-                        ParameterValue::Str(e) => {
-                            f.debug_tuple("ParameterValue::Str").field(e).finish()
-                        }
-                        ParameterValue::Binary(e) => {
-                            f.debug_tuple("ParameterValue::Binary").field(e).finish()
-                        }
-                        ParameterValue::DbNull => f.debug_tuple("ParameterValue::DbNull").finish(),
-                    }
-                }
-            }
-            /// A database column
-            #[derive(Clone)]
-            pub struct Column {
-                pub name: _rt::String,
-                pub data_type: DbDataType,
-            }
-            impl ::core::fmt::Debug for Column {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("Column")
-                        .field("name", &self.name)
-                        .field("data-type", &self.data_type)
-                        .finish()
-                }
-            }
-            /// A database row
-            pub type Row = _rt::Vec<DbValue>;
-            /// A set of database rows
-            #[derive(Clone)]
-            pub struct RowSet {
-                pub columns: _rt::Vec<Column>,
-                pub rows: _rt::Vec<Row>,
-            }
-            impl ::core::fmt::Debug for RowSet {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("RowSet")
-                        .field("columns", &self.columns)
-                        .field("rows", &self.rows)
-                        .finish()
-                }
-            }
-        }
-    }
-}
-#[allow(dead_code)]
 pub mod wasi {
     #[allow(dead_code)]
     pub mod clocks {
@@ -10174,6 +9916,284 @@ pub mod exports {
             }
 
             #[allow(dead_code, clippy::all)]
+            pub mod rdbms_types {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+                use super::super::super::super::_rt;
+                /// Errors related to interacting with a database.
+                #[derive(Clone)]
+                pub enum Error {
+                    ConnectionFailed(_rt::String),
+                    BadParameter(_rt::String),
+                    QueryFailed(_rt::String),
+                    ValueConversionFailed(_rt::String),
+                    Other(_rt::String),
+                }
+                impl ::core::fmt::Debug for Error {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            Error::ConnectionFailed(e) => {
+                                f.debug_tuple("Error::ConnectionFailed").field(e).finish()
+                            }
+                            Error::BadParameter(e) => {
+                                f.debug_tuple("Error::BadParameter").field(e).finish()
+                            }
+                            Error::QueryFailed(e) => {
+                                f.debug_tuple("Error::QueryFailed").field(e).finish()
+                            }
+                            Error::ValueConversionFailed(e) => f
+                                .debug_tuple("Error::ValueConversionFailed")
+                                .field(e)
+                                .finish(),
+                            Error::Other(e) => f.debug_tuple("Error::Other").field(e).finish(),
+                        }
+                    }
+                }
+                impl ::core::fmt::Display for Error {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        write!(f, "{:?}", self)
+                    }
+                }
+
+                impl std::error::Error for Error {}
+                /// Data types for a database column
+                #[repr(u8)]
+                #[derive(Clone, Copy, Eq, PartialEq)]
+                pub enum DbDataType {
+                    Boolean,
+                    Int8,
+                    Int16,
+                    Int32,
+                    Int64,
+                    Uint8,
+                    Uint16,
+                    Uint32,
+                    Uint64,
+                    Floating32,
+                    Floating64,
+                    Str,
+                    Binary,
+                    Other,
+                }
+                impl ::core::fmt::Debug for DbDataType {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            DbDataType::Boolean => f.debug_tuple("DbDataType::Boolean").finish(),
+                            DbDataType::Int8 => f.debug_tuple("DbDataType::Int8").finish(),
+                            DbDataType::Int16 => f.debug_tuple("DbDataType::Int16").finish(),
+                            DbDataType::Int32 => f.debug_tuple("DbDataType::Int32").finish(),
+                            DbDataType::Int64 => f.debug_tuple("DbDataType::Int64").finish(),
+                            DbDataType::Uint8 => f.debug_tuple("DbDataType::Uint8").finish(),
+                            DbDataType::Uint16 => f.debug_tuple("DbDataType::Uint16").finish(),
+                            DbDataType::Uint32 => f.debug_tuple("DbDataType::Uint32").finish(),
+                            DbDataType::Uint64 => f.debug_tuple("DbDataType::Uint64").finish(),
+                            DbDataType::Floating32 => {
+                                f.debug_tuple("DbDataType::Floating32").finish()
+                            }
+                            DbDataType::Floating64 => {
+                                f.debug_tuple("DbDataType::Floating64").finish()
+                            }
+                            DbDataType::Str => f.debug_tuple("DbDataType::Str").finish(),
+                            DbDataType::Binary => f.debug_tuple("DbDataType::Binary").finish(),
+                            DbDataType::Other => f.debug_tuple("DbDataType::Other").finish(),
+                        }
+                    }
+                }
+
+                impl DbDataType {
+                    pub(crate) unsafe fn _lift(val: u8) -> DbDataType {
+                        if !cfg!(debug_assertions) {
+                            return ::core::mem::transmute(val);
+                        }
+
+                        match val {
+                            0 => DbDataType::Boolean,
+                            1 => DbDataType::Int8,
+                            2 => DbDataType::Int16,
+                            3 => DbDataType::Int32,
+                            4 => DbDataType::Int64,
+                            5 => DbDataType::Uint8,
+                            6 => DbDataType::Uint16,
+                            7 => DbDataType::Uint32,
+                            8 => DbDataType::Uint64,
+                            9 => DbDataType::Floating32,
+                            10 => DbDataType::Floating64,
+                            11 => DbDataType::Str,
+                            12 => DbDataType::Binary,
+                            13 => DbDataType::Other,
+
+                            _ => panic!("invalid enum discriminant"),
+                        }
+                    }
+                }
+
+                /// Database values
+                #[derive(Clone)]
+                pub enum DbValue {
+                    Boolean(bool),
+                    Int8(i8),
+                    Int16(i16),
+                    Int32(i32),
+                    Int64(i64),
+                    Uint8(u8),
+                    Uint16(u16),
+                    Uint32(u32),
+                    Uint64(u64),
+                    Floating32(f32),
+                    Floating64(f64),
+                    Str(_rt::String),
+                    Binary(_rt::Vec<u8>),
+                    DbNull,
+                    Unsupported,
+                }
+                impl ::core::fmt::Debug for DbValue {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            DbValue::Boolean(e) => {
+                                f.debug_tuple("DbValue::Boolean").field(e).finish()
+                            }
+                            DbValue::Int8(e) => f.debug_tuple("DbValue::Int8").field(e).finish(),
+                            DbValue::Int16(e) => f.debug_tuple("DbValue::Int16").field(e).finish(),
+                            DbValue::Int32(e) => f.debug_tuple("DbValue::Int32").field(e).finish(),
+                            DbValue::Int64(e) => f.debug_tuple("DbValue::Int64").field(e).finish(),
+                            DbValue::Uint8(e) => f.debug_tuple("DbValue::Uint8").field(e).finish(),
+                            DbValue::Uint16(e) => {
+                                f.debug_tuple("DbValue::Uint16").field(e).finish()
+                            }
+                            DbValue::Uint32(e) => {
+                                f.debug_tuple("DbValue::Uint32").field(e).finish()
+                            }
+                            DbValue::Uint64(e) => {
+                                f.debug_tuple("DbValue::Uint64").field(e).finish()
+                            }
+                            DbValue::Floating32(e) => {
+                                f.debug_tuple("DbValue::Floating32").field(e).finish()
+                            }
+                            DbValue::Floating64(e) => {
+                                f.debug_tuple("DbValue::Floating64").field(e).finish()
+                            }
+                            DbValue::Str(e) => f.debug_tuple("DbValue::Str").field(e).finish(),
+                            DbValue::Binary(e) => {
+                                f.debug_tuple("DbValue::Binary").field(e).finish()
+                            }
+                            DbValue::DbNull => f.debug_tuple("DbValue::DbNull").finish(),
+                            DbValue::Unsupported => f.debug_tuple("DbValue::Unsupported").finish(),
+                        }
+                    }
+                }
+                /// Values used in parameterized queries
+                #[derive(Clone)]
+                pub enum ParameterValue {
+                    Boolean(bool),
+                    Int8(i8),
+                    Int16(i16),
+                    Int32(i32),
+                    Int64(i64),
+                    Uint8(u8),
+                    Uint16(u16),
+                    Uint32(u32),
+                    Uint64(u64),
+                    Floating32(f32),
+                    Floating64(f64),
+                    Str(_rt::String),
+                    Binary(_rt::Vec<u8>),
+                    DbNull,
+                }
+                impl ::core::fmt::Debug for ParameterValue {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        match self {
+                            ParameterValue::Boolean(e) => {
+                                f.debug_tuple("ParameterValue::Boolean").field(e).finish()
+                            }
+                            ParameterValue::Int8(e) => {
+                                f.debug_tuple("ParameterValue::Int8").field(e).finish()
+                            }
+                            ParameterValue::Int16(e) => {
+                                f.debug_tuple("ParameterValue::Int16").field(e).finish()
+                            }
+                            ParameterValue::Int32(e) => {
+                                f.debug_tuple("ParameterValue::Int32").field(e).finish()
+                            }
+                            ParameterValue::Int64(e) => {
+                                f.debug_tuple("ParameterValue::Int64").field(e).finish()
+                            }
+                            ParameterValue::Uint8(e) => {
+                                f.debug_tuple("ParameterValue::Uint8").field(e).finish()
+                            }
+                            ParameterValue::Uint16(e) => {
+                                f.debug_tuple("ParameterValue::Uint16").field(e).finish()
+                            }
+                            ParameterValue::Uint32(e) => {
+                                f.debug_tuple("ParameterValue::Uint32").field(e).finish()
+                            }
+                            ParameterValue::Uint64(e) => {
+                                f.debug_tuple("ParameterValue::Uint64").field(e).finish()
+                            }
+                            ParameterValue::Floating32(e) => f
+                                .debug_tuple("ParameterValue::Floating32")
+                                .field(e)
+                                .finish(),
+                            ParameterValue::Floating64(e) => f
+                                .debug_tuple("ParameterValue::Floating64")
+                                .field(e)
+                                .finish(),
+                            ParameterValue::Str(e) => {
+                                f.debug_tuple("ParameterValue::Str").field(e).finish()
+                            }
+                            ParameterValue::Binary(e) => {
+                                f.debug_tuple("ParameterValue::Binary").field(e).finish()
+                            }
+                            ParameterValue::DbNull => {
+                                f.debug_tuple("ParameterValue::DbNull").finish()
+                            }
+                        }
+                    }
+                }
+                /// A database column
+                #[derive(Clone)]
+                pub struct Column {
+                    pub name: _rt::String,
+                    pub data_type: DbDataType,
+                }
+                impl ::core::fmt::Debug for Column {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        f.debug_struct("Column")
+                            .field("name", &self.name)
+                            .field("data-type", &self.data_type)
+                            .finish()
+                    }
+                }
+                /// A database row
+                pub type Row = _rt::Vec<DbValue>;
+                /// A set of database rows
+                #[derive(Clone)]
+                pub struct RowSet {
+                    pub columns: _rt::Vec<Column>,
+                    pub rows: _rt::Vec<Row>,
+                }
+                impl ::core::fmt::Debug for RowSet {
+                    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                        f.debug_struct("RowSet")
+                            .field("columns", &self.columns)
+                            .field("rows", &self.rows)
+                            .finish()
+                    }
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_fermyon_spin_rdbms_types_2_0_0_cabi {
+                    ($ty:ident with_types_in $($path_to_types:tt)*) => {
+                        const _: () = {};
+                    };
+                }
+                #[doc(hidden)]
+                pub(crate) use __export_fermyon_spin_rdbms_types_2_0_0_cabi;
+            }
+
+            #[allow(dead_code, clippy::all)]
             pub mod postgres {
                 #[used]
                 #[doc(hidden)]
@@ -10182,9 +10202,11 @@ pub mod exports {
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
                 pub type ParameterValue =
-                    super::super::super::super::fermyon::spin::rdbms_types::ParameterValue;
-                pub type RowSet = super::super::super::super::fermyon::spin::rdbms_types::RowSet;
-                pub type Error = super::super::super::super::fermyon::spin::rdbms_types::Error;
+                    super::super::super::super::exports::fermyon::spin::rdbms_types::ParameterValue;
+                pub type RowSet =
+                    super::super::super::super::exports::fermyon::spin::rdbms_types::RowSet;
+                pub type Error =
+                    super::super::super::super::exports::fermyon::spin::rdbms_types::Error;
                 /// A connection to a postgres database.
 
                 #[derive(Debug)]
@@ -10346,7 +10368,7 @@ pub mod exports {
                         }
                         Err(e) => {
                             *ptr2.add(0).cast::<u8>() = (1i32) as u8;
-                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V8;
+                            use super::super::super::super::exports::fermyon::spin::rdbms_types::Error as V8;
                             match e {
                                 V8::ConnectionFailed(e) => {
                                     *ptr2.add(4).cast::<u8>() = (0i32) as u8;
@@ -10458,7 +10480,7 @@ pub mod exports {
                         let base = base20.add(i * 16);
                         let e20 = {
                             let l1 = i32::from(*base.add(0).cast::<u8>());
-                            use super::super::super::super::fermyon::spin::rdbms_types::ParameterValue as V19;
+                            use super::super::super::super::exports::fermyon::spin::rdbms_types::ParameterValue as V19;
                             let v19 = match l1 {
                                 0 => {
                                     let e19 = {
@@ -10590,10 +10612,7 @@ pub mod exports {
                     match result21 {
                         Ok(e) => {
                             *ptr22.add(0).cast::<u8>() = (0i32) as u8;
-                            let super::super::super::super::fermyon::spin::rdbms_types::RowSet {
-                                columns: columns23,
-                                rows: rows23,
-                            } = e;
+                            let super::super::super::super::exports::fermyon::spin::rdbms_types::RowSet{ columns:columns23, rows:rows23, } = e;
                             let vec26 = columns23;
                             let len26 = vec26.len();
                             let layout26 =
@@ -10612,7 +10631,7 @@ pub mod exports {
                             for (i, e) in vec26.into_iter().enumerate() {
                                 let base = result26.add(i * 12);
                                 {
-                                    let super::super::super::super::fermyon::spin::rdbms_types::Column{ name:name24, data_type:data_type24, } = e;
+                                    let super::super::super::super::exports::fermyon::spin::rdbms_types::Column{ name:name24, data_type:data_type24, } = e;
                                     let vec25 = (name24.into_bytes()).into_boxed_slice();
                                     let ptr25 = vec25.as_ptr().cast::<u8>();
                                     let len25 = vec25.len();
@@ -10662,7 +10681,7 @@ pub mod exports {
                                     for (i, e) in vec30.into_iter().enumerate() {
                                         let base = result30.add(i * 16);
                                         {
-                                            use super::super::super::super::fermyon::spin::rdbms_types::DbValue as V29;
+                                            use super::super::super::super::exports::fermyon::spin::rdbms_types::DbValue as V29;
                                             match e {
                                                 V29::Boolean(e) => {
                                                     *base.add(0).cast::<u8>() = (0i32) as u8;
@@ -10754,7 +10773,7 @@ pub mod exports {
                         }
                         Err(e) => {
                             *ptr22.add(0).cast::<u8>() = (1i32) as u8;
-                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V37;
+                            use super::super::super::super::exports::fermyon::spin::rdbms_types::Error as V37;
                             match e {
                                 V37::ConnectionFailed(e) => {
                                     *ptr22.add(4).cast::<u8>() = (0i32) as u8;
@@ -10928,7 +10947,7 @@ pub mod exports {
                         let base = base20.add(i * 16);
                         let e20 = {
                             let l1 = i32::from(*base.add(0).cast::<u8>());
-                            use super::super::super::super::fermyon::spin::rdbms_types::ParameterValue as V19;
+                            use super::super::super::super::exports::fermyon::spin::rdbms_types::ParameterValue as V19;
                             let v19 = match l1 {
                                 0 => {
                                     let e19 = {
@@ -11064,7 +11083,7 @@ pub mod exports {
                         }
                         Err(e) => {
                             *ptr22.add(0).cast::<u8>() = (1i32) as u8;
-                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V28;
+                            use super::super::super::super::exports::fermyon::spin::rdbms_types::Error as V28;
                             match e {
                                 V28::ConnectionFailed(e) => {
                                     *ptr22.add(8).cast::<u8>() = (0i32) as u8;
@@ -11777,9 +11796,11 @@ pub mod exports {
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
                 pub type ParameterValue =
-                    super::super::super::super::fermyon::spin::rdbms_types::ParameterValue;
-                pub type RowSet = super::super::super::super::fermyon::spin::rdbms_types::RowSet;
-                pub type Error = super::super::super::super::fermyon::spin::rdbms_types::Error;
+                    super::super::super::super::exports::fermyon::spin::rdbms_types::ParameterValue;
+                pub type RowSet =
+                    super::super::super::super::exports::fermyon::spin::rdbms_types::RowSet;
+                pub type Error =
+                    super::super::super::super::exports::fermyon::spin::rdbms_types::Error;
                 /// A connection to a MySQL database.
 
                 #[derive(Debug)]
@@ -11941,7 +11962,7 @@ pub mod exports {
                         }
                         Err(e) => {
                             *ptr2.add(0).cast::<u8>() = (1i32) as u8;
-                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V8;
+                            use super::super::super::super::exports::fermyon::spin::rdbms_types::Error as V8;
                             match e {
                                 V8::ConnectionFailed(e) => {
                                     *ptr2.add(4).cast::<u8>() = (0i32) as u8;
@@ -12053,7 +12074,7 @@ pub mod exports {
                         let base = base20.add(i * 16);
                         let e20 = {
                             let l1 = i32::from(*base.add(0).cast::<u8>());
-                            use super::super::super::super::fermyon::spin::rdbms_types::ParameterValue as V19;
+                            use super::super::super::super::exports::fermyon::spin::rdbms_types::ParameterValue as V19;
                             let v19 = match l1 {
                                 0 => {
                                     let e19 = {
@@ -12185,10 +12206,7 @@ pub mod exports {
                     match result21 {
                         Ok(e) => {
                             *ptr22.add(0).cast::<u8>() = (0i32) as u8;
-                            let super::super::super::super::fermyon::spin::rdbms_types::RowSet {
-                                columns: columns23,
-                                rows: rows23,
-                            } = e;
+                            let super::super::super::super::exports::fermyon::spin::rdbms_types::RowSet{ columns:columns23, rows:rows23, } = e;
                             let vec26 = columns23;
                             let len26 = vec26.len();
                             let layout26 =
@@ -12207,7 +12225,7 @@ pub mod exports {
                             for (i, e) in vec26.into_iter().enumerate() {
                                 let base = result26.add(i * 12);
                                 {
-                                    let super::super::super::super::fermyon::spin::rdbms_types::Column{ name:name24, data_type:data_type24, } = e;
+                                    let super::super::super::super::exports::fermyon::spin::rdbms_types::Column{ name:name24, data_type:data_type24, } = e;
                                     let vec25 = (name24.into_bytes()).into_boxed_slice();
                                     let ptr25 = vec25.as_ptr().cast::<u8>();
                                     let len25 = vec25.len();
@@ -12257,7 +12275,7 @@ pub mod exports {
                                     for (i, e) in vec30.into_iter().enumerate() {
                                         let base = result30.add(i * 16);
                                         {
-                                            use super::super::super::super::fermyon::spin::rdbms_types::DbValue as V29;
+                                            use super::super::super::super::exports::fermyon::spin::rdbms_types::DbValue as V29;
                                             match e {
                                                 V29::Boolean(e) => {
                                                     *base.add(0).cast::<u8>() = (0i32) as u8;
@@ -12349,7 +12367,7 @@ pub mod exports {
                         }
                         Err(e) => {
                             *ptr22.add(0).cast::<u8>() = (1i32) as u8;
-                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V37;
+                            use super::super::super::super::exports::fermyon::spin::rdbms_types::Error as V37;
                             match e {
                                 V37::ConnectionFailed(e) => {
                                     *ptr22.add(4).cast::<u8>() = (0i32) as u8;
@@ -12523,7 +12541,7 @@ pub mod exports {
                         let base = base20.add(i * 16);
                         let e20 = {
                             let l1 = i32::from(*base.add(0).cast::<u8>());
-                            use super::super::super::super::fermyon::spin::rdbms_types::ParameterValue as V19;
+                            use super::super::super::super::exports::fermyon::spin::rdbms_types::ParameterValue as V19;
                             let v19 = match l1 {
                                 0 => {
                                     let e19 = {
@@ -12658,7 +12676,7 @@ pub mod exports {
                         }
                         Err(e) => {
                             *ptr22.add(0).cast::<u8>() = (1i32) as u8;
-                            use super::super::super::super::fermyon::spin::rdbms_types::Error as V28;
+                            use super::super::super::super::exports::fermyon::spin::rdbms_types::Error as V28;
                             match e {
                                 V28::ConnectionFailed(e) => {
                                     *ptr22.add(4).cast::<u8>() = (0i32) as u8;
@@ -15554,6 +15572,7 @@ macro_rules! __export_env_impl {
                               $($path_to_types_root)*::exports::fermyon::spin::key_value::__export_fermyon_spin_key_value_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::key_value);
                               $($path_to_types_root)*::exports::fermyon::spin::llm::__export_fermyon_spin_llm_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::llm);
                               $($path_to_types_root)*::exports::fermyon::spin::redis::__export_fermyon_spin_redis_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::redis);
+                              $($path_to_types_root)*::exports::fermyon::spin::rdbms_types::__export_fermyon_spin_rdbms_types_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::rdbms_types);
                               $($path_to_types_root)*::exports::fermyon::spin::postgres::__export_fermyon_spin_postgres_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::postgres);
                               $($path_to_types_root)*::exports::fermyon::spin::mqtt::__export_fermyon_spin_mqtt_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::mqtt);
                               $($path_to_types_root)*::exports::fermyon::spin::mysql::__export_fermyon_spin_mysql_2_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin::mysql);
@@ -15690,65 +15709,65 @@ trailers\xf2\0\0\x81\x01\x04\0\x1c[static]outgoing-body.finish\x01\x82\x01\x01h0
 be\x01\x84\x01\x01i+\x01j\x01\x85\x01\x01\x1b\x01j\x01\x86\x01\0\x01k\x87\x01\x01\
 @\x01\x04self\x83\x01\0\x88\x01\x04\0$[method]future-incoming-response.get\x01\x89\
 \x01\x01h\x07\x01k\x1b\x01@\x01\x03err\x8a\x01\0\x8b\x01\x04\0\x0fhttp-error-cod\
-e\x01\x8c\x01\x03\x01\x15wasi:http/types@0.2.0\x05\x09\x01B\x11\x01q\x05\x11conn\
-ection-failed\x01s\0\x0dbad-parameter\x01s\0\x0cquery-failed\x01s\0\x17value-con\
-version-failed\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x01m\x0e\x07boolean\
-\x04int8\x05int16\x05int32\x05int64\x05uint8\x06uint16\x06uint32\x06uint64\x0afl\
-oating32\x0afloating64\x03str\x06binary\x05other\x04\0\x0cdb-data-type\x03\0\x02\
-\x01p}\x01q\x0f\x07boolean\x01\x7f\0\x04int8\x01~\0\x05int16\x01|\0\x05int32\x01\
-z\0\x05int64\x01x\0\x05uint8\x01}\0\x06uint16\x01{\0\x06uint32\x01y\0\x06uint64\x01\
+e\x01\x8c\x01\x03\x01\x15wasi:http/types@0.2.0\x05\x09\x02\x03\0\x04\x11outgoing\
+-response\x03\0\x11outgoing-response\x03\0\x0a\x02\x03\0\x04\x18future-incoming-\
+response\x03\0\x18future-incoming-response\x03\0\x0c\x01@\0\0s\x03\0\x0cget-mani\
+fest\x01\x0e\x01i\x0b\x01i\x0d\x01@\x01\x08response\x0f\0\x10\x03\0\x11futurize-\
+response\x01\x11\x01@\x01\x0ccomponent-ids\x01\0\x04\0\x10set-component-id\x01\x12\
+\x01B\x19\x04\0\x05store\x03\x01\x01q\x04\x10store-table-full\0\0\x0dno-such-sto\
+re\0\0\x0daccess-denied\0\0\x05other\x01s\0\x04\0\x05error\x03\0\x01\x01i\0\x01j\
+\x01\x03\x01\x02\x01@\x01\x05labels\0\x04\x04\0\x12[static]store.open\x01\x05\x01\
+h\0\x01p}\x01k\x07\x01j\x01\x08\x01\x02\x01@\x02\x04self\x06\x03keys\0\x09\x04\0\
+\x11[method]store.get\x01\x0a\x01j\0\x01\x02\x01@\x03\x04self\x06\x03keys\x05val\
+ue\x07\0\x0b\x04\0\x11[method]store.set\x01\x0c\x01@\x02\x04self\x06\x03keys\0\x0b\
+\x04\0\x14[method]store.delete\x01\x0d\x01j\x01\x7f\x01\x02\x01@\x02\x04self\x06\
+\x03keys\0\x0e\x04\0\x14[method]store.exists\x01\x0f\x01ps\x01j\x01\x10\x01\x02\x01\
+@\x01\x04self\x06\0\x11\x04\0\x16[method]store.get-keys\x01\x12\x04\x01\x1cfermy\
+on:spin/key-value@2.0.0\x05\x13\x01B\x1a\x01s\x04\0\x11inferencing-model\x03\0\0\
+\x01r\x06\x0amax-tokensy\x0erepeat-penaltyv!repeat-penalty-last-n-token-county\x0b\
+temperaturev\x05top-ky\x05top-pv\x04\0\x12inferencing-params\x03\0\x02\x01q\x03\x13\
+model-not-supported\0\0\x0druntime-error\x01s\0\x0dinvalid-input\x01s\0\x04\0\x05\
+error\x03\0\x04\x01r\x02\x12prompt-token-county\x15generated-token-county\x04\0\x11\
+inferencing-usage\x03\0\x06\x01r\x02\x04texts\x05usage\x07\x04\0\x12inferencing-\
+result\x03\0\x08\x01s\x04\0\x0fembedding-model\x03\0\x0a\x01r\x01\x12prompt-toke\
+n-county\x04\0\x10embeddings-usage\x03\0\x0c\x01pv\x01p\x0e\x01r\x02\x0aembeddin\
+gs\x0f\x05usage\x0d\x04\0\x11embeddings-result\x03\0\x10\x01k\x03\x01j\x01\x09\x01\
+\x05\x01@\x03\x05model\x01\x06prompts\x06params\x12\0\x13\x04\0\x05infer\x01\x14\
+\x01ps\x01j\x01\x11\x01\x05\x01@\x02\x05model\x0b\x04text\x15\0\x16\x04\0\x13gen\
+erate-embeddings\x01\x17\x04\x01\x16fermyon:spin/llm@2.0.0\x05\x14\x01B)\x01q\x04\
+\x0finvalid-address\0\0\x14too-many-connections\0\0\x0atype-error\0\0\x05other\x01\
+s\0\x04\0\x05error\x03\0\0\x04\0\x0aconnection\x03\x01\x01p}\x04\0\x07payload\x03\
+\0\x03\x01q\x02\x05int64\x01x\0\x06binary\x01\x04\0\x04\0\x0fredis-parameter\x03\
+\0\x05\x01q\x04\x03nil\0\0\x06status\x01s\0\x05int64\x01x\0\x06binary\x01\x04\0\x04\
+\0\x0credis-result\x03\0\x07\x01i\x02\x01j\x01\x09\x01\x01\x01@\x01\x07addresss\0\
+\x0a\x04\0\x17[static]connection.open\x01\x0b\x01h\x02\x01j\0\x01\x01\x01@\x03\x04\
+self\x0c\x07channels\x07payload\x04\0\x0d\x04\0\x1a[method]connection.publish\x01\
+\x0e\x01k\x04\x01j\x01\x0f\x01\x01\x01@\x02\x04self\x0c\x03keys\0\x10\x04\0\x16[\
+method]connection.get\x01\x11\x01@\x03\x04self\x0c\x03keys\x05value\x04\0\x0d\x04\
+\0\x16[method]connection.set\x01\x12\x01j\x01x\x01\x01\x01@\x02\x04self\x0c\x03k\
+eys\0\x13\x04\0\x17[method]connection.incr\x01\x14\x01ps\x01j\x01y\x01\x01\x01@\x02\
+\x04self\x0c\x04keys\x15\0\x16\x04\0\x16[method]connection.del\x01\x17\x01@\x03\x04\
+self\x0c\x03keys\x06values\x15\0\x16\x04\0\x17[method]connection.sadd\x01\x18\x01\
+j\x01\x15\x01\x01\x01@\x02\x04self\x0c\x03keys\0\x19\x04\0\x1b[method]connection\
+.smembers\x01\x1a\x04\0\x17[method]connection.srem\x01\x18\x01p\x06\x01p\x08\x01\
+j\x01\x1c\x01\x01\x01@\x03\x04self\x0c\x07commands\x09arguments\x1b\0\x1d\x04\0\x1a\
+[method]connection.execute\x01\x1e\x04\x01\x18fermyon:spin/redis@2.0.0\x05\x15\x01\
+B\x11\x01q\x05\x11connection-failed\x01s\0\x0dbad-parameter\x01s\0\x0cquery-fail\
+ed\x01s\0\x17value-conversion-failed\x01s\0\x05other\x01s\0\x04\0\x05error\x03\0\
+\0\x01m\x0e\x07boolean\x04int8\x05int16\x05int32\x05int64\x05uint8\x06uint16\x06\
+uint32\x06uint64\x0afloating32\x0afloating64\x03str\x06binary\x05other\x04\0\x0c\
+db-data-type\x03\0\x02\x01p}\x01q\x0f\x07boolean\x01\x7f\0\x04int8\x01~\0\x05int\
+16\x01|\0\x05int32\x01z\0\x05int64\x01x\0\x05uint8\x01}\0\x06uint16\x01{\0\x06ui\
+nt32\x01y\0\x06uint64\x01w\0\x0afloating32\x01v\0\x0afloating64\x01u\0\x03str\x01\
+s\0\x06binary\x01\x04\0\x07db-null\0\0\x0bunsupported\0\0\x04\0\x08db-value\x03\0\
+\x05\x01q\x0e\x07boolean\x01\x7f\0\x04int8\x01~\0\x05int16\x01|\0\x05int32\x01z\0\
+\x05int64\x01x\0\x05uint8\x01}\0\x06uint16\x01{\0\x06uint32\x01y\0\x06uint64\x01\
 w\0\x0afloating32\x01v\0\x0afloating64\x01u\0\x03str\x01s\0\x06binary\x01\x04\0\x07\
-db-null\0\0\x0bunsupported\0\0\x04\0\x08db-value\x03\0\x05\x01q\x0e\x07boolean\x01\
-\x7f\0\x04int8\x01~\0\x05int16\x01|\0\x05int32\x01z\0\x05int64\x01x\0\x05uint8\x01\
-}\0\x06uint16\x01{\0\x06uint32\x01y\0\x06uint64\x01w\0\x0afloating32\x01v\0\x0af\
-loating64\x01u\0\x03str\x01s\0\x06binary\x01\x04\0\x07db-null\0\0\x04\0\x0fparam\
-eter-value\x03\0\x07\x01r\x02\x04names\x09data-type\x03\x04\0\x06column\x03\0\x09\
-\x01p\x06\x04\0\x03row\x03\0\x0b\x01p\x0a\x01p\x0c\x01r\x02\x07columns\x0d\x04ro\
-ws\x0e\x04\0\x07row-set\x03\0\x0f\x03\x01\x1efermyon:spin/rdbms-types@2.0.0\x05\x0a\
-\x02\x03\0\x04\x11outgoing-response\x03\0\x11outgoing-response\x03\0\x0b\x02\x03\
-\0\x04\x18future-incoming-response\x03\0\x18future-incoming-response\x03\0\x0d\x01\
-@\0\0s\x03\0\x0cget-manifest\x01\x0f\x01i\x0c\x01i\x0e\x01@\x01\x08response\x10\0\
-\x11\x03\0\x11futurize-response\x01\x12\x01@\x01\x0ccomponent-ids\x01\0\x04\0\x10\
-set-component-id\x01\x13\x01B\x19\x04\0\x05store\x03\x01\x01q\x04\x10store-table\
--full\0\0\x0dno-such-store\0\0\x0daccess-denied\0\0\x05other\x01s\0\x04\0\x05err\
-or\x03\0\x01\x01i\0\x01j\x01\x03\x01\x02\x01@\x01\x05labels\0\x04\x04\0\x12[stat\
-ic]store.open\x01\x05\x01h\0\x01p}\x01k\x07\x01j\x01\x08\x01\x02\x01@\x02\x04sel\
-f\x06\x03keys\0\x09\x04\0\x11[method]store.get\x01\x0a\x01j\0\x01\x02\x01@\x03\x04\
-self\x06\x03keys\x05value\x07\0\x0b\x04\0\x11[method]store.set\x01\x0c\x01@\x02\x04\
-self\x06\x03keys\0\x0b\x04\0\x14[method]store.delete\x01\x0d\x01j\x01\x7f\x01\x02\
-\x01@\x02\x04self\x06\x03keys\0\x0e\x04\0\x14[method]store.exists\x01\x0f\x01ps\x01\
-j\x01\x10\x01\x02\x01@\x01\x04self\x06\0\x11\x04\0\x16[method]store.get-keys\x01\
-\x12\x04\x01\x1cfermyon:spin/key-value@2.0.0\x05\x14\x01B\x1a\x01s\x04\0\x11infe\
-rencing-model\x03\0\0\x01r\x06\x0amax-tokensy\x0erepeat-penaltyv!repeat-penalty-\
-last-n-token-county\x0btemperaturev\x05top-ky\x05top-pv\x04\0\x12inferencing-par\
-ams\x03\0\x02\x01q\x03\x13model-not-supported\0\0\x0druntime-error\x01s\0\x0dinv\
-alid-input\x01s\0\x04\0\x05error\x03\0\x04\x01r\x02\x12prompt-token-county\x15ge\
-nerated-token-county\x04\0\x11inferencing-usage\x03\0\x06\x01r\x02\x04texts\x05u\
-sage\x07\x04\0\x12inferencing-result\x03\0\x08\x01s\x04\0\x0fembedding-model\x03\
-\0\x0a\x01r\x01\x12prompt-token-county\x04\0\x10embeddings-usage\x03\0\x0c\x01pv\
-\x01p\x0e\x01r\x02\x0aembeddings\x0f\x05usage\x0d\x04\0\x11embeddings-result\x03\
-\0\x10\x01k\x03\x01j\x01\x09\x01\x05\x01@\x03\x05model\x01\x06prompts\x06params\x12\
-\0\x13\x04\0\x05infer\x01\x14\x01ps\x01j\x01\x11\x01\x05\x01@\x02\x05model\x0b\x04\
-text\x15\0\x16\x04\0\x13generate-embeddings\x01\x17\x04\x01\x16fermyon:spin/llm@\
-2.0.0\x05\x15\x01B)\x01q\x04\x0finvalid-address\0\0\x14too-many-connections\0\0\x0a\
-type-error\0\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x04\0\x0aconnection\x03\x01\
-\x01p}\x04\0\x07payload\x03\0\x03\x01q\x02\x05int64\x01x\0\x06binary\x01\x04\0\x04\
-\0\x0fredis-parameter\x03\0\x05\x01q\x04\x03nil\0\0\x06status\x01s\0\x05int64\x01\
-x\0\x06binary\x01\x04\0\x04\0\x0credis-result\x03\0\x07\x01i\x02\x01j\x01\x09\x01\
-\x01\x01@\x01\x07addresss\0\x0a\x04\0\x17[static]connection.open\x01\x0b\x01h\x02\
-\x01j\0\x01\x01\x01@\x03\x04self\x0c\x07channels\x07payload\x04\0\x0d\x04\0\x1a[\
-method]connection.publish\x01\x0e\x01k\x04\x01j\x01\x0f\x01\x01\x01@\x02\x04self\
-\x0c\x03keys\0\x10\x04\0\x16[method]connection.get\x01\x11\x01@\x03\x04self\x0c\x03\
-keys\x05value\x04\0\x0d\x04\0\x16[method]connection.set\x01\x12\x01j\x01x\x01\x01\
-\x01@\x02\x04self\x0c\x03keys\0\x13\x04\0\x17[method]connection.incr\x01\x14\x01\
-ps\x01j\x01y\x01\x01\x01@\x02\x04self\x0c\x04keys\x15\0\x16\x04\0\x16[method]con\
-nection.del\x01\x17\x01@\x03\x04self\x0c\x03keys\x06values\x15\0\x16\x04\0\x17[m\
-ethod]connection.sadd\x01\x18\x01j\x01\x15\x01\x01\x01@\x02\x04self\x0c\x03keys\0\
-\x19\x04\0\x1b[method]connection.smembers\x01\x1a\x04\0\x17[method]connection.sr\
-em\x01\x18\x01p\x06\x01p\x08\x01j\x01\x1c\x01\x01\x01@\x03\x04self\x0c\x07comman\
-ds\x09arguments\x1b\0\x1d\x04\0\x1a[method]connection.execute\x01\x1e\x04\x01\x18\
-fermyon:spin/redis@2.0.0\x05\x16\x02\x03\0\x05\x0fparameter-value\x02\x03\0\x05\x07\
-row-set\x02\x03\0\x05\x05error\x01B\x13\x02\x03\x02\x01\x17\x04\0\x0fparameter-v\
+db-null\0\0\x04\0\x0fparameter-value\x03\0\x07\x01r\x02\x04names\x09data-type\x03\
+\x04\0\x06column\x03\0\x09\x01p\x06\x04\0\x03row\x03\0\x0b\x01p\x0a\x01p\x0c\x01\
+r\x02\x07columns\x0d\x04rows\x0e\x04\0\x07row-set\x03\0\x0f\x04\x01\x1efermyon:s\
+pin/rdbms-types@2.0.0\x05\x16\x02\x03\0\x08\x0fparameter-value\x02\x03\0\x08\x07\
+row-set\x02\x03\0\x08\x05error\x01B\x13\x02\x03\x02\x01\x17\x04\0\x0fparameter-v\
 alue\x03\0\0\x02\x03\x02\x01\x18\x04\0\x07row-set\x03\0\x02\x02\x03\x02\x01\x19\x04\
 \0\x05error\x03\0\x04\x04\0\x0aconnection\x03\x01\x01i\x06\x01j\x01\x07\x01\x05\x01\
 @\x01\x07addresss\0\x08\x04\0\x17[static]connection.open\x01\x09\x01h\x06\x01p\x01\
@@ -15784,11 +15803,11 @@ databases\0\x0e\x04\0\x17[static]connection.open\x01\x0f\x01h\0\x01j\x01\x0c\x01
 get\x01\x03\x04\x01\x1cfermyon:spin/variables@2.0.0\x05\x1e\x02\x03\0\x04\x10out\
 going-request\x02\x03\0\x04\x0frequest-options\x02\x03\0\x04\x0aerror-code\x01B\x0f\
 \x02\x03\x02\x01\x1f\x04\0\x10outgoing-request\x03\0\0\x02\x03\x02\x01\x20\x04\0\
-\x0frequest-options\x03\0\x02\x02\x03\x02\x01\x0d\x04\0\x18future-incoming-respo\
+\x0frequest-options\x03\0\x02\x02\x03\x02\x01\x0c\x04\0\x18future-incoming-respo\
 nse\x03\0\x04\x02\x03\x02\x01!\x04\0\x0aerror-code\x03\0\x06\x01i\x01\x01i\x03\x01\
 k\x09\x01i\x05\x01j\x01\x0b\x01\x07\x01@\x02\x07request\x08\x07options\x0a\0\x0c\
 \x04\0\x06handle\x01\x0d\x04\x01\x20wasi:http/outgoing-handler@0.2.0\x05\"\x01B\x05\
-\x02\x03\x02\x01\x0b\x04\0\x11outgoing-response\x03\0\0\x01i\x01\x01@\x02\x03url\
+\x02\x03\x02\x01\x0a\x04\0\x11outgoing-response\x03\0\0\x01i\x01\x01@\x02\x03url\
 s\x08response\x02\x01\0\x04\0\x0cset-response\x01\x03\x04\x01#fermyon:spin-test-\
 virt/http-handler\x05#\x01B\x19\x04\0\x05store\x03\x01\x01p}\x01o\x02s\x01\x01q\x05\
 \x03get\x01s\0\x03set\x01\x02\0\x06delete\x01s\0\x06exists\x01s\0\x08get-keys\0\0\

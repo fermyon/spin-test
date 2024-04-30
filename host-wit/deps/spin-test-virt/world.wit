@@ -6,6 +6,7 @@ world env {
     export fermyon:spin/key-value@2.0.0;
     export fermyon:spin/llm@2.0.0;
     export fermyon:spin/redis@2.0.0;
+    export fermyon:spin/rdbms-types@2.0.0;
     export fermyon:spin/postgres@2.0.0;
     export fermyon:spin/mqtt@2.0.0;
     export fermyon:spin/mysql@2.0.0;
