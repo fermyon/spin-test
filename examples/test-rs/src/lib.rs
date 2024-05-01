@@ -1,6 +1,9 @@
 use spin_test_sdk::{
     bindings::{
-        fermyon::spin_test_virt::{http_handler, key_value},
+        fermyon::{
+            spin_test_virt::{http_handler, key_value},
+            spin_wasi_virt::environment,
+        },
         wasi::http,
     },
     spin_test,
@@ -47,6 +50,15 @@ fn cache_miss() {
     assert_eq!(
         key_value_config.get("123").as_deref(),
         Some(user_json.as_bytes())
+    );
+}
+
+#[spin_test]
+fn check_args() {
+    environment::set_arguments(&["foo".to_string(), "bar".to_string()]);
+    assert_eq!(
+        vec!["foo".to_string(), "bar".to_string()],
+        std::env::args().collect::<Vec<_>>(),
     );
 }
 

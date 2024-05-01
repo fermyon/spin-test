@@ -1,6 +1,10 @@
+// TODO: remove this when things are closer to being implemented
+#![allow(warnings)]
+
 #[allow(clippy::all)]
 mod bindings;
 mod manifest;
+mod wasi_virt;
 
 use std::{
     collections::{HashMap, HashSet},
@@ -11,8 +15,9 @@ use bindings::exports::{
     fermyon::{
         spin::{self, llm, mqtt, mysql, postgres, redis, sqlite, variables},
         spin_test_virt::{self, http_handler, key_value as virt_key_value},
+        spin_wasi_virt::environment as virt_environment,
     },
-    wasi::http::outgoing_handler,
+    wasi::{self, http::outgoing_handler},
 };
 use bindings::wasi::http::types;
 
@@ -668,5 +673,3 @@ impl virt_key_value::GuestStore for VirtKeyValueStore {
         self.inner.delete(&key);
     }
 }
-
-bindings::export!(Component with_types_in bindings);

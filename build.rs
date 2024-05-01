@@ -9,7 +9,6 @@ fn main() {
     check_cargo_component_installed();
     cargo_component_build("crates/router");
     cargo_component_build("crates/spin-test-virt");
-    cargo_component_build("crates/spin-wasi-virt");
     copy_wit_to_out_dir();
 }
 

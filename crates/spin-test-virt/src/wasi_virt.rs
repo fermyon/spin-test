@@ -1,25 +1,51 @@
-// TODO: remove this when things are closer to being implemented
-#![allow(warnings)]
+use super::*;
 
-#[allow(warnings)]
-mod bindings;
-
-use bindings::exports::wasi;
-
-struct Component;
+static INITIAL_CWD: OnceLock<RwLock<Option<String>>> = OnceLock::new();
+static ARGUMENTS: OnceLock<RwLock<Vec<String>>> = OnceLock::new();
 
 impl wasi::cli::environment::Guest for Component {
     fn get_environment() -> Vec<(String, String)> {
-        // TODO: Implement this
-        Vec::new()
+        let Some(component) = manifest::AppManifest::get_component() else {
+            return Vec::new();
+        };
+
+        component.environment.into_iter().collect()
     }
 
     fn get_arguments() -> Vec<String> {
-        Vec::new()
+        ARGUMENTS
+            .get_or_init(Default::default)
+            .read()
+            .unwrap()
+            .iter()
+            .cloned()
+            .collect()
     }
 
     fn initial_cwd() -> Option<String> {
-        todo!()
+        INITIAL_CWD
+            .get_or_init(Default::default)
+            .read()
+            .unwrap()
+            .clone()
+    }
+}
+
+impl virt_environment::Guest for Component {
+    fn set_arguments(arguments: Vec<String>) {
+        ARGUMENTS
+            .get_or_init(Default::default)
+            .write()
+            .unwrap()
+            .extend(arguments);
+    }
+
+    fn set_initial_cwd(cwd: String) {
+        INITIAL_CWD
+            .get_or_init(Default::default)
+            .write()
+            .unwrap()
+            .insert(cwd);
     }
 }
 
@@ -47,7 +73,7 @@ impl wasi::filesystem::types::Guest for Component {
     }
 }
 
-struct Descriptor;
+pub struct Descriptor;
 
 impl wasi::filesystem::types::GuestDescriptor for Descriptor {
     fn read_via_stream(
@@ -235,7 +261,7 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
     }
 }
 
-struct DirectoryEntryStream;
+pub struct DirectoryEntryStream;
 
 impl wasi::filesystem::types::GuestDirectoryEntryStream for DirectoryEntryStream {
     fn read_directory_entry(
@@ -266,7 +292,7 @@ impl wasi::sockets::ip_name_lookup::Guest for Component {
     }
 }
 
-struct ResolveAddressStream;
+pub struct ResolveAddressStream;
 
 impl wasi::sockets::ip_name_lookup::GuestResolveAddressStream for ResolveAddressStream {
     fn resolve_next_address(
@@ -287,7 +313,7 @@ impl wasi::sockets::network::Guest for Component {
     type Network = Network;
 }
 
-struct Network;
+pub struct Network;
 
 impl wasi::sockets::network::GuestNetwork for Network {}
 
@@ -295,7 +321,7 @@ impl wasi::sockets::tcp::Guest for Component {
     type TcpSocket = TcpSocket;
 }
 
-struct TcpSocket;
+pub struct TcpSocket;
 
 impl wasi::sockets::tcp::GuestTcpSocket for TcpSocket {
     fn start_bind(
@@ -470,7 +496,7 @@ impl wasi::sockets::udp::Guest for Component {
     type OutgoingDatagramStream = OutgoingDatagramStream;
 }
 
-struct UdpSocket;
+pub struct UdpSocket;
 
 impl wasi::sockets::udp::GuestUdpSocket for UdpSocket {
     fn start_bind(
@@ -543,7 +569,7 @@ impl wasi::sockets::udp::GuestUdpSocket for UdpSocket {
     }
 }
 
-struct IncomingDatagramStream;
+pub struct IncomingDatagramStream;
 
 impl wasi::sockets::udp::GuestIncomingDatagramStream for IncomingDatagramStream {
     fn receive(
@@ -558,7 +584,7 @@ impl wasi::sockets::udp::GuestIncomingDatagramStream for IncomingDatagramStream 
     }
 }
 
-struct OutgoingDatagramStream;
+pub struct OutgoingDatagramStream;
 
 impl wasi::sockets::udp::GuestOutgoingDatagramStream for OutgoingDatagramStream {
     fn check_send(&self) -> Result<u64, wasi::sockets::udp::ErrorCode> {

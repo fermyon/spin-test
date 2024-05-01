@@ -11,11 +11,7 @@ const SPIN_TEST_VIRT: &[u8] = include_bytes!(concat!(
     env!("OUT_DIR"),
     "/wasm32-wasi/release/spin_test_virt.wasm"
 ));
-/// The built `spin-wasi-virt` component
-const SPIN_WASI_VIRT: &[u8] = include_bytes!(concat!(
-    env!("OUT_DIR"),
-    "/wasm32-wasi/release/spin_wasi_virt.wasm"
-));
+
 /// The built `router` component
 const ROUTER: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/wasm32-wasi/release/router.wasm"));
 /// The wit package for `spin-test` (packed into a single file)
@@ -66,12 +62,21 @@ pub fn encode_composition(
         .instantiate("virt", SPIN_TEST_VIRT, virt_args)
         .context("fatal error: could not instantiate spin-test-virt")?;
 
-    let wasi_virt = composition
-        .instantiate("wasi-virt", SPIN_WASI_VIRT, Vec::new())
-        .context("fatal error: could not instantiate spin-wasi-virt")?;
-
     // Instantiate the `app` component with various exports from `spin-test-virt` instance
     let app_args = [
+        "wasi:cli/environment@0.2.0",
+        "wasi:cli/exit@0.2.0",
+        "wasi:filesystem/types@0.2.0",
+        "wasi:filesystem/preopens@0.2.0",
+        "wasi:cli/environment@0.2.0",
+        "wasi:cli/exit@0.2.0",
+        "wasi:sockets/instance-network@0.2.0",
+        "wasi:sockets/network@0.2.0",
+        "wasi:sockets/udp@0.2.0",
+        "wasi:sockets/udp-create-socket@0.2.0",
+        "wasi:sockets/tcp@0.2.0",
+        "wasi:sockets/tcp-create-socket@0.2.0",
+        "wasi:sockets/ip-name-lookup@0.2.0",
         "fermyon:spin/key-value@2.0.0",
         "fermyon:spin/llm@2.0.0",
         "fermyon:spin/redis@2.0.0",
@@ -94,35 +99,6 @@ pub fn encode_composition(
             ) as Box<_>,
         ))
     })
-    .chain(
-        [
-            "wasi:cli/environment@0.2.0",
-            "wasi:cli/exit@0.2.0",
-            "wasi:filesystem/types@0.2.0",
-            "wasi:filesystem/preopens@0.2.0",
-            "wasi:cli/environment@0.2.0",
-            "wasi:cli/exit@0.2.0",
-            "wasi:sockets/instance-network@0.2.0",
-            "wasi:sockets/network@0.2.0",
-            "wasi:sockets/udp@0.2.0",
-            "wasi:sockets/udp-create-socket@0.2.0",
-            "wasi:sockets/tcp@0.2.0",
-            "wasi:sockets/tcp-create-socket@0.2.0",
-            "wasi:sockets/ip-name-lookup@0.2.0",
-        ]
-        .into_iter()
-        .map(|k| {
-            Ok((
-                k,
-                Box::new(
-                    wasi_virt
-                        .export(k)
-                        .with_context(|| format!("failed to export '{k}' from `spin-wasi-virt`"))?
-                        .with_context(|| format!("`spin-wasi-virt` does not export '{k}'"))?,
-                ) as Box<_>,
-            ))
-        }),
-    )
     .collect::<anyhow::Result<Vec<_>>>()?;
     let app = composition
         .instantiate("app", &app_component.bytes, app_args)
@@ -161,6 +137,7 @@ pub fn encode_composition(
             &virt,
             "`spin-test-virt`",
         ),
+        ("wasi:cli/environment@0.2.0", &virt, "`spin-test-virt`"),
         ("fermyon:spin/key-value@2.0.0", &virt, "`spin-test-virt`"),
         (
             "fermyon:spin-test-virt/key-value",
@@ -168,6 +145,11 @@ pub fn encode_composition(
             "`spin-test-virt`",
         ),
         ("fermyon:spin-test-virt/sqlite", &virt, "`spin-test-virt`"),
+        (
+            "fermyon:spin-wasi-virt/environment",
+            &virt,
+            "`spin-test-virt`",
+        ),
         // Needed for types
         ("fermyon:spin/sqlite@2.0.0", &virt, "`spin-test-virt`"),
         (

@@ -1,4 +1,4 @@
-package component:spin-wasi-virt;
+package fermyon:spin-wasi-virt;
 
 world virt {
     import wasi:clocks/monotonic-clock@0.2.0;
@@ -26,4 +26,15 @@ world virt {
     export wasi:sockets/tcp@0.2.0;
     export wasi:sockets/tcp-create-socket@0.2.0;
     export wasi:sockets/ip-name-lookup@0.2.0;
+
+    /// Helpers interfaces to dynamically configure virtualization.
+    export environment;
+}
+
+/// Interface for configuring the behavior of the `wasi:cli/environment` interface
+interface environment {
+    /// Set the POSIX-style arguments to the program.
+    set-arguments: func(arguments: list<string>);
+    /// Set the initial current working directory.
+    set-initial-cwd: func(cwd: string);
 }

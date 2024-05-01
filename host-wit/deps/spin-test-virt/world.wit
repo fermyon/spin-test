@@ -2,6 +2,8 @@ package fermyon:spin-test-virt;
 
 /// A configurable virtualized environment for Spin apps.
 world env {
+    include fermyon:spin-wasi-virt/virt;
+
     // The exports that compose directly with Spin app
     export fermyon:spin/key-value@2.0.0;
     export fermyon:spin/llm@2.0.0;
@@ -26,7 +28,7 @@ world env {
     import futurize-response: func(response: outgoing-response) -> future-incoming-response;
 }
 
-/// Interface for configuring the behavior of `fermyon:spin/sqlite` interface
+/// Interface for configuring the behavior of the `fermyon:spin/sqlite` interface
 interface sqlite {
     use fermyon:spin/sqlite@2.0.0.{value, query-result, error};
 
@@ -34,7 +36,7 @@ interface sqlite {
     set-response: func(query: string, params: list<value>, response: result<query-result, error>);
 }
 
-/// Interface for configuring the behavior of `wasi:http/outgoing-handler` interface
+/// Interface for configuring the behavior of the `wasi:http/outgoing-handler` interface
 interface http-handler {
     use wasi:http/types@0.2.0.{outgoing-response};
 

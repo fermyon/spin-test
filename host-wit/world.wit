@@ -5,7 +5,9 @@ world test-imports {
     import fermyon:spin-test-virt/http-handler;
     import fermyon:spin-test-virt/key-value;
     import fermyon:spin-test-virt/sqlite;
+    import fermyon:spin-wasi-virt/environment;
     import wasi:http/incoming-handler@0.2.0;
+    import wasi:cli/environment@0.2.0;
     import http-helper;
 }
 
@@ -21,7 +23,6 @@ world runner {
     import get-manifest: func() -> string;
     /// Provided helpers for http that must be supplied by a host
     import http-helper;
-    
     /// Run the test
     export run: func();
 }
