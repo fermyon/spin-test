@@ -18,6 +18,16 @@ This will install the plugin which can be invoked with `spin test`.
 
 In the future, stable, non-canary releases will also be made available.
 
+#### Installing a Locally Built Version
+
+To install a version of `spin-test` plugin that has been locally built using `cargo build --release`, use the following command:
+
+```bash
+spin pluginify -i
+```
+
+Note: the [`pluginify`](https://github.com/fermyon/spin-plugins/blob/main/manifests/pluginify/pluginify.json) plugin is a pre-requisite.
+
 ### Install `spin-test` (stand alone)
 
 Alternatively, to install `spin-test` as a stand alone binary, run `cargo build --release` from this directory and ensure that the resulting binary is located on your path.

@@ -1,0 +1,5 @@
+name = "test"
+version = "0.1"
+spin_compatibility = ">=2.0"
+license = "Apache-2.0"
+package = "./target/release/spin-test"
