@@ -94,7 +94,6 @@ impl http::types::OutgoingBody {
 
         let stream = self.write().expect("response body should be writable");
         let pair = Outgoing(Some((stream, self)));
-
         let pollable = pair.stream().subscribe();
         while !bytes.is_empty() {
             // Block until ready to write

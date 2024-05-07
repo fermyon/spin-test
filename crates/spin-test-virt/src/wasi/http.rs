@@ -13,65 +13,61 @@ use crate::Component;
 use super::io;
 
 impl exports::types::Guest for Component {
-    type Fields = Fields;
-
     type IncomingRequest = IncomingRequest;
-
-    type OutgoingRequest = OutgoingRequest;
-
-    type RequestOptions = RequestOptions;
-
-    type ResponseOutparam = ResponseOutparam;
-
-    type IncomingResponse = IncomingResponse;
-
-    type IncomingBody = IncomingBody;
-
-    type FutureTrailers = FutureTrailers;
-
     type OutgoingResponse = OutgoingResponse;
 
-    type OutgoingBody = OutgoingBody;
+    type OutgoingRequest = OutgoingRequest;
+    type IncomingResponse = IncomingResponse;
 
+    type OutgoingBody = OutgoingBody;
+    type IncomingBody = IncomingBody;
+
+    type Fields = Fields;
+    type RequestOptions = RequestOptions;
+    type ResponseOutparam = ResponseOutparam;
     type FutureIncomingResponse = FutureIncomingResponse;
+    type FutureTrailers = FutureTrailers;
 
     fn http_error_code(
         err: io::exports::error::ErrorBorrow<'_>,
     ) -> Option<exports::types::ErrorCode> {
-        todo!()
+        None
     }
 }
 
-pub struct FutureIncomingResponse;
-
-impl exports::types::GuestFutureIncomingResponse for FutureIncomingResponse {
-    fn subscribe(&self) -> io::exports::poll::Pollable {
-        todo!()
-    }
-
-    fn get(
-        &self,
-    ) -> Option<Result<Result<exports::types::IncomingResponse, exports::types::ErrorCode>, ()>>
-    {
-        todo!()
-    }
+pub struct IncomingRequest {
+    pub method: exports::types::Method,
+    pub scheme: Option<exports::types::Scheme>,
+    pub authority: Option<String>,
+    pub path_with_query: Option<String>,
+    pub headers: Fields,
+    pub body: RefCell<Option<IncomingBody>>,
 }
 
-#[derive(Clone)]
-pub struct OutgoingBody;
-
-impl exports::types::GuestOutgoingBody for OutgoingBody {
-    fn write(&self) -> Result<io::exports::streams::OutputStream, ()> {
-        Ok(io::exports::streams::OutputStream::new(
-            io::OutputStream::Virtualized,
-        ))
+impl exports::types::GuestIncomingRequest for IncomingRequest {
+    fn method(&self) -> exports::types::Method {
+        self.method.clone()
     }
 
-    fn finish(
-        this: exports::types::OutgoingBody,
-        trailers: Option<exports::types::Trailers>,
-    ) -> Result<(), exports::types::ErrorCode> {
-        Ok(())
+    fn path_with_query(&self) -> Option<String> {
+        self.path_with_query.clone()
+    }
+
+    fn scheme(&self) -> Option<exports::types::Scheme> {
+        self.scheme.clone()
+    }
+
+    fn authority(&self) -> Option<String> {
+        self.authority.clone()
+    }
+
+    fn headers(&self) -> exports::types::Headers {
+        exports::types::Headers::new(self.headers.clone())
+    }
+
+    fn consume(&self) -> Result<exports::types::IncomingBody, ()> {
+        let body = self.body.borrow_mut().take().ok_or(())?;
+        Ok(exports::types::IncomingBody::new(body))
     }
 }
 
@@ -102,114 +98,12 @@ impl exports::types::GuestOutgoingResponse for OutgoingResponse {
     }
 
     fn headers(&self) -> exports::types::Headers {
-        todo!()
+        exports::types::Headers::new(self.headers.clone())
     }
 
     fn body(&self) -> Result<exports::types::OutgoingBody, ()> {
         let body = self.body.take().ok_or(())?;
         Ok(exports::types::OutgoingBody::new(body))
-    }
-}
-
-pub struct FutureTrailers;
-
-impl exports::types::GuestFutureTrailers for FutureTrailers {
-    fn subscribe(&self) -> io::exports::poll::Pollable {
-        todo!()
-    }
-
-    fn get(
-        &self,
-    ) -> Option<Result<Result<Option<exports::types::Trailers>, exports::types::ErrorCode>, ()>>
-    {
-        todo!()
-    }
-}
-
-pub struct IncomingBody;
-
-impl exports::types::GuestIncomingBody for IncomingBody {
-    fn stream(&self) -> Result<io::exports::streams::InputStream, ()> {
-        todo!()
-    }
-
-    fn finish(this: exports::types::IncomingBody) -> exports::types::FutureTrailers {
-        todo!()
-    }
-}
-
-impl From<OutgoingBody> for IncomingBody {
-    fn from(_: OutgoingBody) -> Self {
-        Self
-    }
-}
-
-pub struct IncomingResponse {
-    pub status: exports::types::StatusCode,
-    pub body: RefCell<Option<IncomingBody>>,
-}
-
-impl exports::types::GuestIncomingResponse for IncomingResponse {
-    fn status(&self) -> exports::types::StatusCode {
-        self.status
-    }
-
-    fn headers(&self) -> exports::types::Headers {
-        todo!()
-    }
-
-    fn consume(&self) -> Result<exports::types::IncomingBody, ()> {
-        let body = self.body.borrow_mut().take().ok_or(())?;
-        Ok(exports::types::IncomingBody::new(body))
-    }
-}
-
-pub struct ResponseOutparam(
-    pub Arc<Mutex<Option<Result<exports::types::OutgoingResponse, exports::types::ErrorCode>>>>,
-);
-
-impl exports::types::GuestResponseOutparam for ResponseOutparam {
-    fn set(
-        mut param: exports::types::ResponseOutparam,
-        response: Result<exports::types::OutgoingResponse, exports::types::ErrorCode>,
-    ) {
-        let inner: &mut ResponseOutparam = param.get_mut();
-        *inner.0.lock().unwrap() = Some(response);
-    }
-}
-
-pub struct RequestOptions;
-
-impl exports::types::GuestRequestOptions for RequestOptions {
-    fn new() -> Self {
-        todo!()
-    }
-
-    fn connect_timeout(&self) -> Option<exports::types::Duration> {
-        todo!()
-    }
-
-    fn set_connect_timeout(&self, duration: Option<exports::types::Duration>) -> Result<(), ()> {
-        todo!()
-    }
-
-    fn first_byte_timeout(&self) -> Option<exports::types::Duration> {
-        todo!()
-    }
-
-    fn between_bytes_timeout(&self) -> Option<exports::types::Duration> {
-        todo!()
-    }
-
-    fn set_between_bytes_timeout(
-        &self,
-        duration: Option<exports::types::Duration>,
-    ) -> Result<(), ()> {
-        todo!()
-    }
-
-    fn set_first_byte_timeout(&self, duration: Option<exports::types::Duration>) -> Result<(), ()> {
-        todo!()
     }
 }
 
@@ -219,6 +113,7 @@ pub struct OutgoingRequest {
     pub authority: RefCell<Option<String>>,
     pub path_with_query: RefCell<Option<String>>,
     pub headers: Fields,
+    body: RefCell<Option<OutgoingBody>>,
 }
 
 impl exports::types::GuestOutgoingRequest for OutgoingRequest {
@@ -230,11 +125,13 @@ impl exports::types::GuestOutgoingRequest for OutgoingRequest {
             authority: Default::default(),
             path_with_query: Default::default(),
             headers,
+            body: RefCell::new(Some(OutgoingBody)),
         }
     }
 
     fn body(&self) -> Result<exports::types::OutgoingBody, ()> {
-        todo!()
+        let body = self.body.borrow_mut().take().ok_or(())?;
+        Ok(exports::types::OutgoingBody::new(body))
     }
 
     fn method(&self) -> exports::types::Method {
@@ -282,30 +179,15 @@ impl exports::types::GuestOutgoingRequest for OutgoingRequest {
     }
 }
 
-pub struct IncomingRequest {
-    pub method: exports::types::Method,
-    pub scheme: Option<exports::types::Scheme>,
-    pub authority: Option<String>,
-    pub path_with_query: Option<String>,
+pub struct IncomingResponse {
+    pub status: exports::types::StatusCode,
     pub headers: Fields,
     pub body: RefCell<Option<IncomingBody>>,
 }
 
-impl exports::types::GuestIncomingRequest for IncomingRequest {
-    fn method(&self) -> exports::types::Method {
-        self.method.clone()
-    }
-
-    fn path_with_query(&self) -> Option<String> {
-        self.path_with_query.clone()
-    }
-
-    fn scheme(&self) -> Option<exports::types::Scheme> {
-        self.scheme.clone()
-    }
-
-    fn authority(&self) -> Option<String> {
-        self.authority.clone()
+impl exports::types::GuestIncomingResponse for IncomingResponse {
+    fn status(&self) -> exports::types::StatusCode {
+        self.status
     }
 
     fn headers(&self) -> exports::types::Headers {
@@ -315,6 +197,45 @@ impl exports::types::GuestIncomingRequest for IncomingRequest {
     fn consume(&self) -> Result<exports::types::IncomingBody, ()> {
         let body = self.body.borrow_mut().take().ok_or(())?;
         Ok(exports::types::IncomingBody::new(body))
+    }
+}
+
+#[derive(Clone)]
+pub struct OutgoingBody;
+
+impl exports::types::GuestOutgoingBody for OutgoingBody {
+    fn write(&self) -> Result<io::exports::streams::OutputStream, ()> {
+        Ok(io::exports::streams::OutputStream::new(
+            io::OutputStream::Virtualized,
+        ))
+    }
+
+    fn finish(
+        this: exports::types::OutgoingBody,
+        trailers: Option<exports::types::Trailers>,
+    ) -> Result<(), exports::types::ErrorCode> {
+        Ok(())
+    }
+}
+
+pub struct IncomingBody;
+
+impl exports::types::GuestIncomingBody for IncomingBody {
+    fn stream(&self) -> Result<io::exports::streams::InputStream, ()> {
+        // implement this properly
+        Ok(io::exports::streams::InputStream::new(
+            io::InputStream::Virtualized,
+        ))
+    }
+
+    fn finish(this: exports::types::IncomingBody) -> exports::types::FutureTrailers {
+        exports::types::FutureTrailers::new(FutureTrailers)
+    }
+}
+
+impl From<OutgoingBody> for IncomingBody {
+    fn from(_: OutgoingBody) -> Self {
+        Self
     }
 }
 
@@ -331,7 +252,14 @@ impl exports::types::GuestFields for Fields {
     fn from_list(
         entries: Vec<(exports::types::FieldKey, exports::types::FieldValue)>,
     ) -> Result<exports::types::Fields, exports::types::HeaderError> {
-        todo!()
+        let mut fields: HashMap<String, Vec<Vec<u8>>> = HashMap::new();
+        for (k, v) in entries {
+            fields.entry(k).or_default().push(v);
+        }
+        let fields = Fields {
+            fields: RefCell::new(fields),
+        };
+        Ok(exports::types::Fields::new(fields))
     }
 
     fn get(&self, name: exports::types::FieldKey) -> Vec<exports::types::FieldValue> {
@@ -385,6 +313,108 @@ impl exports::types::GuestFields for Fields {
     }
 }
 
+pub struct RequestOptions;
+
+impl exports::types::GuestRequestOptions for RequestOptions {
+    fn new() -> Self {
+        todo!()
+    }
+
+    fn connect_timeout(&self) -> Option<exports::types::Duration> {
+        todo!()
+    }
+
+    fn set_connect_timeout(&self, duration: Option<exports::types::Duration>) -> Result<(), ()> {
+        todo!()
+    }
+
+    fn first_byte_timeout(&self) -> Option<exports::types::Duration> {
+        todo!()
+    }
+
+    fn between_bytes_timeout(&self) -> Option<exports::types::Duration> {
+        todo!()
+    }
+
+    fn set_between_bytes_timeout(
+        &self,
+        duration: Option<exports::types::Duration>,
+    ) -> Result<(), ()> {
+        todo!()
+    }
+
+    fn set_first_byte_timeout(&self, duration: Option<exports::types::Duration>) -> Result<(), ()> {
+        todo!()
+    }
+}
+
+pub struct ResponseOutparam(
+    pub Arc<Mutex<Option<Result<exports::types::OutgoingResponse, exports::types::ErrorCode>>>>,
+);
+
+impl exports::types::GuestResponseOutparam for ResponseOutparam {
+    fn set(
+        mut param: exports::types::ResponseOutparam,
+        response: Result<exports::types::OutgoingResponse, exports::types::ErrorCode>,
+    ) {
+        let inner: &mut ResponseOutparam = param.get_mut();
+        if let Ok(response) = &response {
+            let response: &OutgoingResponse = response.get();
+            let stdout = crate::bindings::wasi::cli::stdout::get_stdout();
+            stdout
+                .blocking_write_and_flush(
+                    format!("HERE{:?}\n", response.body.borrow().is_some()).as_bytes(),
+                )
+                .unwrap();
+        }
+        *inner.0.lock().unwrap() = Some(response);
+    }
+}
+
+pub struct FutureIncomingResponse(
+    RefCell<Option<Result<IncomingResponse, exports::types::ErrorCode>>>,
+);
+
+impl FutureIncomingResponse {
+    pub fn new(response: Result<IncomingResponse, exports::types::ErrorCode>) -> Self {
+        Self(RefCell::new(Some(response)))
+    }
+}
+
+impl exports::types::GuestFutureIncomingResponse for FutureIncomingResponse {
+    fn subscribe(&self) -> io::exports::poll::Pollable {
+        io::exports::poll::Pollable::new(io::Pollable::Virtualized)
+    }
+
+    fn get(
+        &self,
+    ) -> Option<Result<Result<exports::types::IncomingResponse, exports::types::ErrorCode>, ()>>
+    {
+        Some(
+            self.0
+                .borrow_mut()
+                .take()
+                .map(|s| s.map(exports::types::IncomingResponse::new))
+                .ok_or(()),
+        )
+    }
+}
+
+pub struct FutureTrailers;
+
+impl exports::types::GuestFutureTrailers for FutureTrailers {
+    fn subscribe(&self) -> io::exports::poll::Pollable {
+        todo!()
+    }
+
+    fn get(
+        &self,
+    ) -> Option<Result<Result<Option<exports::types::Trailers>, exports::types::ErrorCode>, ()>>
+    {
+        todo!()
+    }
+}
+
 pub static RESPONSES: std::sync::OnceLock<
     Mutex<HashMap<String, exports::types::OutgoingResponse>>,
 > = std::sync::OnceLock::new();
@@ -426,9 +456,16 @@ impl exports::outgoing_handler::Guest for Component {
             .unwrap()
             .remove(&url);
         match response {
-            Some(r) => Ok(exports::types::FutureIncomingResponse::new(
-                FutureIncomingResponse,
-            )),
+            Some(r) => {
+                let r: OutgoingResponse = r.into_inner();
+                Ok(exports::types::FutureIncomingResponse::new(
+                    FutureIncomingResponse::new(Ok(IncomingResponse {
+                        status: r.status_code.get(),
+                        headers: r.headers,
+                        body: RefCell::new(r.body.into_inner().map(Into::into)),
+                    })),
+                ))
+            }
             None => Err(exports::outgoing_handler::ErrorCode::InternalError(Some(
                 format!("unrecognized url: {url}"),
             ))),

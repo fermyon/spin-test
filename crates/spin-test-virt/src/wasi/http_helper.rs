@@ -65,6 +65,7 @@ impl exports::GuestResponseReceiver for ResponseReceiver {
                 let outgoing = r.get::<OutgoingResponse>().clone();
                 Some(exports::IncomingResponse::new(IncomingResponse {
                     status: outgoing.status_code.get(),
+                    headers: outgoing.headers,
                     body: RefCell::new(outgoing.body.into_inner().map(Into::into)),
                 }))
             }

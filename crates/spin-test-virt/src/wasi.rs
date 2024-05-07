@@ -66,27 +66,27 @@ impl wasi::cli::terminal_input::GuestTerminalInput for TerminalInput {}
 
 impl wasi::random::random::Guest for Component {
     fn get_random_bytes(len: u64) -> Vec<u8> {
-        todo!()
+        crate::bindings::wasi::random::random::get_random_bytes(len)
     }
 
     fn get_random_u64() -> u64 {
-        todo!()
+        crate::bindings::wasi::random::random::get_random_u64()
     }
 }
 
 impl wasi::random::insecure_seed::Guest for Component {
     fn insecure_seed() -> (u64, u64) {
-        todo!()
+        crate::bindings::wasi::random::insecure_seed::insecure_seed()
     }
 }
 
 impl wasi::random::insecure::Guest for Component {
     fn get_insecure_random_bytes(len: u64) -> Vec<u8> {
-        todo!()
+        crate::bindings::wasi::random::insecure::get_insecure_random_bytes(len)
     }
 
     fn get_insecure_random_u64() -> u64 {
-        todo!()
+        crate::bindings::wasi::random::insecure::get_insecure_random_u64()
     }
 }
 

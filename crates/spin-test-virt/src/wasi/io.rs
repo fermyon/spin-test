@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-use crate::bindings;
+use crate::bindings::{self, wasi::cli::stdout::get_stdout};
 pub use crate::bindings::{exports::wasi::io as exports, wasi::io as imports};
 use crate::Component;
 
@@ -84,7 +84,10 @@ impl exports::poll::GuestPollable for Pollable {
     }
 
     fn block(&self) {
-        todo!()
+        match self {
+            Pollable::Host(h) => h.block(),
+            Pollable::Virtualized => {}
+        }
     }
 }
 
@@ -100,7 +103,11 @@ pub enum InputStream {
 
 impl exports::streams::GuestInputStream for InputStream {
     fn read(&self, len: u64) -> Result<Vec<u8>, exports::streams::StreamError> {
-        todo!()
+        match self {
+            InputStream::Host(h) => h.read(len).map_err(Into::into),
+            // Virtualized streams are always done
+            InputStream::Virtualized => Err(exports::streams::StreamError::Closed),
+        }
     }
 
     fn blocking_read(&self, len: u64) -> Result<Vec<u8>, exports::streams::StreamError> {
@@ -137,11 +144,17 @@ pub enum OutputStream {
 
 impl exports::streams::GuestOutputStream for OutputStream {
     fn check_write(&self) -> Result<u64, exports::streams::StreamError> {
-        todo!()
+        match self {
+            OutputStream::Host(h) => h.check_write().map_err(Into::into),
+            OutputStream::Virtualized => Ok(u64::MAX),
+        }
     }
 
     fn write(&self, contents: Vec<u8>) -> Result<(), exports::streams::StreamError> {
-        todo!()
+        match self {
+            OutputStream::Host(h) => h.write(&contents).map_err(Into::into),
+            OutputStream::Virtualized => Ok(()),
+        }
     }
 
     fn blocking_write_and_flush(
@@ -155,7 +168,10 @@ impl exports::streams::GuestOutputStream for OutputStream {
     }
 
     fn flush(&self) -> Result<(), exports::streams::StreamError> {
-        todo!()
+        match self {
+            OutputStream::Host(h) => h.flush().map_err(Into::into),
+            OutputStream::Virtualized => Ok(()),
+        }
     }
 
     fn blocking_flush(&self) -> Result<(), exports::streams::StreamError> {
@@ -163,7 +179,13 @@ impl exports::streams::GuestOutputStream for OutputStream {
     }
 
     fn subscribe(&self) -> exports::streams::Pollable {
-        todo!()
+        match self {
+            OutputStream::Host(stream) => {
+                let pollable = imports::streams::OutputStream::subscribe(stream);
+                exports::poll::Pollable::new(Pollable::Host(pollable))
+            }
+            OutputStream::Virtualized => exports::poll::Pollable::new(Pollable::Virtualized),
+        }
     }
 
     fn write_zeroes(&self, len: u64) -> Result<(), exports::streams::StreamError> {
