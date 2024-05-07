@@ -1,8 +1,8 @@
 use std::{
     borrow::{Borrow, BorrowMut},
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::HashMap,
-    sync::Mutex,
+    sync::{Arc, Mutex},
 };
 
 pub use crate::bindings::exports::wasi::http as exports;
@@ -57,34 +57,48 @@ impl exports::types::GuestFutureIncomingResponse for FutureIncomingResponse {
     }
 }
 
+#[derive(Clone)]
 pub struct OutgoingBody;
 
 impl exports::types::GuestOutgoingBody for OutgoingBody {
     fn write(&self) -> Result<io::exports::streams::OutputStream, ()> {
-        todo!()
+        Ok(io::exports::streams::OutputStream::new(
+            io::OutputStream::Virtualized,
+        ))
     }
 
     fn finish(
         this: exports::types::OutgoingBody,
         trailers: Option<exports::types::Trailers>,
     ) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Ok(())
     }
 }
 
-pub struct OutgoingResponse;
+#[derive(Clone)]
+pub struct OutgoingResponse {
+    pub status_code: Cell<exports::types::StatusCode>,
+    pub headers: Fields,
+    pub body: RefCell<Option<OutgoingBody>>,
+}
 
 impl exports::types::GuestOutgoingResponse for OutgoingResponse {
     fn new(headers: exports::types::Headers) -> Self {
-        todo!()
+        Self {
+            status_code: Cell::new(200),
+            headers: headers.into_inner(),
+            body: RefCell::new(Some(OutgoingBody)),
+        }
     }
 
     fn status_code(&self) -> exports::types::StatusCode {
-        todo!()
+        self.status_code.get()
     }
 
     fn set_status_code(&self, status_code: exports::types::StatusCode) -> Result<(), ()> {
-        todo!()
+        // TODO: check that status code is valid
+        self.status_code.set(status_code);
+        Ok(())
     }
 
     fn headers(&self) -> exports::types::Headers {
@@ -92,7 +106,8 @@ impl exports::types::GuestOutgoingResponse for OutgoingResponse {
     }
 
     fn body(&self) -> Result<exports::types::OutgoingBody, ()> {
-        todo!()
+        let body = self.body.take().ok_or(())?;
+        Ok(exports::types::OutgoingBody::new(body))
     }
 }
 
@@ -123,13 +138,20 @@ impl exports::types::GuestIncomingBody for IncomingBody {
     }
 }
 
+impl From<OutgoingBody> for IncomingBody {
+    fn from(_: OutgoingBody) -> Self {
+        Self
+    }
+}
+
 pub struct IncomingResponse {
-    body: RefCell<Option<exports::types::IncomingBody>>,
+    pub status: exports::types::StatusCode,
+    pub body: RefCell<Option<IncomingBody>>,
 }
 
 impl exports::types::GuestIncomingResponse for IncomingResponse {
     fn status(&self) -> exports::types::StatusCode {
-        todo!()
+        self.status
     }
 
     fn headers(&self) -> exports::types::Headers {
@@ -137,18 +159,22 @@ impl exports::types::GuestIncomingResponse for IncomingResponse {
     }
 
     fn consume(&self) -> Result<exports::types::IncomingBody, ()> {
-        self.body.borrow_mut().take().ok_or(())
+        let body = self.body.borrow_mut().take().ok_or(())?;
+        Ok(exports::types::IncomingBody::new(body))
     }
 }
 
-pub struct ResponseOutparam;
+pub struct ResponseOutparam(
+    pub Arc<Mutex<Option<Result<exports::types::OutgoingResponse, exports::types::ErrorCode>>>>,
+);
 
 impl exports::types::GuestResponseOutparam for ResponseOutparam {
     fn set(
-        param: exports::types::ResponseOutparam,
+        mut param: exports::types::ResponseOutparam,
         response: Result<exports::types::OutgoingResponse, exports::types::ErrorCode>,
     ) {
-        todo!()
+        let inner: &mut ResponseOutparam = param.get_mut();
+        *inner.0.lock().unwrap() = Some(response);
     }
 }
 

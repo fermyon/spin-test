@@ -104,7 +104,10 @@ impl exports::streams::GuestInputStream for InputStream {
     }
 
     fn blocking_read(&self, len: u64) -> Result<Vec<u8>, exports::streams::StreamError> {
-        todo!()
+        match self {
+            InputStream::Host(h) => h.blocking_read(len).map_err(Into::into),
+            InputStream::Virtualized => Ok(Vec::new()),
+        }
     }
 
     fn skip(&self, len: u64) -> Result<u64, exports::streams::StreamError> {

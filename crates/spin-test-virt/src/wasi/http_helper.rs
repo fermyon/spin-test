@@ -1,10 +1,16 @@
-use std::cell::RefCell;
+use std::{
+    cell::RefCell,
+    sync::{Arc, Mutex},
+};
 
 use crate::Component;
 
 use crate::bindings::exports::fermyon::spin_wasi_virt::http_helper as exports;
 
-use super::http::{Fields, IncomingBody, IncomingRequest, OutgoingRequest, ResponseOutparam};
+use super::http::{
+    Fields, IncomingBody, IncomingRequest, IncomingResponse, OutgoingRequest, OutgoingResponse,
+    ResponseOutparam,
+};
 
 impl exports::Guest for Component {
     type ResponseReceiver = ResponseReceiver;
@@ -31,17 +37,38 @@ impl exports::Guest for Component {
     }
 
     fn new_response() -> (exports::ResponseOutparam, exports::ResponseReceiver) {
+        let response = Arc::new(Mutex::new(None));
         (
-            exports::ResponseOutparam::new(ResponseOutparam),
-            exports::ResponseReceiver::new(ResponseReceiver),
+            exports::ResponseOutparam::new(ResponseOutparam(response.clone())),
+            exports::ResponseReceiver::new(ResponseReceiver(response)),
         )
     }
 }
 
-pub struct ResponseReceiver;
+pub struct ResponseReceiver(
+    Arc<
+        Mutex<
+            Option<
+                Result<
+                    super::http::exports::types::OutgoingResponse,
+                    super::http::exports::types::ErrorCode,
+                >,
+            >,
+        >,
+    >,
+);
 
 impl exports::GuestResponseReceiver for ResponseReceiver {
     fn get(&self) -> Option<exports::IncomingResponse> {
-        todo!()
+        match &*self.0.lock().unwrap() {
+            Some(Ok(r)) => {
+                let outgoing = r.get::<OutgoingResponse>().clone();
+                Some(exports::IncomingResponse::new(IncomingResponse {
+                    status: outgoing.status_code.get(),
+                    body: RefCell::new(outgoing.body.into_inner().map(Into::into)),
+                }))
+            }
+            Some(Err(_)) | None => None,
+        }
     }
 }

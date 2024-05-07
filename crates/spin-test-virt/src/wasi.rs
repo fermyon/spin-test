@@ -148,9 +148,7 @@ impl wasi::cli::exit::Guest for Component {
 impl wasi::filesystem::preopens::Guest for Component {
     fn get_directories() -> Vec<(wasi::filesystem::preopens::Descriptor, String)> {
         vec![(
-            wasi::filesystem::preopens::Descriptor::new(Descriptor {
-                type_: wasi::filesystem::types::DescriptorType::Directory,
-            }),
+            wasi::filesystem::preopens::Descriptor::new(Descriptor::Directory),
             ".".into(),
         )]
     }
@@ -168,8 +166,9 @@ impl wasi::filesystem::types::Guest for Component {
     }
 }
 
-pub struct Descriptor {
-    type_: wasi::filesystem::types::DescriptorType,
+pub enum Descriptor {
+    Directory,
+    File(Vec<u8>),
 }
 
 impl wasi::filesystem::types::GuestDescriptor for Descriptor {
@@ -177,7 +176,12 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
         &self,
         offset: wasi::filesystem::types::Filesize,
     ) -> Result<wasi::filesystem::types::InputStream, wasi::filesystem::types::ErrorCode> {
-        todo!()
+        match self {
+            Descriptor::Directory => todo!(),
+            Descriptor::File(c) => Ok(wasi::filesystem::types::InputStream::new(
+                io::InputStream::Virtualized,
+            )),
+        }
     }
 
     fn write_via_stream(
@@ -215,8 +219,10 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
     fn get_type(
         &self,
     ) -> Result<wasi::filesystem::types::DescriptorType, wasi::filesystem::types::ErrorCode> {
-        println!("Getting type");
-        Ok(self.type_)
+        Ok(match self {
+            Descriptor::Directory => wasi::filesystem::types::DescriptorType::Directory,
+            Descriptor::File(_) => wasi::filesystem::types::DescriptorType::RegularFile,
+        })
     }
 
     fn set_size(
@@ -276,7 +282,6 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
         path_flags: wasi::filesystem::types::PathFlags,
         path: String,
     ) -> Result<wasi::filesystem::types::DescriptorStat, wasi::filesystem::types::ErrorCode> {
-        println!("stat_at: {:?} {}", path_flags, path);
         Ok(wasi::filesystem::types::DescriptorStat {
             type_: wasi::filesystem::types::DescriptorType::RegularFile,
             link_count: 0,
@@ -314,9 +319,13 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
         open_flags: wasi::filesystem::types::OpenFlags,
         flags: wasi::filesystem::types::DescriptorFlags,
     ) -> Result<wasi::filesystem::types::Descriptor, wasi::filesystem::types::ErrorCode> {
-        Ok(wasi::filesystem::types::Descriptor::new(Descriptor {
-            type_: wasi::filesystem::types::DescriptorType::RegularFile,
-        }))
+        let stdout = crate::bindings::wasi::cli::stdout::get_stdout();
+        stdout
+            .blocking_write_and_flush(format!("{path}\n").as_bytes())
+            .unwrap();
+        Ok(wasi::filesystem::types::Descriptor::new(Descriptor::File(
+            "Hello, world!".into(),
+        )))
     }
 
     fn readlink_at(&self, path: String) -> Result<String, wasi::filesystem::types::ErrorCode> {
@@ -365,7 +374,6 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
         path: String,
     ) -> Result<wasi::filesystem::types::MetadataHashValue, wasi::filesystem::types::ErrorCode>
     {
-        println!("metadata_hash_at: {:?} {}", path_flags, path);
         Ok(wasi::filesystem::types::MetadataHashValue { lower: 0, upper: 0 })
     }
 }
