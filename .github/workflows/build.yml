@@ -53,7 +53,6 @@ jobs:
   build-rust:
     name: Build Plugin
     runs-on: ${{ matrix.os }}
-    needs: [lint-rust]
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -61,7 +60,7 @@ jobs:
       # install dependencies
       - name: Install latest Rust stable toolchain
         run: |
-          rustup toolchain install ${{ env.RUST_VERSION }} --component clippy --component rustfmt
+          rustup toolchain install ${{ env.RUST_VERSION }} --component clippy --component rustfmt --no-self-update
           rustup default ${{ env.RUST_VERSION }}
       - name: "Install Wasm Rust target"
         run: rustup target add wasm32-wasi && rustup target add wasm32-unknown-unknown
@@ -83,11 +82,10 @@ jobs:
   test-rust:
     name: Plugin Unit Tests
     runs-on: "ubuntu-latest"
-    needs: [lint-rust]
     steps:
       - name: Install latest Rust stable toolchain
         run: |
-          rustup toolchain install ${{ env.RUST_VERSION }} --component clippy --component rustfmt
+          rustup toolchain install ${{ env.RUST_VERSION }} --component clippy --component rustfmt --no-self-update
           rustup default ${{ env.RUST_VERSION }}
       - name: "Install Wasm Rust target"
         run: rustup target add wasm32-wasi && rustup target add wasm32-unknown-unknown
