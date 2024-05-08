@@ -217,7 +217,7 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
     fn get_flags(
         &self,
     ) -> Result<wasi::filesystem::types::DescriptorFlags, wasi::filesystem::types::ErrorCode> {
-        todo!()
+        Ok(wasi::filesystem::types::DescriptorFlags::READ)
     }
 
     fn get_type(
@@ -278,7 +278,14 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
     fn stat(
         &self,
     ) -> Result<wasi::filesystem::types::DescriptorStat, wasi::filesystem::types::ErrorCode> {
-        todo!()
+        Ok(wasi::filesystem::types::DescriptorStat {
+            type_: wasi::filesystem::types::DescriptorType::RegularFile,
+            link_count: 0,
+            size: 64,
+            data_access_timestamp: None,
+            data_modification_timestamp: None,
+            status_change_timestamp: None,
+        })
     }
 
     fn stat_at(
@@ -365,7 +372,7 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
         &self,
     ) -> Result<wasi::filesystem::types::MetadataHashValue, wasi::filesystem::types::ErrorCode>
     {
-        todo!()
+        Ok(wasi::filesystem::types::MetadataHashValue { lower: 0, upper: 0 })
     }
 
     fn metadata_hash_at(
