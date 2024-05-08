@@ -126,8 +126,12 @@ impl wasi::clocks::monotonic_clock::Guest for Component {
 
 impl wasi::cli::environment::Guest for Component {
     fn get_environment() -> Vec<(String, String)> {
-        // TODO: Implement this
-        Vec::new()
+        let Some(component) = crate::manifest::AppManifest::get_component() else {
+            // If we don't have a component, we just accept the host environment
+            return crate::bindings::wasi::cli::environment::get_environment();
+        };
+
+        component.environment.into_iter().collect()
     }
 
     fn get_arguments() -> Vec<String> {
@@ -135,7 +139,7 @@ impl wasi::cli::environment::Guest for Component {
     }
 
     fn initial_cwd() -> Option<String> {
-        todo!()
+        None
     }
 }
 
