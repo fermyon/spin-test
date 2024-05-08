@@ -4,8 +4,6 @@ use std::{
     sync::Arc,
 };
 
-use bytes::BytesMut;
-
 pub use crate::bindings::{exports::wasi::io as exports, wasi::io as imports};
 use crate::Component;
 

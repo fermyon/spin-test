@@ -1924,7 +1924,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitflags",
- "bytes",
  "spin-expressions",
  "spin-manifest",
  "spin-outbound-networking",

@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-bytes = "1.6"
 bitflags = "2.5.0"
 wit-bindgen-rt = { version = "0.24.0", features = ["bitflags"] }
 spin-expressions = { workspace = true }
