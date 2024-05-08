@@ -43,8 +43,6 @@ pub fn encode_composition(
     test_component: Component,
 ) -> anyhow::Result<(Vec<u8>, TestTarget)> {
     let test_target = TestTarget::from_component(&test_component)?;
-    let test_target = test_target;
-
     let composition = Composition::new();
 
     let virt = composition
