@@ -32,7 +32,7 @@ impl exports::Guest for Component {
             authority,
             path_with_query,
             headers,
-            body: RefCell::new(Some(body.unwrap_or_else(|| IncomingBody))),
+            body: RefCell::new(Ok(body.unwrap_or_else(|| IncomingBody))),
         })
     }
 
@@ -66,7 +66,11 @@ impl exports::GuestResponseReceiver for ResponseReceiver {
                 Some(exports::IncomingResponse::new(IncomingResponse {
                     status: outgoing.status_code.get(),
                     headers: outgoing.headers,
-                    body: RefCell::new(outgoing.body.into_inner().map(Into::into)),
+                    body: RefCell::new(Ok(match outgoing.body.into_inner() {
+                        Ok(r) => r,
+                        Err(r) => r,
+                    }
+                    .into())),
                 }))
             }
             Some(Err(_)) | None => None,

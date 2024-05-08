@@ -41,8 +41,11 @@ pub struct IncomingRequest {
     pub authority: Option<String>,
     pub path_with_query: Option<String>,
     pub headers: Fields,
-    pub body: RefCell<Option<IncomingBody>>,
+    pub body: RefCell<Consumable<IncomingBody>>,
 }
+
+/// A `Result` type where `Err` is the consumed value.
+type Consumable<T> = Result<T, T>;
 
 impl exports::types::GuestIncomingRequest for IncomingRequest {
     fn method(&self) -> exports::types::Method {
@@ -66,8 +69,11 @@ impl exports::types::GuestIncomingRequest for IncomingRequest {
     }
 
     fn consume(&self) -> Result<exports::types::IncomingBody, ()> {
-        let body = self.body.borrow_mut().take().ok_or(())?;
-        Ok(exports::types::IncomingBody::new(body))
+        let mut container = self.body.borrow_mut();
+        let body = container.as_mut().map_err(|_| ())?;
+        let new_body = body.clone();
+        *container = Err(new_body.clone());
+        Ok(exports::types::IncomingBody::new(new_body))
     }
 }
 
@@ -75,7 +81,7 @@ impl exports::types::GuestIncomingRequest for IncomingRequest {
 pub struct OutgoingResponse {
     pub status_code: Cell<exports::types::StatusCode>,
     pub headers: Fields,
-    pub body: RefCell<Option<OutgoingBody>>,
+    pub body: RefCell<Consumable<OutgoingBody>>,
 }
 
 impl exports::types::GuestOutgoingResponse for OutgoingResponse {
@@ -83,7 +89,7 @@ impl exports::types::GuestOutgoingResponse for OutgoingResponse {
         Self {
             status_code: Cell::new(200),
             headers: headers.into_inner(),
-            body: RefCell::new(Some(OutgoingBody)),
+            body: RefCell::new(Ok(OutgoingBody)),
         }
     }
 
@@ -102,8 +108,11 @@ impl exports::types::GuestOutgoingResponse for OutgoingResponse {
     }
 
     fn body(&self) -> Result<exports::types::OutgoingBody, ()> {
-        let body = self.body.take().ok_or(())?;
-        Ok(exports::types::OutgoingBody::new(body))
+        let mut container = self.body.borrow_mut();
+        let body = container.as_mut().map_err(|_| ())?;
+        let new_body = body.clone();
+        *container = Err(new_body.clone());
+        Ok(exports::types::OutgoingBody::new(new_body))
     }
 }
 
@@ -182,7 +191,7 @@ impl exports::types::GuestOutgoingRequest for OutgoingRequest {
 pub struct IncomingResponse {
     pub status: exports::types::StatusCode,
     pub headers: Fields,
-    pub body: RefCell<Option<IncomingBody>>,
+    pub body: RefCell<Consumable<IncomingBody>>,
 }
 
 impl exports::types::GuestIncomingResponse for IncomingResponse {
@@ -195,8 +204,11 @@ impl exports::types::GuestIncomingResponse for IncomingResponse {
     }
 
     fn consume(&self) -> Result<exports::types::IncomingBody, ()> {
-        let body = self.body.borrow_mut().take().ok_or(())?;
-        Ok(exports::types::IncomingBody::new(body))
+        let mut container = self.body.borrow_mut();
+        let body = container.as_mut().map_err(|_| ())?;
+        let new_body = body.clone();
+        *container = Err(new_body.clone());
+        Ok(exports::types::IncomingBody::new(new_body))
     }
 }
 
@@ -218,6 +230,7 @@ impl exports::types::GuestOutgoingBody for OutgoingBody {
     }
 }
 
+#[derive(Clone)]
 pub struct IncomingBody;
 
 impl exports::types::GuestIncomingBody for IncomingBody {
@@ -358,15 +371,6 @@ impl exports::types::GuestResponseOutparam for ResponseOutparam {
         response: Result<exports::types::OutgoingResponse, exports::types::ErrorCode>,
     ) {
         let inner: &mut ResponseOutparam = param.get_mut();
-        if let Ok(response) = &response {
-            let response: &OutgoingResponse = response.get();
-            let stdout = crate::bindings::wasi::cli::stdout::get_stdout();
-            stdout
-                .blocking_write_and_flush(
-                    format!("HERE{:?}\n", response.body.borrow().is_some()).as_bytes(),
-                )
-                .unwrap();
-        }
         *inner.0.lock().unwrap() = Some(response);
     }
 }
@@ -462,7 +466,11 @@ impl exports::outgoing_handler::Guest for Component {
                     FutureIncomingResponse::new(Ok(IncomingResponse {
                         status: r.status_code.get(),
                         headers: r.headers,
-                        body: RefCell::new(r.body.into_inner().map(Into::into)),
+                        body: RefCell::new(Ok(match r.body.into_inner() {
+                            Ok(r) => r,
+                            Err(r) => r,
+                        }
+                        .into())),
                     })),
                 ))
             }

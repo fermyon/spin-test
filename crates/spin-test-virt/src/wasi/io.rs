@@ -1,5 +1,3 @@
-#![allow(unused_variables)]
-use crate::bindings::{self, wasi::cli::stdout::get_stdout};
 pub use crate::bindings::{exports::wasi::io as exports, wasi::io as imports};
 use crate::Component;
 
