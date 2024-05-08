@@ -36,6 +36,7 @@ impl Composition {
         Ok(Package {
             graph: self.graph.clone(),
             id: package,
+            name: name.to_owned(),
         })
     }
 
@@ -48,6 +49,7 @@ impl Composition {
         Ok(Instance {
             graph: self.graph.clone(),
             id: node_id,
+            name: name.to_owned(),
         })
     }
 
@@ -70,6 +72,7 @@ impl Composition {
 pub struct Instance {
     graph: Rc<RefCell<wac_graph::CompositionGraph>>,
     id: wac_graph::NodeId,
+    name: String,
 }
 
 impl Instance {
@@ -93,8 +96,13 @@ impl Instance {
                 graph: self.graph.clone(),
                 id: node_id,
                 kind: node.item_kind(),
+                name: name.to_owned(),
             }
         }))
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -102,6 +110,7 @@ impl Instance {
 pub struct Package {
     graph: Rc<RefCell<wac_graph::CompositionGraph>>,
     id: wac_graph::PackageId,
+    name: String,
 }
 
 impl Package {
@@ -125,6 +134,7 @@ impl Package {
         Ok(Instance {
             graph: self.graph.clone(),
             id: instance,
+            name: self.name.clone(),
         })
     }
 
@@ -205,6 +215,7 @@ pub struct InstanceItem {
 /// An export from an instantiated instance
 #[derive(Clone)]
 pub struct InstanceExport {
+    name: String,
     graph: Rc<RefCell<wac_graph::CompositionGraph>>,
     id: wac_graph::NodeId,
     kind: wac_graph::types::ItemKind,
@@ -217,6 +228,7 @@ impl InstanceExport {
             Some(Instance {
                 graph: self.graph.clone(),
                 id: self.id,
+                name: self.name.clone(),
             })
         } else {
             None
