@@ -1,4 +1,6 @@
-#[allow(clippy::all, warnings)]
+mod helper;
+
+#[allow(warnings)]
 mod bindings;
 mod manifest;
 mod wasi;

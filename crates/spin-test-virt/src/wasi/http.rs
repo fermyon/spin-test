@@ -41,11 +41,48 @@ pub struct IncomingRequest {
     pub authority: Option<String>,
     pub path_with_query: Option<String>,
     pub headers: Fields,
-    pub body: RefCell<Consumable<IncomingBody>>,
+    pub body: Consumable<IncomingBody>,
 }
 
 /// A `Result` type where `Err` is the consumed value.
-type Consumable<T> = Result<T, T>;
+#[derive(Clone, Debug)]
+pub struct Consumable<T> {
+    value: T,
+    consumed: Cell<bool>,
+}
+
+impl<T> Consumable<T> {
+    pub fn new(value: T) -> Self {
+        Self {
+            value,
+            consumed: Cell::new(false),
+        }
+    }
+
+    pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Consumable<U> {
+        Consumable {
+            value: f(self.value),
+            consumed: self.consumed,
+        }
+    }
+}
+
+impl<T: Clone> Consumable<T> {
+    pub fn consume(&self) -> Result<T, ()> {
+        if self.consumed.get() {
+            Err(())
+        } else {
+            self.consumed.set(true);
+            Ok(self.value.clone())
+        }
+    }
+
+    pub fn unconsume(&self) -> Self {
+        let new = self.clone();
+        new.consumed.set(false);
+        new
+    }
+}
 
 impl exports::types::GuestIncomingRequest for IncomingRequest {
     fn method(&self) -> exports::types::Method {
@@ -69,19 +106,15 @@ impl exports::types::GuestIncomingRequest for IncomingRequest {
     }
 
     fn consume(&self) -> Result<exports::types::IncomingBody, ()> {
-        let mut container = self.body.borrow_mut();
-        let body = container.as_mut().map_err(|_| ())?;
-        let new_body = body.clone();
-        *container = Err(new_body.clone());
-        Ok(exports::types::IncomingBody::new(new_body))
+        Ok(exports::types::IncomingBody::new(self.body.consume()?))
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OutgoingResponse {
     pub status_code: Cell<exports::types::StatusCode>,
     pub headers: Fields,
-    pub body: RefCell<Consumable<OutgoingBody>>,
+    pub body: Consumable<OutgoingBody>,
 }
 
 impl exports::types::GuestOutgoingResponse for OutgoingResponse {
@@ -89,7 +122,7 @@ impl exports::types::GuestOutgoingResponse for OutgoingResponse {
         Self {
             status_code: Cell::new(200),
             headers: headers.into_inner(),
-            body: RefCell::new(Ok(OutgoingBody)),
+            body: Consumable::new(OutgoingBody(io::Buffer::empty())),
         }
     }
 
@@ -108,11 +141,7 @@ impl exports::types::GuestOutgoingResponse for OutgoingResponse {
     }
 
     fn body(&self) -> Result<exports::types::OutgoingBody, ()> {
-        let mut container = self.body.borrow_mut();
-        let body = container.as_mut().map_err(|_| ())?;
-        let new_body = body.clone();
-        *container = Err(new_body.clone());
-        Ok(exports::types::OutgoingBody::new(new_body))
+        Ok(exports::types::OutgoingBody::new(self.body.consume()?))
     }
 }
 
@@ -122,7 +151,7 @@ pub struct OutgoingRequest {
     pub authority: RefCell<Option<String>>,
     pub path_with_query: RefCell<Option<String>>,
     pub headers: Fields,
-    body: RefCell<Option<OutgoingBody>>,
+    body: Consumable<OutgoingBody>,
 }
 
 impl exports::types::GuestOutgoingRequest for OutgoingRequest {
@@ -134,12 +163,12 @@ impl exports::types::GuestOutgoingRequest for OutgoingRequest {
             authority: Default::default(),
             path_with_query: Default::default(),
             headers,
-            body: RefCell::new(Some(OutgoingBody)),
+            body: Consumable::new(OutgoingBody(io::Buffer::empty())),
         }
     }
 
     fn body(&self) -> Result<exports::types::OutgoingBody, ()> {
-        let body = self.body.borrow_mut().take().ok_or(())?;
+        let body = self.body.consume()?;
         Ok(exports::types::OutgoingBody::new(body))
     }
 
@@ -191,7 +220,7 @@ impl exports::types::GuestOutgoingRequest for OutgoingRequest {
 pub struct IncomingResponse {
     pub status: exports::types::StatusCode,
     pub headers: Fields,
-    pub body: RefCell<Consumable<IncomingBody>>,
+    pub body: Consumable<IncomingBody>,
 }
 
 impl exports::types::GuestIncomingResponse for IncomingResponse {
@@ -204,21 +233,17 @@ impl exports::types::GuestIncomingResponse for IncomingResponse {
     }
 
     fn consume(&self) -> Result<exports::types::IncomingBody, ()> {
-        let mut container = self.body.borrow_mut();
-        let body = container.as_mut().map_err(|_| ())?;
-        let new_body = body.clone();
-        *container = Err(new_body.clone());
-        Ok(exports::types::IncomingBody::new(new_body))
+        Ok(exports::types::IncomingBody::new(self.body.consume()?))
     }
 }
 
-#[derive(Clone)]
-pub struct OutgoingBody;
+#[derive(Clone, Debug)]
+pub struct OutgoingBody(io::Buffer);
 
 impl exports::types::GuestOutgoingBody for OutgoingBody {
     fn write(&self) -> Result<io::exports::streams::OutputStream, ()> {
         Ok(io::exports::streams::OutputStream::new(
-            io::OutputStream::Virtualized,
+            io::OutputStream::Buffered(self.0.clone()),
         ))
     }
 
@@ -231,13 +256,12 @@ impl exports::types::GuestOutgoingBody for OutgoingBody {
 }
 
 #[derive(Clone)]
-pub struct IncomingBody;
+pub struct IncomingBody(pub io::Buffer);
 
 impl exports::types::GuestIncomingBody for IncomingBody {
     fn stream(&self) -> Result<io::exports::streams::InputStream, ()> {
-        // implement this properly
         Ok(io::exports::streams::InputStream::new(
-            io::InputStream::Virtualized,
+            io::InputStream::Buffered(self.0.clone()),
         ))
     }
 
@@ -247,8 +271,8 @@ impl exports::types::GuestIncomingBody for IncomingBody {
 }
 
 impl From<OutgoingBody> for IncomingBody {
-    fn from(_: OutgoingBody) -> Self {
-        Self
+    fn from(o: OutgoingBody) -> Self {
+        Self(o.0)
     }
 }
 
@@ -466,11 +490,7 @@ impl exports::outgoing_handler::Guest for Component {
                     FutureIncomingResponse::new(Ok(IncomingResponse {
                         status: r.status_code.get(),
                         headers: r.headers,
-                        body: RefCell::new(Ok(match r.body.into_inner() {
-                            Ok(r) => r,
-                            Err(r) => r,
-                        }
-                        .into())),
+                        body: r.body.unconsume().map(Into::into),
                     })),
                 ))
             }

@@ -18,7 +18,7 @@ impl wasi::cli::stdout::Guest for Component {
 
 impl wasi::cli::stdin::Guest for Component {
     fn get_stdin() -> io::exports::streams::InputStream {
-        io::exports::streams::InputStream::new(io::InputStream::Virtualized)
+        io::exports::streams::InputStream::new(io::InputStream::Buffered(io::Buffer::empty()))
     }
 }
 
@@ -179,7 +179,7 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
         match self {
             Descriptor::Directory => todo!(),
             Descriptor::File(c) => Ok(wasi::filesystem::types::InputStream::new(
-                io::InputStream::Virtualized,
+                io::InputStream::Buffered(c.clone().into()),
             )),
         }
     }
@@ -319,10 +319,6 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
         open_flags: wasi::filesystem::types::OpenFlags,
         flags: wasi::filesystem::types::DescriptorFlags,
     ) -> Result<wasi::filesystem::types::Descriptor, wasi::filesystem::types::ErrorCode> {
-        let stdout = crate::bindings::wasi::cli::stdout::get_stdout();
-        stdout
-            .blocking_write_and_flush(format!("{path}\n").as_bytes())
-            .unwrap();
         Ok(wasi::filesystem::types::Descriptor::new(Descriptor::File(
             "Hello, world!".into(),
         )))

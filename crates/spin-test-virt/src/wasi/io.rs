@@ -1,3 +1,11 @@
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+    sync::Arc,
+};
+
+use bytes::BytesMut;
+
 pub use crate::bindings::{exports::wasi::io as exports, wasi::io as imports};
 use crate::Component;
 
@@ -5,11 +13,11 @@ impl exports::error::Guest for Component {
     type Error = IoError;
 }
 
-pub struct IoError;
+pub struct IoError(String);
 
 impl exports::error::GuestError for IoError {
     fn to_debug_string(&self) -> String {
-        todo!()
+        self.0.clone()
     }
 }
 
@@ -96,22 +104,25 @@ impl exports::streams::Guest for Component {
 
 pub enum InputStream {
     Host(imports::streams::InputStream),
-    Virtualized,
+    Buffered(Buffer),
 }
 
 impl exports::streams::GuestInputStream for InputStream {
     fn read(&self, len: u64) -> Result<Vec<u8>, exports::streams::StreamError> {
         match self {
             InputStream::Host(h) => h.read(len).map_err(Into::into),
-            // Virtualized streams are always done
-            InputStream::Virtualized => Err(exports::streams::StreamError::Closed),
+            InputStream::Buffered(buffer) if buffer.is_fully_read() => {
+                Err(exports::streams::StreamError::Closed)
+            }
+            InputStream::Buffered(buffer) => Ok(buffer.read(len as usize).to_vec()),
         }
     }
 
     fn blocking_read(&self, len: u64) -> Result<Vec<u8>, exports::streams::StreamError> {
         match self {
             InputStream::Host(h) => h.blocking_read(len).map_err(Into::into),
-            InputStream::Virtualized => Ok(Vec::new()),
+            // Blocking streams have the same behavior as non-blocking
+            InputStream::Buffered(_) => self.read(len),
         }
     }
 
@@ -129,7 +140,8 @@ impl exports::streams::GuestInputStream for InputStream {
                 let pollable = imports::streams::InputStream::subscribe(stream);
                 Pollable::Host(pollable)
             }
-            InputStream::Virtualized => Pollable::Virtualized,
+            // Buffered streams are always ready
+            InputStream::Buffered(_) => Pollable::Virtualized,
         };
         exports::poll::Pollable::new(pollable)
     }
@@ -137,21 +149,22 @@ impl exports::streams::GuestInputStream for InputStream {
 
 pub enum OutputStream {
     Host(imports::streams::OutputStream),
-    Virtualized,
+    Buffered(Buffer),
 }
 
 impl exports::streams::GuestOutputStream for OutputStream {
     fn check_write(&self) -> Result<u64, exports::streams::StreamError> {
         match self {
             OutputStream::Host(h) => h.check_write().map_err(Into::into),
-            OutputStream::Virtualized => Ok(u64::MAX),
+            // Writers can always write as much as they want to a buffered stream
+            OutputStream::Buffered(b) => Ok(usize::MAX as u64),
         }
     }
 
     fn write(&self, contents: Vec<u8>) -> Result<(), exports::streams::StreamError> {
         match self {
             OutputStream::Host(h) => h.write(&contents).map_err(Into::into),
-            OutputStream::Virtualized => Ok(()),
+            OutputStream::Buffered(b) => b.write(&contents),
         }
     }
 
@@ -161,14 +174,15 @@ impl exports::streams::GuestOutputStream for OutputStream {
     ) -> Result<(), exports::streams::StreamError> {
         match self {
             OutputStream::Host(h) => h.blocking_write_and_flush(&contents).map_err(Into::into),
-            OutputStream::Virtualized => Ok(()),
+            // Blocking streams have the same behavior as non-blocking
+            OutputStream::Buffered(_) => self.write(contents),
         }
     }
 
     fn flush(&self) -> Result<(), exports::streams::StreamError> {
         match self {
             OutputStream::Host(h) => h.flush().map_err(Into::into),
-            OutputStream::Virtualized => Ok(()),
+            OutputStream::Buffered(_) => Ok(()),
         }
     }
 
@@ -182,7 +196,8 @@ impl exports::streams::GuestOutputStream for OutputStream {
                 let pollable = imports::streams::OutputStream::subscribe(stream);
                 exports::poll::Pollable::new(Pollable::Host(pollable))
             }
-            OutputStream::Virtualized => exports::poll::Pollable::new(Pollable::Virtualized),
+            // Buffered streams are always ready
+            OutputStream::Buffered(_) => exports::poll::Pollable::new(Pollable::Virtualized),
         }
     }
 
@@ -220,9 +235,54 @@ impl From<imports::streams::StreamError> for exports::streams::StreamError {
             imports::streams::StreamError::Closed => exports::streams::StreamError::Closed,
             imports::streams::StreamError::LastOperationFailed(e) => {
                 exports::streams::StreamError::LastOperationFailed(exports::error::Error::new(
-                    IoError,
+                    IoError(e.to_debug_string()),
                 ))
             }
         }
+    }
+}
+
+// A simple buffer that can be used as a stream
+#[derive(Clone, Debug)]
+pub struct Buffer {
+    inner: Rc<RefCell<Vec<u8>>>,
+    read_offset: Cell<usize>,
+}
+
+impl Buffer {
+    /// Create a new buffer with the given contents
+    pub fn new(inner: Vec<u8>) -> Self {
+        Buffer {
+            inner: Rc::new(RefCell::new(inner)),
+            read_offset: Cell::new(0),
+        }
+    }
+
+    pub fn empty() -> Buffer {
+        Self::new(Default::default())
+    }
+
+    /// Read the next `len` bytes from the buffer
+    fn read(&self, len: usize) -> impl std::ops::Deref<Target = [u8]> + '_ {
+        let end = std::cmp::min(self.read_offset.get() + len, self.inner.borrow().len());
+        let slice = std::cell::Ref::map(self.inner.borrow(), |s| &s[self.read_offset.get()..end]);
+        self.read_offset.set(end);
+        slice
+    }
+
+    /// Write the given contents to the buffer
+    fn write(&self, contents: &[u8]) -> Result<(), exports::streams::StreamError> {
+        Ok(self.inner.borrow_mut().extend_from_slice(contents))
+    }
+
+    /// Check if the buffer has been fully read
+    fn is_fully_read(&self) -> bool {
+        self.inner.borrow().len() == self.read_offset.get()
+    }
+}
+
+impl From<Vec<u8>> for Buffer {
+    fn from(v: Vec<u8>) -> Self {
+        Buffer::new(v)
     }
 }

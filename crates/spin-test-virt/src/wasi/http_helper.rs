@@ -7,9 +7,12 @@ use crate::Component;
 
 use crate::bindings::exports::fermyon::spin_wasi_virt::http_helper as exports;
 
-use super::http::{
-    Fields, IncomingBody, IncomingRequest, IncomingResponse, OutgoingRequest, OutgoingResponse,
-    ResponseOutparam,
+use super::{
+    http::{
+        Fields, IncomingBody, IncomingRequest, IncomingResponse, OutgoingRequest, OutgoingResponse,
+        ResponseOutparam,
+    },
+    io,
 };
 
 impl exports::Guest for Component {
@@ -32,7 +35,9 @@ impl exports::Guest for Component {
             authority,
             path_with_query,
             headers,
-            body: RefCell::new(Ok(body.unwrap_or_else(|| IncomingBody))),
+            body: super::http::Consumable::new(
+                body.unwrap_or_else(|| IncomingBody(io::Buffer::empty())),
+            ),
         })
     }
 
@@ -62,15 +67,11 @@ impl exports::GuestResponseReceiver for ResponseReceiver {
     fn get(&self) -> Option<exports::IncomingResponse> {
         match &*self.0.lock().unwrap() {
             Some(Ok(r)) => {
-                let outgoing = r.get::<OutgoingResponse>().clone();
+                let outgoing = r.get::<OutgoingResponse>();
                 Some(exports::IncomingResponse::new(IncomingResponse {
                     status: outgoing.status_code.get(),
-                    headers: outgoing.headers,
-                    body: RefCell::new(Ok(match outgoing.body.into_inner() {
-                        Ok(r) => r,
-                        Err(r) => r,
-                    }
-                    .into())),
+                    headers: outgoing.headers.clone(),
+                    body: outgoing.body.unconsume().map(Into::into),
                 }))
             }
             Some(Err(_)) | None => None,

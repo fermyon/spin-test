@@ -103,6 +103,7 @@ impl http::types::OutgoingBody {
             // Get the minimum of how much we can write and how much we have left
             let len = std::cmp::min(n, bytes.len());
             // Break off the chunk we can write
+            println!("len: {} n: {n}", len);
             let (chunk, rest) = bytes.split_at(len);
             // Write the chunk
             pair.stream().write(chunk).unwrap();

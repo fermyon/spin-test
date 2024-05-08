@@ -1924,6 +1924,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitflags",
+ "bytes",
  "spin-expressions",
  "spin-manifest",
  "spin-outbound-networking",
@@ -2277,6 +2278,8 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "wac-graph"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0590b997892dc9d7e19884e7a1525263aec6069094775bd5f933858770e045f8"
 dependencies = [
  "anyhow",
  "id-arena",
@@ -2294,6 +2297,8 @@ dependencies = [
 [[package]]
 name = "wac-types"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "670f97b1f3b730df47e4c914e78b5ca0d140ed5656203bb7525bf3684c4616f4"
 dependencies = [
  "anyhow",
  "id-arena",
