@@ -106,7 +106,7 @@ impl wasi::clocks::wall_clock::Guest for Component {
 
 impl wasi::clocks::monotonic_clock::Guest for Component {
     fn now() -> wasi::clocks::monotonic_clock::Instant {
-        todo!()
+        crate::bindings::wasi::clocks::monotonic_clock::now()
     }
 
     fn resolution() -> wasi::clocks::monotonic_clock::Duration {
