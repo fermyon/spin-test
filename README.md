@@ -6,9 +6,11 @@
 
 `spin-test` can be used as a stand alone binary or as a plugin for Spin.
 
-### Install `spin test` (plugin)
+Before using `spin-test`, make sure you've [installed Spin](https://developer.fermyon.com/spin/v2/install).
 
-To install the `spin test` plugin canary release, run the following:
+### Install `spin test` (Spin plugin)
+
+To install `spin-test` as a Spin plugin, run the following:
 
 ```
 spin plugin install -u https://github.com/fermyon/spin-test/releases/download/canary/spin-test.json
@@ -16,9 +18,9 @@ spin plugin install -u https://github.com/fermyon/spin-test/releases/download/ca
 
 This will install the plugin which can be invoked with `spin test`.
 
-In the future, stable, non-canary releases will also be made available.
+Currently only a canary version (that matches the code on the `main` branch) is available at this time. This does mean that breaking changes may come with any upgrade of the plugin. In the future, stable, non-canary releases will also be made available.
 
-#### Installing a Locally Built Version
+#### Or install a locally built version
 
 To install a version of `spin-test` plugin that has been locally built using `cargo build --release`, use the following command:
 
@@ -28,7 +30,7 @@ spin pluginify -i
 
 Note: the [`pluginify`](https://github.com/fermyon/spin-plugins/blob/main/manifests/pluginify/pluginify.json) plugin is a pre-requisite.
 
-### Install `spin-test` (stand alone)
+### Or install `spin-test` (stand alone)
 
 Alternatively, to install `spin-test` as a stand alone binary, run `cargo build --release` from this directory and ensure that the resulting binary is located on your path.
 
@@ -60,13 +62,15 @@ build = "cargo component build --release"
 dir = "../../test-rs"
 ```
 
-### Run `spin-test`
+### Run `spin test`
 
-Finally, we're ready for our test to be run. We can do this simply by invoking `spin-test` from the directory where our Spin application lives:
+Finally, we're ready for our test to be run. We can do this simply by invoking the `spin test` plugin from the directory where our Spin application lives:
 
 ```bash
-spin-test
+spin test
 ```
+
+> *Note*: if you've installed `spin-test` as a stand alone binary instead of as a Spin plugin, you'll need to invoke it as `spin-test` instead of with a space like `spin test`.
 
 ## Examples
 
