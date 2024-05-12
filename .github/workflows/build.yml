@@ -28,7 +28,7 @@ jobs:
       # install dependencies
       - name: Install Rust toolchain
         run: |
-          rustup toolchain install ${{ env.RUST_VERSION }} --component clippy --component rustfmt
+          rustup toolchain install ${{ env.RUST_VERSION }} --component clippy --component rustfmt --no-self-update
           rustup default ${{ env.RUST_VERSION }}
       - name: Install Wasm Rust target
         run: rustup target add wasm32-wasi && rustup target add wasm32-unknown-unknown
