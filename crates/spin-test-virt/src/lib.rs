@@ -1,20 +1,19 @@
-#[allow(clippy::all)]
+mod helper;
+
+#[allow(warnings)]
 mod bindings;
 mod manifest;
+mod wasi;
 
 use std::{
     collections::{HashMap, HashSet},
     sync::{Arc, Mutex, OnceLock, RwLock},
 };
 
-use bindings::exports::{
-    fermyon::{
-        spin::{self, llm, mqtt, mysql, postgres, redis, sqlite, variables},
-        spin_test_virt::{self, http_handler, key_value as virt_key_value},
-    },
-    wasi::http::outgoing_handler,
+use bindings::exports::fermyon::{
+    spin::{self, llm, mqtt, mysql, postgres, redis, sqlite, variables},
+    spin_test_virt::{self, key_value as virt_key_value},
 };
-use bindings::wasi::http::types;
 
 struct Component;
 
@@ -561,56 +560,6 @@ impl variables::Guest for Component {
                 .flatten()
         });
         variable.ok_or_else(|| variables::Error::Undefined(name.to_string()))
-    }
-}
-
-static RESPONSES: std::sync::OnceLock<Mutex<HashMap<String, types::OutgoingResponse>>> =
-    std::sync::OnceLock::new();
-
-impl outgoing_handler::Guest for Component {
-    fn handle(
-        request: outgoing_handler::OutgoingRequest,
-        _options: Option<outgoing_handler::RequestOptions>,
-    ) -> Result<outgoing_handler::FutureIncomingResponse, outgoing_handler::ErrorCode> {
-        let url = format!(
-            "{scheme}://{authority}{path_and_query}",
-            scheme = match request.scheme() {
-                Some(types::Scheme::Http) => "http",
-                Some(types::Scheme::Https) | None => "https",
-                Some(types::Scheme::Other(ref s)) => s,
-            },
-            authority = request.authority().expect("TODO: handle"),
-            path_and_query = request
-                .path_with_query()
-                .filter(|p| p != "/")
-                .unwrap_or_default()
-        );
-        let url_allowed = manifest::AppManifest::allows_url(&url, "https")
-            .map_err(|e| outgoing_handler::ErrorCode::InternalError(Some(format!("{e}"))))?;
-        if !url_allowed {
-            return Err(outgoing_handler::ErrorCode::HttpRequestDenied);
-        }
-        let response = RESPONSES
-            .get_or_init(Default::default)
-            .lock()
-            .unwrap()
-            .remove(&url);
-        match response {
-            Some(r) => Ok(bindings::futurize_response(r)),
-            None => Err(outgoing_handler::ErrorCode::InternalError(Some(format!(
-                "unrecognized url: {url}"
-            )))),
-        }
-    }
-}
-
-impl http_handler::Guest for Component {
-    fn set_response(url: String, response: http_handler::OutgoingResponse) {
-        RESPONSES
-            .get_or_init(Default::default)
-            .lock()
-            .unwrap()
-            .insert(url, response);
     }
 }
 

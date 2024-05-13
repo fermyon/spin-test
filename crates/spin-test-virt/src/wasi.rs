@@ -1,17 +1,137 @@
 // TODO: remove this when things are closer to being implemented
 #![allow(warnings)]
 
-#[allow(warnings)]
-mod bindings;
+pub mod http;
+pub mod http_helper;
+pub mod io;
 
-use bindings::exports::wasi;
+use crate::bindings::exports::wasi;
+use crate::Component;
 
-struct Component;
+impl wasi::cli::stdout::Guest for Component {
+    fn get_stdout() -> io::exports::streams::OutputStream {
+        io::exports::streams::OutputStream::new(io::OutputStream::Host(
+            crate::bindings::wasi::cli::stdout::get_stdout(),
+        ))
+    }
+}
+
+impl wasi::cli::stdin::Guest for Component {
+    fn get_stdin() -> io::exports::streams::InputStream {
+        io::exports::streams::InputStream::new(io::InputStream::Buffered(io::Buffer::empty()))
+    }
+}
+
+impl wasi::cli::stderr::Guest for Component {
+    fn get_stderr() -> wasi::cli::stderr::OutputStream {
+        wasi::io::streams::OutputStream::new(io::OutputStream::Host(
+            crate::bindings::wasi::cli::stderr::get_stderr(),
+        ))
+    }
+}
+
+impl wasi::cli::terminal_stdout::Guest for Component {
+    fn get_terminal_stdout() -> Option<wasi::cli::terminal_stdout::TerminalOutput> {
+        todo!()
+    }
+}
+
+impl wasi::cli::terminal_stdin::Guest for Component {
+    fn get_terminal_stdin() -> Option<wasi::cli::terminal_stdin::TerminalInput> {
+        todo!()
+    }
+}
+
+impl wasi::cli::terminal_stderr::Guest for Component {
+    fn get_terminal_stderr() -> Option<wasi::cli::terminal_stderr::TerminalOutput> {
+        todo!()
+    }
+}
+
+impl wasi::cli::terminal_output::Guest for Component {
+    type TerminalOutput = TerminalOutput;
+}
+
+pub struct TerminalOutput;
+
+impl wasi::cli::terminal_output::GuestTerminalOutput for TerminalOutput {}
+
+impl wasi::cli::terminal_input::Guest for Component {
+    type TerminalInput = TerminalInput;
+}
+
+pub struct TerminalInput;
+
+impl wasi::cli::terminal_input::GuestTerminalInput for TerminalInput {}
+
+impl wasi::random::random::Guest for Component {
+    fn get_random_bytes(len: u64) -> Vec<u8> {
+        crate::bindings::wasi::random::random::get_random_bytes(len)
+    }
+
+    fn get_random_u64() -> u64 {
+        crate::bindings::wasi::random::random::get_random_u64()
+    }
+}
+
+impl wasi::random::insecure_seed::Guest for Component {
+    fn insecure_seed() -> (u64, u64) {
+        crate::bindings::wasi::random::insecure_seed::insecure_seed()
+    }
+}
+
+impl wasi::random::insecure::Guest for Component {
+    fn get_insecure_random_bytes(len: u64) -> Vec<u8> {
+        crate::bindings::wasi::random::insecure::get_insecure_random_bytes(len)
+    }
+
+    fn get_insecure_random_u64() -> u64 {
+        crate::bindings::wasi::random::insecure::get_insecure_random_u64()
+    }
+}
+
+impl wasi::clocks::wall_clock::Guest for Component {
+    fn now() -> wasi::clocks::wall_clock::Datetime {
+        let now = crate::bindings::wasi::clocks::wall_clock::now();
+        wasi::clocks::wall_clock::Datetime {
+            seconds: now.seconds,
+            nanoseconds: now.nanoseconds,
+        }
+    }
+
+    fn resolution() -> wasi::clocks::wall_clock::Datetime {
+        todo!()
+    }
+}
+
+impl wasi::clocks::monotonic_clock::Guest for Component {
+    fn now() -> wasi::clocks::monotonic_clock::Instant {
+        crate::bindings::wasi::clocks::monotonic_clock::now()
+    }
+
+    fn resolution() -> wasi::clocks::monotonic_clock::Duration {
+        todo!()
+    }
+
+    fn subscribe_instant(when: wasi::clocks::monotonic_clock::Instant) -> wasi::io::poll::Pollable {
+        todo!()
+    }
+
+    fn subscribe_duration(
+        when: wasi::clocks::monotonic_clock::Duration,
+    ) -> wasi::io::poll::Pollable {
+        todo!()
+    }
+}
 
 impl wasi::cli::environment::Guest for Component {
     fn get_environment() -> Vec<(String, String)> {
-        // TODO: Implement this
-        Vec::new()
+        let Some(component) = crate::manifest::AppManifest::get_component() else {
+            // If we don't have a component, we just accept the host environment
+            return crate::bindings::wasi::cli::environment::get_environment();
+        };
+
+        component.environment.into_iter().collect()
     }
 
     fn get_arguments() -> Vec<String> {
@@ -19,7 +139,7 @@ impl wasi::cli::environment::Guest for Component {
     }
 
     fn initial_cwd() -> Option<String> {
-        todo!()
+        None
     }
 }
 
@@ -31,7 +151,10 @@ impl wasi::cli::exit::Guest for Component {
 
 impl wasi::filesystem::preopens::Guest for Component {
     fn get_directories() -> Vec<(wasi::filesystem::preopens::Descriptor, String)> {
-        Vec::new()
+        vec![(
+            wasi::filesystem::preopens::Descriptor::new(Descriptor::Directory),
+            ".".into(),
+        )]
     }
 }
 
@@ -41,20 +164,28 @@ impl wasi::filesystem::types::Guest for Component {
     type DirectoryEntryStream = DirectoryEntryStream;
 
     fn filesystem_error_code(
-        err: &wasi::filesystem::types::Error,
+        err: wasi::io::error::ErrorBorrow<'_>,
     ) -> Option<wasi::filesystem::types::ErrorCode> {
         todo!()
     }
 }
 
-struct Descriptor;
+pub enum Descriptor {
+    Directory,
+    File(Vec<u8>),
+}
 
 impl wasi::filesystem::types::GuestDescriptor for Descriptor {
     fn read_via_stream(
         &self,
         offset: wasi::filesystem::types::Filesize,
     ) -> Result<wasi::filesystem::types::InputStream, wasi::filesystem::types::ErrorCode> {
-        todo!()
+        match self {
+            Descriptor::Directory => todo!(),
+            Descriptor::File(c) => Ok(wasi::filesystem::types::InputStream::new(
+                io::InputStream::Buffered(c.clone().into()),
+            )),
+        }
     }
 
     fn write_via_stream(
@@ -86,13 +217,16 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
     fn get_flags(
         &self,
     ) -> Result<wasi::filesystem::types::DescriptorFlags, wasi::filesystem::types::ErrorCode> {
-        todo!()
+        Ok(wasi::filesystem::types::DescriptorFlags::READ)
     }
 
     fn get_type(
         &self,
     ) -> Result<wasi::filesystem::types::DescriptorType, wasi::filesystem::types::ErrorCode> {
-        todo!()
+        Ok(match self {
+            Descriptor::Directory => wasi::filesystem::types::DescriptorType::Directory,
+            Descriptor::File(_) => wasi::filesystem::types::DescriptorType::RegularFile,
+        })
     }
 
     fn set_size(
@@ -144,7 +278,14 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
     fn stat(
         &self,
     ) -> Result<wasi::filesystem::types::DescriptorStat, wasi::filesystem::types::ErrorCode> {
-        todo!()
+        Ok(wasi::filesystem::types::DescriptorStat {
+            type_: wasi::filesystem::types::DescriptorType::RegularFile,
+            link_count: 0,
+            size: 64,
+            data_access_timestamp: None,
+            data_modification_timestamp: None,
+            status_change_timestamp: None,
+        })
     }
 
     fn stat_at(
@@ -152,7 +293,14 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
         path_flags: wasi::filesystem::types::PathFlags,
         path: String,
     ) -> Result<wasi::filesystem::types::DescriptorStat, wasi::filesystem::types::ErrorCode> {
-        todo!()
+        Ok(wasi::filesystem::types::DescriptorStat {
+            type_: wasi::filesystem::types::DescriptorType::RegularFile,
+            link_count: 0,
+            size: 64,
+            data_access_timestamp: None,
+            data_modification_timestamp: None,
+            status_change_timestamp: None,
+        })
     }
 
     fn set_times_at(
@@ -182,7 +330,9 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
         open_flags: wasi::filesystem::types::OpenFlags,
         flags: wasi::filesystem::types::DescriptorFlags,
     ) -> Result<wasi::filesystem::types::Descriptor, wasi::filesystem::types::ErrorCode> {
-        todo!()
+        Ok(wasi::filesystem::types::Descriptor::new(Descriptor::File(
+            "Hello, world!".into(),
+        )))
     }
 
     fn readlink_at(&self, path: String) -> Result<String, wasi::filesystem::types::ErrorCode> {
@@ -222,7 +372,7 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
         &self,
     ) -> Result<wasi::filesystem::types::MetadataHashValue, wasi::filesystem::types::ErrorCode>
     {
-        todo!()
+        Ok(wasi::filesystem::types::MetadataHashValue { lower: 0, upper: 0 })
     }
 
     fn metadata_hash_at(
@@ -231,11 +381,11 @@ impl wasi::filesystem::types::GuestDescriptor for Descriptor {
         path: String,
     ) -> Result<wasi::filesystem::types::MetadataHashValue, wasi::filesystem::types::ErrorCode>
     {
-        todo!()
+        Ok(wasi::filesystem::types::MetadataHashValue { lower: 0, upper: 0 })
     }
 }
 
-struct DirectoryEntryStream;
+pub struct DirectoryEntryStream;
 
 impl wasi::filesystem::types::GuestDirectoryEntryStream for DirectoryEntryStream {
     fn read_directory_entry(
@@ -266,7 +416,7 @@ impl wasi::sockets::ip_name_lookup::Guest for Component {
     }
 }
 
-struct ResolveAddressStream;
+pub struct ResolveAddressStream;
 
 impl wasi::sockets::ip_name_lookup::GuestResolveAddressStream for ResolveAddressStream {
     fn resolve_next_address(
@@ -287,7 +437,7 @@ impl wasi::sockets::network::Guest for Component {
     type Network = Network;
 }
 
-struct Network;
+pub struct Network;
 
 impl wasi::sockets::network::GuestNetwork for Network {}
 
@@ -295,7 +445,7 @@ impl wasi::sockets::tcp::Guest for Component {
     type TcpSocket = TcpSocket;
 }
 
-struct TcpSocket;
+pub struct TcpSocket;
 
 impl wasi::sockets::tcp::GuestTcpSocket for TcpSocket {
     fn start_bind(
@@ -470,7 +620,7 @@ impl wasi::sockets::udp::Guest for Component {
     type OutgoingDatagramStream = OutgoingDatagramStream;
 }
 
-struct UdpSocket;
+pub struct UdpSocket;
 
 impl wasi::sockets::udp::GuestUdpSocket for UdpSocket {
     fn start_bind(
@@ -543,7 +693,7 @@ impl wasi::sockets::udp::GuestUdpSocket for UdpSocket {
     }
 }
 
-struct IncomingDatagramStream;
+pub struct IncomingDatagramStream;
 
 impl wasi::sockets::udp::GuestIncomingDatagramStream for IncomingDatagramStream {
     fn receive(
@@ -558,7 +708,7 @@ impl wasi::sockets::udp::GuestIncomingDatagramStream for IncomingDatagramStream 
     }
 }
 
-struct OutgoingDatagramStream;
+pub struct OutgoingDatagramStream;
 
 impl wasi::sockets::udp::GuestOutgoingDatagramStream for OutgoingDatagramStream {
     fn check_send(&self) -> Result<u64, wasi::sockets::udp::ErrorCode> {
@@ -587,5 +737,3 @@ impl wasi::sockets::udp_create_socket::Guest for Component {
         todo!()
     }
 }
-
-bindings::export!(Component with_types_in bindings);

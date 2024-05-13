@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 /// A composition of components
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Composition {
     graph: Rc<RefCell<wac_graph::CompositionGraph>>,
 }
@@ -19,7 +19,7 @@ impl Composition {
         &self,
         name: &str,
         bytes: &[u8],
-        arguments: impl IntoIterator<Item = (&'a str, Box<dyn InstantiationArg>)> + 'a,
+        arguments: impl IntoIterator<Item = (&'a str, &'a dyn InstantiationArg)> + 'a,
     ) -> anyhow::Result<Instance> {
         let package = self.register_package(name, bytes)?;
         package.instantiate(arguments)
@@ -36,6 +36,7 @@ impl Composition {
         Ok(Package {
             graph: self.graph.clone(),
             id: package,
+            name: name.to_owned(),
         })
     }
 
@@ -48,6 +49,7 @@ impl Composition {
         Ok(Instance {
             graph: self.graph.clone(),
             id: node_id,
+            name: name.to_owned(),
         })
     }
 
@@ -57,18 +59,20 @@ impl Composition {
     }
 
     /// Encode the composition into a component binary
-    pub fn encode(&self) -> anyhow::Result<Vec<u8>> {
-        Ok(self
-            .graph
-            .borrow_mut()
-            .encode(wac_graph::EncodeOptions::default())?)
+    pub fn encode(&self, validate: bool) -> anyhow::Result<Vec<u8>> {
+        Ok(self.graph.borrow_mut().encode(wac_graph::EncodeOptions {
+            validate,
+            ..Default::default()
+        })?)
     }
 }
 
 /// An instance of a component in a composition
+#[derive(Clone)]
 pub struct Instance {
     graph: Rc<RefCell<wac_graph::CompositionGraph>>,
     id: wac_graph::NodeId,
+    name: String,
 }
 
 impl Instance {
@@ -86,7 +90,19 @@ impl Instance {
                 e => Err(e),
             })?;
 
-        Ok(node.map(|node| InstanceExport { id: node }))
+        Ok(node.map(|node_id| {
+            let node = &RefCell::borrow(&self.graph)[node_id];
+            InstanceExport {
+                graph: self.graph.clone(),
+                id: node_id,
+                kind: node.item_kind(),
+                name: name.to_owned(),
+            }
+        }))
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -94,13 +110,14 @@ impl Instance {
 pub struct Package {
     graph: Rc<RefCell<wac_graph::CompositionGraph>>,
     id: wac_graph::PackageId,
+    name: String,
 }
 
 impl Package {
     /// Instantiate the package with the given arguments
     pub fn instantiate<'a>(
         &self,
-        arguments: impl IntoIterator<Item = (&'a str, Box<dyn InstantiationArg>)>,
+        arguments: impl IntoIterator<Item = (&'a str, &'a dyn InstantiationArg)>,
     ) -> anyhow::Result<Instance> {
         let instance = self.graph.borrow_mut().instantiate(self.id);
         for (arg_name, arg) in arguments {
@@ -117,6 +134,7 @@ impl Package {
         Ok(Instance {
             graph: self.graph.clone(),
             id: instance,
+            name: self.name.clone(),
         })
     }
 
@@ -195,8 +213,27 @@ pub struct InstanceItem {
 }
 
 /// An export from an instantiated instance
+#[derive(Clone)]
 pub struct InstanceExport {
+    name: String,
+    graph: Rc<RefCell<wac_graph::CompositionGraph>>,
     id: wac_graph::NodeId,
+    kind: wac_graph::types::ItemKind,
+}
+
+impl InstanceExport {
+    /// View the export as an instance if it is one.
+    pub fn as_instance(&self) -> Option<Instance> {
+        if let wac_graph::types::ItemKind::Instance(_) = self.kind {
+            Some(Instance {
+                graph: self.graph.clone(),
+                id: self.id,
+                name: self.name.clone(),
+            })
+        } else {
+            None
+        }
+    }
 }
 
 /// An argument to an instantiation

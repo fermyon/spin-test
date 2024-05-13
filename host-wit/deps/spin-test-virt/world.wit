@@ -2,6 +2,7 @@ package fermyon:spin-test-virt;
 
 /// A configurable virtualized environment for Spin apps.
 world env {
+    include fermyon:spin-wasi-virt/virt;
     // The exports that compose directly with Spin app
     export fermyon:spin/key-value@2.0.0;
     export fermyon:spin/llm@2.0.0;
@@ -12,18 +13,14 @@ world env {
     export fermyon:spin/mysql@2.0.0;
     export fermyon:spin/sqlite@2.0.0;
     export fermyon:spin/variables@2.0.0;
-    export wasi:http/outgoing-handler@0.2.0;
 
     // Handles for configuring the environment
-    export http-handler;
     export key-value;
     export sqlite;
 
     // Helper functions
     export set-component-id: func(component-id: string);
     import get-manifest: func() -> string;
-    use wasi:http/types@0.2.0.{outgoing-response, future-incoming-response};
-    import futurize-response: func(response: outgoing-response) -> future-incoming-response;
 }
 
 /// Interface for configuring the behavior of `fermyon:spin/sqlite` interface
@@ -34,13 +31,6 @@ interface sqlite {
     set-response: func(query: string, params: list<value>, response: result<query-result, error>);
 }
 
-/// Interface for configuring the behavior of `wasi:http/outgoing-handler` interface
-interface http-handler {
-    use wasi:http/types@0.2.0.{outgoing-response};
-
-    /// Set a response for a given url
-    set-response: func(url: string, response: outgoing-response);
-}
 
 /// Interface for introspecting the `fermyon:spin/key-value` interface
 interface key-value {

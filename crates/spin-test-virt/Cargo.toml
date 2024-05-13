@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 bitflags = "2.5.0"
-wit-bindgen-rt = "0.24.0"
+wit-bindgen-rt = { version = "0.24.0", features = ["bitflags"] }
 spin-expressions = { workspace = true }
 spin-manifest = { workspace = true }
 spin-outbound-networking = { workspace = true }
@@ -25,6 +25,7 @@ world = "env"
 path = "../../host-wit/deps/spin-test-virt"
 
 [package.metadata.component.target.dependencies]
+"fermyon:spin-wasi-virt" = { path = "../../host-wit/deps/spin-wasi-virt" }
 "fermyon:spin" = { path = "../../host-wit/deps/fermyon" }
 "wasi:http" = { path = "../../host-wit/deps/http" }
 "wasi:random" = { path = "../../host-wit/deps/random" }

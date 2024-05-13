@@ -1,29 +1,9 @@
-use std::{
-    env,
-    io::{BufRead, Write},
-    path::{Path, PathBuf},
-    process,
-};
+use std::{env, process};
 
 fn main() {
     check_cargo_component_installed();
     cargo_component_build("crates/router");
     cargo_component_build("crates/spin-test-virt");
-    cargo_component_build("crates/spin-wasi-virt");
-    copy_wit_to_out_dir();
-}
-
-/// Make the wit files available in the out directory
-fn copy_wit_to_out_dir() {
-    let out = PathBuf::from(env::var("OUT_DIR").unwrap()).join("world.wit");
-    let mut file = std::fs::OpenOptions::new()
-        .create(true)
-        .write(true)
-        .truncate(true)
-        .open(out)
-        .unwrap();
-    pack_dir_all("host-wit", &mut file).unwrap();
-    println!("cargo:rerun-if-changed=host-wit");
 }
 
 fn check_cargo_component_installed() {
@@ -40,6 +20,8 @@ fn cargo_component_build(dir: &str) {
             "cargo",
             "component",
             "build",
+            "--target",
+            "wasm32-unknown-unknown",
             "--release",
             "--target-dir",
             out_dir.to_str().unwrap(),
@@ -78,39 +60,4 @@ fn get_os_process() -> String {
     } else {
         String::from("bash")
     }
-}
-
-/// Copy the contents of a `src` directory to a single `dst` file
-///
-/// Each file in `src` is written to `dst` in the following format:
-/// * Path length (u16, big-endian)
-/// * Path (utf-8)
-/// * File length (u64, big-endian)
-/// * File contents
-fn pack_dir_all(src: impl AsRef<Path>, dst: &mut std::fs::File) -> std::io::Result<()> {
-    for entry in std::fs::read_dir(src)? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        if ty.is_dir() {
-            pack_dir_all(entry.path(), dst)?;
-        } else {
-            let path = entry.path().display().to_string();
-            dst.write_all(&(path.len() as u16).to_be_bytes())?;
-            write!(dst, "{path}")?;
-            dst.write_all(&entry.metadata()?.len().to_be_bytes())?;
-            let mut reader =
-                std::io::BufReader::with_capacity(1024 * 128, std::fs::File::open(entry.path())?);
-            loop {
-                let buffer = reader.fill_buf()?;
-                let length = buffer.len();
-                if length == 0 {
-                    break;
-                } else {
-                    dst.write_all(buffer)?;
-                }
-                reader.consume(length);
-            }
-        }
-    }
-    Ok(())
 }

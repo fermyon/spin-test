@@ -3,23 +3,19 @@ pub mod runtime;
 
 use std::{collections::HashSet, path::PathBuf};
 
-use anyhow::Context as _;
+use anyhow::Context;
 pub use composition::Composition;
 
 /// The built `spin-test-virt` component
 const SPIN_TEST_VIRT: &[u8] = include_bytes!(concat!(
     env!("OUT_DIR"),
-    "/wasm32-wasi/release/spin_test_virt.wasm"
-));
-/// The built `spin-wasi-virt` component
-const SPIN_WASI_VIRT: &[u8] = include_bytes!(concat!(
-    env!("OUT_DIR"),
-    "/wasm32-wasi/release/spin_wasi_virt.wasm"
+    "/wasm32-unknown-unknown/release/spin_test_virt.wasm"
 ));
 /// The built `router` component
-const ROUTER: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/wasm32-wasi/release/router.wasm"));
-/// The wit package for `spin-test` (packed into a single file)
-const PACKED_WIT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/world.wit"));
+const ROUTER: &[u8] = include_bytes!(concat!(
+    env!("OUT_DIR"),
+    "/wasm32-unknown-unknown/release/router.wasm"
+));
 
 /// A Wasm component
 pub struct Component {
@@ -47,161 +43,20 @@ pub fn encode_composition(
     test_component: Component,
 ) -> anyhow::Result<(Vec<u8>, TestTarget)> {
     let test_target = TestTarget::from_component(&test_component)?;
-
     let composition = Composition::new();
 
-    // Get definition of the `fermyon:spin-test/http-helper` instance from the embedded wit package
-    let http_helper = get_http_helper_instance(&composition)
-        .context("internal error: failed to get `fermyon:spin-test/http-helper` instance from embedded wit package")?;
-
-    // Import the `fermyon:spin-test/http-helper` instance into the composition
-    let http_helper = composition.import_instance("fermyon:spin-test/http-helper", http_helper)?;
-
-    // Instantiate the `spin-test-virt` component with the `futurize-response` export from the `http-helper` instance
-    let futurize_response = http_helper
-        .export("futurize-response")?
-        .expect("internal error: `futurize-response` not found");
-    let virt_args = vec![("futurize-response", Box::new(futurize_response) as Box<_>)];
     let virt = composition
-        .instantiate("virt", SPIN_TEST_VIRT, virt_args)
+        .instantiate("virt", SPIN_TEST_VIRT, Vec::new())
         .context("fatal error: could not instantiate spin-test-virt")?;
 
-    let wasi_virt = composition
-        .instantiate("wasi-virt", SPIN_WASI_VIRT, Vec::new())
-        .context("fatal error: could not instantiate spin-wasi-virt")?;
-
     // Instantiate the `app` component with various exports from `spin-test-virt` instance
-    let app_args = [
-        "fermyon:spin/key-value@2.0.0",
-        "fermyon:spin/llm@2.0.0",
-        "fermyon:spin/redis@2.0.0",
-        "fermyon:spin/rdbms-types@2.0.0",
-        "fermyon:spin/mysql@2.0.0",
-        "fermyon:spin/postgres@2.0.0",
-        "fermyon:spin/sqlite@2.0.0",
-        "fermyon:spin/mqtt@2.0.0",
-        "fermyon:spin/variables@2.0.0",
-        "wasi:http/outgoing-handler@0.2.0",
-    ]
-    .into_iter()
-    .map(|k| {
-        Ok((
-            k,
-            Box::new(
-                virt.export(k)
-                    .with_context(|| format!("failed to export '{k}' from `spin-test-virt`"))?
-                    .with_context(|| format!("`spin-test-virt` does not export '{k}'"))?,
-            ) as Box<_>,
-        ))
-    })
-    .chain(
-        [
-            "wasi:cli/environment@0.2.0",
-            "wasi:cli/exit@0.2.0",
-            "wasi:filesystem/types@0.2.0",
-            "wasi:filesystem/preopens@0.2.0",
-            "wasi:cli/environment@0.2.0",
-            "wasi:cli/exit@0.2.0",
-            "wasi:sockets/instance-network@0.2.0",
-            "wasi:sockets/network@0.2.0",
-            "wasi:sockets/udp@0.2.0",
-            "wasi:sockets/udp-create-socket@0.2.0",
-            "wasi:sockets/tcp@0.2.0",
-            "wasi:sockets/tcp-create-socket@0.2.0",
-            "wasi:sockets/ip-name-lookup@0.2.0",
-        ]
-        .into_iter()
-        .map(|k| {
-            Ok((
-                k,
-                Box::new(
-                    wasi_virt
-                        .export(k)
-                        .with_context(|| format!("failed to export '{k}' from `spin-wasi-virt`"))?
-                        .with_context(|| format!("`spin-wasi-virt` does not export '{k}'"))?,
-                ) as Box<_>,
-            ))
-        }),
-    )
-    .collect::<anyhow::Result<Vec<_>>>()?;
-    let app = composition
-        .instantiate("app", &app_component.bytes, app_args)
-        .context("failed to instantiate Spin app")?;
+    let app = instantiate_app(&composition, app_component, &virt)?;
 
-    let new_request = http_helper
-        .export("new-request")?
-        .expect("internal error: `new-request` not found");
-    // Instantiate the `router` component with various exports from `spin-test-virt` and `app` instances
-    let router_args = [
-        ("set-component-id", &virt, "`spin-test-virt`"),
-        ("wasi:http/incoming-handler@0.2.0", &app, "the Spin app"),
-    ]
-    .into_iter()
-    .map(|(k, v, name)| {
-        Ok((
-            k,
-            Box::new(
-                v.export(k)
-                    .with_context(|| format!("failed to export '{k}' from {name}"))?
-                    .with_context(|| format!("{name} does not export '{k}'"))?,
-            ) as _,
-        ))
-    })
-    .chain([Ok(("new-request", Box::new(new_request) as _))])
-    .collect::<anyhow::Result<Vec<_>>>()?;
-    let router = composition
-        .instantiate("router", ROUTER, router_args)
-        .context("failed to instantiate router")?;
+    // Instantiate the `router` component
+    let router = instantiate_router(&composition, &virt, app)?;
 
     // Instantiate the `test` component
-    let mut test_args = vec![
-        ("wasi:http/incoming-handler@0.2.0", &router, "the router"),
-        (
-            "wasi:http/outgoing-handler@0.2.0",
-            &virt,
-            "`spin-test-virt`",
-        ),
-        ("fermyon:spin/key-value@2.0.0", &virt, "`spin-test-virt`"),
-        (
-            "fermyon:spin-test-virt/key-value",
-            &virt,
-            "`spin-test-virt`",
-        ),
-        ("fermyon:spin-test-virt/sqlite", &virt, "`spin-test-virt`"),
-        // Needed for types
-        ("fermyon:spin/sqlite@2.0.0", &virt, "`spin-test-virt`"),
-        (
-            "fermyon:spin-test-virt/http-handler",
-            &virt,
-            "`spin-test-virt`",
-        ),
-    ]
-    .into_iter()
-    .map(|(k, v, name)| {
-        Ok((
-            k,
-            Box::new(
-                v.export(k)
-                    .with_context(|| format!("failed to export '{k}' from {name}"))?
-                    .with_context(|| format!("{name} does not export '{k}'"))?,
-            ) as Box<_>,
-        ))
-    })
-    .collect::<anyhow::Result<Vec<_>>>()?;
-    // Explicitly import the `fermyon:spin-test/http-helper` instance into the
-    // `test` component from the top-level composition's import
-    test_args.push((
-        "fermyon:spin-test/http-helper",
-        Box::new(http_helper) as Box<_>,
-    ));
-    let test = composition
-        .instantiate("test", &test_component.bytes, test_args)
-        .with_context(|| {
-            format!(
-                "failed to instantiate test component '{}'",
-                test_component.path.display()
-            )
-        })?;
+    let test = instantiate_test(&composition, test_component, router, virt)?;
 
     match &test_target {
         TestTarget::AdHoc { exports } => {
@@ -231,71 +86,180 @@ pub fn encode_composition(
     }
 
     let bytes = composition
-        .encode()
+        .encode(true)
         .context("failed to encode composition")?;
 
     Ok((bytes, test_target))
 }
 
-fn get_http_helper_instance(
+fn instantiate_test(
     composition: &Composition,
-) -> anyhow::Result<composition::InstanceItem> {
-    let wit_bytes =
-        read_embedded_wit_package().context("failed to read embedded `spin-test` wit package")?;
-    let wit = composition.register_package("wit", &wit_bytes)?;
-    // The instance is buried in an `http-helper` component export.
-    let http_helper = wit
-        .get_export("http-helper")
-        .context("no 'http-helper' component export found in wit package'")?
-        .as_component()
-        .context("'http-helper' export was not a component")?;
-    let http_helper = http_helper
-        .get_export("fermyon:spin-test/http-helper")
-        .context("`fermyon:spin-test/http-helper` not found in 'http-helper' component")?
-        .as_instance()
-        .context("`fermyon:spin-test/http-helper` is not an instance")?;
-    Ok(http_helper)
+    test_component: Component,
+    router: composition::Instance,
+    virt: composition::Instance,
+) -> Result<composition::Instance, anyhow::Error> {
+    // Get args from `router` and `virt` instances
+    let router_args = [Ok((
+        "wasi:http/incoming-handler@0.2.0",
+        export_item(&router, "wasi:http/incoming-handler@0.2.0")?,
+    ))]
+    .into_iter();
+    let virt_args = [
+        "fermyon:spin-wasi-virt/http-handler",
+        "fermyon:spin/sqlite@2.0.0",
+        "fermyon:spin-test-virt/sqlite",
+        "fermyon:spin-test-virt/key-value",
+        "fermyon:spin/key-value@2.0.0",
+        "wasi:io/error@0.2.0",
+        "wasi:io/streams@0.2.0",
+        "wasi:io/poll@0.2.0",
+        "wasi:clocks/monotonic-clock@0.2.0",
+        "wasi:clocks/wall-clock@0.2.0",
+        "wasi:filesystem/types@0.2.0",
+        "wasi:filesystem/preopens@0.2.0",
+        "wasi:cli/stdin@0.2.0",
+        "wasi:cli/stderr@0.2.0",
+        "wasi:cli/stdout@0.2.0",
+        "wasi:http/types@0.2.0",
+        "wasi:http/outgoing-handler@0.2.0",
+    ]
+    .into_iter()
+    .map(|k| Ok((k, export_item(&virt, k)?)))
+    .chain([Ok((
+        "fermyon:spin-test/http-helper",
+        export_item(&virt, "fermyon:spin-wasi-virt/http-helper")?,
+    ))]);
+
+    // Collect args and instantiate the `test` component
+    let test_args = router_args
+        .chain(virt_args)
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    let test_args = test_args
+        .iter()
+        .map(|(k, v)| (*k, v as &dyn composition::InstantiationArg));
+    composition
+        .instantiate("test", &test_component.bytes, test_args)
+        .with_context(|| {
+            format!(
+                "failed to instantiate test component '{}'",
+                test_component.path.display()
+            )
+        })
 }
 
-fn read_embedded_wit_package() -> anyhow::Result<Vec<u8>> {
-    let mut resolve = wit_parser::Resolve::new();
-    let temp = temp_dir::TempDir::new()?;
-    unpack_packed_wit(temp.path()).context("failed to unpack wit package from binary")?;
-    let (pkg, _) = resolve
-        .push_dir(temp.path())
-        .context("failed to push host-wit directory")?;
-    wit_component::encode(Some(true), &resolve, pkg)
+fn instantiate_router(
+    composition: &Composition,
+    virt: &composition::Instance,
+    app: composition::Instance,
+) -> anyhow::Result<composition::Instance> {
+    // Get access to the `http/types` and `http-helper` exports
+    let http_types = export_instance(virt, "wasi:http/types@0.2.0")?;
+    let http_helper = export_instance(virt, "fermyon:spin-wasi-virt/http-helper")?;
+
+    let router_args = [
+        ("wasi:http/types@0.2.0", virt),
+        ("set-component-id", virt),
+        ("wasi:http/incoming-handler@0.2.0", &app),
+        ("outgoing-request", &http_types),
+        ("incoming-request", &http_types),
+        ("incoming-body", &http_types),
+        ("new-request", &http_helper),
+    ]
+    .into_iter()
+    .map(|(k, v)| Ok((k, export_item(v, k)?)))
+    .collect::<anyhow::Result<Vec<_>>>()?;
+
+    let router_args = router_args
+        .iter()
+        .map(|(k, v)| (*k, v as &dyn composition::InstantiationArg));
+    let router = composition
+        .instantiate("router", ROUTER, router_args)
+        .context("failed to instantiate router")?;
+    Ok(router)
 }
 
-/// Unpack the packed wit file into a directory structure
-fn unpack_packed_wit(dst: &std::path::Path) -> anyhow::Result<()> {
-    let mut index = 0;
-    while PACKED_WIT.len() > index {
-        let path_length = u16::from_be_bytes([PACKED_WIT[index], PACKED_WIT[index + 1]]) as usize;
-        let path = std::path::Path::new(
-            std::str::from_utf8(&PACKED_WIT[index + 2..index + 2 + path_length])
-                .context("failed to read packed wit file's path")?,
-        );
-        let path = path
-            .strip_prefix("host-wit")
-            .context("packed wit file's path did not begin with `host-wit`")?;
-        let file_length = u64::from_be_bytes(
-            PACKED_WIT[index + 2 + path_length..index + 2 + path_length + 8].try_into()?,
-        ) as usize;
+fn instantiate_app(
+    composition: &Composition,
+    app_component: Component,
+    virt: &composition::Instance,
+) -> anyhow::Result<composition::Instance, anyhow::Error> {
+    let app_args = [
+        "fermyon:spin/key-value@2.0.0",
+        "fermyon:spin/llm@2.0.0",
+        "fermyon:spin/redis@2.0.0",
+        "fermyon:spin/rdbms-types@2.0.0",
+        "fermyon:spin/mysql@2.0.0",
+        "fermyon:spin/postgres@2.0.0",
+        "fermyon:spin/sqlite@2.0.0",
+        "fermyon:spin/mqtt@2.0.0",
+        "fermyon:spin/variables@2.0.0",
+        "wasi:io/error@0.2.0",
+        "wasi:io/streams@0.2.0",
+        "wasi:io/poll@0.2.0",
+        "wasi:clocks/monotonic-clock@0.2.0",
+        "wasi:clocks/wall-clock@0.2.0",
+        "wasi:random/random@0.2.0",
+        "wasi:random/insecure@0.2.0",
+        "wasi:random/insecure-seed@0.2.0",
+        "wasi:cli/terminal-input@0.2.0",
+        "wasi:cli/terminal-output@0.2.0",
+        "wasi:cli/terminal-stdin@0.2.0",
+        "wasi:cli/terminal-stdout@0.2.0",
+        "wasi:cli/terminal-stderr@0.2.0",
+        "wasi:cli/environment@0.2.0",
+        "wasi:cli/exit@0.2.0",
+        "wasi:cli/environment@0.2.0",
+        "wasi:cli/exit@0.2.0",
+        "wasi:cli/stdin@0.2.0",
+        "wasi:cli/stderr@0.2.0",
+        "wasi:cli/stdout@0.2.0",
+        "wasi:filesystem/types@0.2.0",
+        "wasi:filesystem/preopens@0.2.0",
+        "wasi:sockets/instance-network@0.2.0",
+        "wasi:sockets/network@0.2.0",
+        "wasi:sockets/udp@0.2.0",
+        "wasi:sockets/udp-create-socket@0.2.0",
+        "wasi:sockets/tcp@0.2.0",
+        "wasi:sockets/tcp-create-socket@0.2.0",
+        "wasi:sockets/ip-name-lookup@0.2.0",
+        "wasi:http/outgoing-handler@0.2.0",
+        "wasi:http/types@0.2.0",
+    ]
+    .into_iter()
+    .map(|k| Ok((k, export_item(virt, k)?)))
+    .collect::<anyhow::Result<Vec<_>>>()?;
 
-        let file_start = index + 2 + path_length + 8;
-        log::debug!(
-            "writing unpacked wit file '{}' to '{}'",
-            path.display(),
-            dst.join(path).display()
-        );
-        std::fs::create_dir_all(dst.join(path).parent().unwrap())
-            .context("failed to create unpacked wit directory structure")?;
-        std::fs::write(dst.join(path), &PACKED_WIT[file_start..][..file_length])
-            .context("failed to write packed wit file to temporary directory")?;
-        index = index + 2 + path_length + 8 + file_length;
-    }
-    Ok(())
+    let app_args = app_args
+        .iter()
+        .map(|(k, v)| (*k, v as &dyn composition::InstantiationArg));
+    let app = composition
+        .instantiate("app", &app_component.bytes, app_args)
+        .context("failed to instantiate Spin app")?;
+    Ok(app)
+}
+
+/// Export an instance from an instance
+fn export_instance(
+    instance: &composition::Instance,
+    name: &str,
+) -> anyhow::Result<composition::Instance> {
+    export_item(instance, name)?.as_instance().with_context(|| {
+        format!(
+            "internal error: export `{name}` in `{}` is not an instance",
+            instance.name()
+        )
+    })
+}
+
+/// Export an item from an instance
+fn export_item(
+    instance: &composition::Instance,
+    name: &str,
+) -> anyhow::Result<composition::InstanceExport> {
+    instance
+        .export(name)
+        .with_context(|| format!("failed to export '{name}' from {}", instance.name()))?
+        .with_context(|| format!("{} does not export '{name}'", instance.name()))
 }
 
 /// Represents the target type of the test component.
