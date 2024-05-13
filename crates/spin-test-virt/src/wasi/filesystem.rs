@@ -47,8 +47,6 @@ pub enum Descriptor {
     File(Arc<Vec<u8>>),
 }
 
-static FILES: OnceLock<Mutex<HashMap<String, Arc<Vec<u8>>>>> = OnceLock::new();
-
 impl exports::types::GuestDescriptor for Descriptor {
     fn read_via_stream(
         &self,
@@ -193,16 +191,7 @@ impl exports::types::GuestDescriptor for Descriptor {
         open_flags: exports::types::OpenFlags,
         flags: exports::types::DescriptorFlags,
     ) -> Result<exports::types::Descriptor, exports::types::ErrorCode> {
-        let files = FILES
-            .get_or_init(|| Mutex::new(HashMap::new()))
-            .lock()
-            .unwrap();
-        crate::println!("open_at {path:?} {files:?}");
-
-        let file = files
-            .get(&path)
-            .cloned()
-            .ok_or_else(|| exports::types::ErrorCode::NoEntry)?;
+        let file = FileSystem::get(&path).ok_or_else(|| exports::types::ErrorCode::NoEntry)?;
         Ok(exports::types::Descriptor::new(Descriptor::File(file)))
     }
 
@@ -261,5 +250,34 @@ impl exports::types::GuestDirectoryEntryStream for DirectoryEntryStream {
         &self,
     ) -> Result<Option<exports::types::DirectoryEntry>, exports::types::ErrorCode> {
         todo!()
+    }
+}
+
+impl crate::bindings::exports::fermyon::spin_wasi_virt::fs_handler::Guest for Component {
+    fn add_file(path: String, contents: Vec<u8>) {
+        FileSystem::add(path, contents)
+    }
+}
+
+struct FileSystem;
+static FILES: OnceLock<Mutex<HashMap<String, Arc<Vec<u8>>>>> = OnceLock::new();
+
+impl FileSystem {
+    fn add(path: String, contents: Vec<u8>) {
+        let mut files = Self::get_files();
+        files.insert(path, Arc::new(contents));
+    }
+
+    fn get(path: &str) -> Option<Arc<Vec<u8>>> {
+        let files = Self::get_files();
+        files.get(path).cloned()
+    }
+
+    fn get_files() -> std::sync::MutexGuard<'static, HashMap<String, Arc<Vec<u8>>>> {
+        let mut files = FILES
+            .get_or_init(|| Mutex::new(HashMap::new()))
+            .lock()
+            .unwrap();
+        files
     }
 }

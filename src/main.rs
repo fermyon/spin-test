@@ -124,7 +124,13 @@ impl Run {
         )
         .context("failed to compose Spin app, test, and virtualized Spin environment")?;
 
-        let tests = run_tests(test_name, test_target, raw_manifest, encoded)?;
+        let tests = run_tests(
+            test_name,
+            test_target,
+            raw_manifest,
+            component.clone(),
+            encoded,
+        )?;
         let _ = libtest_mimic::run(&libtest_mimic::Arguments::default(), tests);
 
         Ok(())
@@ -149,6 +155,7 @@ fn run_tests(
     test_name: &str,
     test_target: spin_test::TestTarget,
     raw_manifest: String,
+    component_config: spin_manifest::schema::v2::Component,
     encoded: Vec<u8>,
 ) -> anyhow::Result<Vec<libtest_mimic::Trial>> {
     let mut trials = vec![];
@@ -163,10 +170,14 @@ fn run_tests(
                     .to_owned();
                 let raw_manifest = raw_manifest.clone();
                 let encoded = encoded.clone();
+                let component_config = component_config.clone();
 
                 trials.push(libtest_mimic::Trial::test(test_name, move || {
-                    let mut runtime =
-                        spin_test::runtime::Runtime::instantiate(raw_manifest, &encoded)?;
+                    let mut runtime = spin_test::runtime::Runtime::instantiate(
+                        raw_manifest,
+                        component_config,
+                        &encoded,
+                    )?;
 
                     Ok(runtime.run(Some(&test_export)).map_err(FullError::from)?)
                 }));
@@ -174,8 +185,12 @@ fn run_tests(
         }
         spin_test::TestTarget::TestWorld => {
             trials.push(libtest_mimic::Trial::test(test_name, move || {
-                let mut runtime = spin_test::runtime::Runtime::instantiate(raw_manifest, &encoded)
-                    .context("failed to create `spin-test` runtime")?;
+                let mut runtime = spin_test::runtime::Runtime::instantiate(
+                    raw_manifest,
+                    component_config,
+                    &encoded,
+                )
+                .context("failed to create `spin-test` runtime")?;
 
                 Ok(runtime.run(None).map_err(FullError::from)?)
             }));

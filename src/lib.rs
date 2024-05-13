@@ -45,11 +45,10 @@ pub fn encode_composition(
     let test_target = TestTarget::from_component(&test_component)?;
     let composition = Composition::new();
 
-    let virt = composition
-        .instantiate("virt", SPIN_TEST_VIRT, Vec::new())
-        .context("fatal error: could not instantiate spin-test-virt")?;
+    // Instantiate the `virt` component
+    let virt = instantiate_virt(&composition)?;
 
-    // Instantiate the `app` component with various exports from `spin-test-virt` instance
+    // Instantiate the `app` component with various exports from the virt instance
     let app = instantiate_app(&composition, app_component, &virt)?;
 
     // Instantiate the `router` component
@@ -236,6 +235,18 @@ fn instantiate_app(
         .instantiate("app", &app_component.bytes, app_args)
         .context("failed to instantiate Spin app")?;
     Ok(app)
+}
+
+/// Instantiate the `virt` component and export the `fs-handler` instance
+fn instantiate_virt(composition: &Composition) -> anyhow::Result<composition::Instance> {
+    let virt = composition
+        .instantiate("virt", SPIN_TEST_VIRT, Vec::new())
+        .context("fatal error: could not instantiate spin-test-virt")?;
+    let fs_handler = export_item(&virt, "fermyon:spin-wasi-virt/fs-handler")?;
+    composition
+        .export(fs_handler, "fermyon:spin-wasi-virt/fs-handler")
+        .context("fatal error: could not export fs-handler from spin-test-virt")?;
+    Ok(virt)
 }
 
 /// Export an instance from an instance
