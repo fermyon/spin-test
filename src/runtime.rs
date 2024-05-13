@@ -1,5 +1,7 @@
 use anyhow::Context as _;
 
+use crate::manifest::ManifestInformation;
+
 mod non_dynamic {
     wasmtime::component::bindgen!({
         world: "runner",
@@ -35,21 +37,20 @@ pub struct Runtime {
     store: wasmtime::Store<Data>,
     linker: wasmtime::component::Linker<Data>,
     component: wasmtime::component::Component,
-    component_config: spin_manifest::schema::v2::Component,
+    manifest: ManifestInformation,
 }
 
 impl Runtime {
     /// Create a new runtime
     pub fn instantiate(
-        manifest: String,
-        component_config: spin_manifest::schema::v2::Component,
+        manifest: ManifestInformation,
         composed_component: &[u8],
     ) -> anyhow::Result<Self> {
         if std::env::var("SPIN_TEST_DUMP_COMPOSITION").is_ok() {
             let _ = std::fs::write("composition.wasm", composed_component);
         }
         let engine = wasmtime::Engine::default();
-        let store = wasmtime::Store::new(&engine, Data::new(manifest));
+        let store = wasmtime::Store::new(&engine, Data::new(manifest.raw().to_owned()));
 
         let component = wasmtime::component::Component::new(&engine, composed_component)
             .context("composed component was an invalid Wasm component")?;
@@ -64,7 +65,7 @@ impl Runtime {
             store,
             linker,
             component,
-            component_config,
+            manifest,
         })
     }
 
@@ -77,47 +78,7 @@ impl Runtime {
                     .instantiate(&mut self.store, &self.component)
                     .context("failed to instantiate spin-test composition")?;
                 let runner = dynamic::DynamicRunner::new(&mut self.store, &test_instance)?;
-                for file in self.component_config.files.iter() {
-                    match file {
-                        spin_manifest::schema::v2::WasiFilesMount::Pattern(p) => {
-                            // TODO: handle * wildcards
-                            let path = std::path::Path::new(p);
-                            if path.is_dir() {
-                                for entry in
-                                    std::fs::read_dir(path).context("failed to read directory")?
-                                {
-                                    let entry = entry.context("failed to read directory entry")?;
-                                    let path = entry.path();
-                                    if path.is_file() {
-                                        let contents = std::fs::read(&path)
-                                            .context("failed to read file contents")?;
-                                        runner.fermyon_spin_wasi_virt_fs_handler().call_add_file(
-                                            &mut self.store,
-                                            &path.to_string_lossy(),
-                                            &contents,
-                                        )?;
-                                    }
-                                }
-                            } else {
-                                let contents =
-                                    std::fs::read(&path).context("failed to read file contents")?;
-                                runner.fermyon_spin_wasi_virt_fs_handler().call_add_file(
-                                    &mut self.store,
-                                    &path.to_string_lossy(),
-                                    &contents,
-                                )?;
-                            }
-                        }
-                        spin_manifest::schema::v2::WasiFilesMount::Placement { .. } => {
-                            todo!("placement file mounts are not yet supported in `spin-test`")
-                        }
-                    }
-                }
-                runner.fermyon_spin_wasi_virt_fs_handler().call_add_file(
-                    &mut self.store,
-                    "static/hello.txt",
-                    &"Hello, world!".to_owned().into_bytes(),
-                )?;
+                self.add_files(runner)?;
 
                 let test_func = test_instance
                     .get_typed_func::<(), ()>(&mut self.store, test_name)
@@ -138,6 +99,77 @@ impl Runtime {
                 runner.call_run(&mut self.store)
             }
         }
+    }
+
+    /// Make all mounted files visible to the WASI virtual filesystem
+    fn add_files(&mut self, runner: dynamic::DynamicRunner) -> anyhow::Result<()> {
+        /// Make a file visible to the WASI virtual filesystem
+        fn add_file<T>(
+            store: &mut wasmtime::Store<T>,
+            runner: &dynamic::DynamicRunner,
+            host_path: &std::path::Path,
+            guest_path: &std::path::Path,
+        ) -> anyhow::Result<()> {
+            let contents = std::fs::read(host_path).context("failed to read file contents")?;
+            runner.fermyon_spin_wasi_virt_fs_handler().call_add_file(
+                store,
+                &guest_path.to_string_lossy(),
+                &contents,
+            )
+        }
+        for file in self.manifest.component().files.iter() {
+            match file {
+                spin_manifest::schema::v2::WasiFilesMount::Pattern(p) => {
+                    for path in glob::glob(p).context("failed to glob pattern")? {
+                        let path = path.context("failed to read glob entry")?;
+                        let path = self.manifest.relative_from(path);
+                        if path.is_dir() {
+                            for entry in
+                                std::fs::read_dir(path).context("failed to read directory")?
+                            {
+                                let entry = entry.context("failed to read directory entry")?;
+                                let path = entry.path();
+                                if path.is_file() {
+                                    add_file(&mut self.store, &runner, &path, &path)?;
+                                }
+                            }
+                        } else {
+                            add_file(&mut self.store, &runner, &path, &path)?;
+                        }
+                    }
+                }
+                spin_manifest::schema::v2::WasiFilesMount::Placement {
+                    source,
+                    destination,
+                } => {
+                    let source = self.manifest.relative_from(source);
+                    if source.is_dir() {
+                        let source = source.join("**/*");
+                        println!("source: {:?}", source);
+                        for path in glob::glob(&source.to_string_lossy())? {
+                            let path = path.context("failed to read glob entry")?;
+                            if !path.is_file() {
+                                continue;
+                            }
+                            add_file(
+                                &mut self.store,
+                                &runner,
+                                &path,
+                                std::path::Path::new(destination),
+                            )?;
+                        }
+                    } else {
+                        add_file(
+                            &mut self.store,
+                            &runner,
+                            &source,
+                            std::path::Path::new(destination),
+                        )?
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }
 

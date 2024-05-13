@@ -7,6 +7,7 @@ edition = "2021"
 anyhow = { workspace = true }
 clap = { version = "4.5", features = ["derive"] }
 env_logger = "0.11"
+glob = "0.3"
 http-body-util = "0.1.1"
 hyper = "1.0"
 libtest-mimic = "0.7"
@@ -17,6 +18,7 @@ spin-componentize = { git = "https://github.com/fermyon/spin" }
 spin-manifest = { workspace = true }
 temp-dir = "0.1.13"
 tokio = "1.0"
+toml = { workspace = true }
 wac-graph = "0.1.0"
 wasmtime = "19.0.1"
 wasmtime-wasi = "19.0.1"

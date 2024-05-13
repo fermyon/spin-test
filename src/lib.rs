@@ -1,10 +1,12 @@
 mod composition;
+mod manifest;
 pub mod runtime;
 
 use std::{collections::HashSet, path::PathBuf};
 
 use anyhow::Context;
 pub use composition::Composition;
+pub use manifest::ManifestInformation;
 
 /// The built `spin-test-virt` component
 const SPIN_TEST_VIRT: &[u8] = include_bytes!(concat!(

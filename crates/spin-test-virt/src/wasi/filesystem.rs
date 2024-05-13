@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    fs::File,
     sync::{Arc, Mutex, OnceLock},
 };
 
@@ -12,21 +13,10 @@ use crate::bindings::exports::wasi::filesystem as exports;
 
 impl exports::preopens::Guest for Component {
     fn get_directories() -> Vec<(exports::preopens::Descriptor, String)> {
-        let Some(component) = crate::manifest::AppManifest::get_component() else {
-            return Vec::new();
-        };
-        component
-            .files
-            .into_iter()
-            .map(|file| match file {
-                // All pattern based file mounts are mounted at the root of the filesystem
-                WasiFilesMount::Pattern(path) => (
-                    exports::preopens::Descriptor::new(Descriptor::Directory),
-                    "/".to_owned(),
-                ),
-                WasiFilesMount::Placement { .. } => todo!(),
-            })
-            .collect()
+        vec![(
+            exports::preopens::Descriptor::new(Descriptor::Directory),
+            "/".to_owned(),
+        )]
     }
 }
 
@@ -139,7 +129,10 @@ impl exports::types::GuestDescriptor for Descriptor {
 
     fn stat(&self) -> Result<exports::types::DescriptorStat, exports::types::ErrorCode> {
         Ok(exports::types::DescriptorStat {
-            type_: exports::types::DescriptorType::RegularFile,
+            type_: match self {
+                Descriptor::Directory => exports::types::DescriptorType::Directory,
+                Descriptor::File(_) => exports::types::DescriptorType::RegularFile,
+            },
             link_count: 0,
             size: 64,
             data_access_timestamp: None,
@@ -153,6 +146,7 @@ impl exports::types::GuestDescriptor for Descriptor {
         path_flags: exports::types::PathFlags,
         path: String,
     ) -> Result<exports::types::DescriptorStat, exports::types::ErrorCode> {
+        crate::println!("stat_at: {:?}", path);
         Ok(exports::types::DescriptorStat {
             type_: exports::types::DescriptorType::RegularFile,
             link_count: 0,
