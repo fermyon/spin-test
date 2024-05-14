@@ -3,14 +3,13 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::Component;
-
 use crate::bindings::exports::fermyon::spin_wasi_virt::http_helper as exports;
+use crate::Component;
 
 use super::{
     http::{
-        Fields, IncomingBody, IncomingRequest, IncomingResponse, OutgoingRequest, OutgoingResponse,
-        ResponseOutparam,
+        self, Fields, IncomingBody, IncomingRequest, IncomingResponse, OutgoingRequest,
+        OutgoingResponse, ResponseOutparam,
     },
     io,
 };
@@ -35,9 +34,7 @@ impl exports::Guest for Component {
             authority,
             path_with_query,
             headers,
-            body: super::http::Consumable::new(
-                body.unwrap_or_else(|| IncomingBody(io::Buffer::empty())),
-            ),
+            body: body.unwrap_or_else(IncomingBody::empty).into(),
         })
     }
 
@@ -65,16 +62,36 @@ pub struct ResponseReceiver(
 
 impl exports::GuestResponseReceiver for ResponseReceiver {
     fn get(&self) -> Option<exports::IncomingResponse> {
-        match &*self.0.lock().unwrap() {
+        let response = match &*self.0.lock().unwrap() {
             Some(Ok(r)) => {
                 let outgoing = r.get::<OutgoingResponse>();
-                Some(exports::IncomingResponse::new(IncomingResponse {
+                Some(IncomingResponse {
                     status: outgoing.status_code.get(),
                     headers: outgoing.headers.clone(),
                     body: outgoing.body.unconsume().map(Into::into),
-                }))
+                })
             }
-            Some(Err(_)) | None => None,
-        }
+            Some(Err(e)) => {
+                use http::exports::types::ErrorCode;
+                let (status, msg) = match &e {
+                    ErrorCode::InternalError(Some(msg)) => (500, msg.clone()),
+                    ErrorCode::InternalError(None) => {
+                        (500, "an internal error occurred".to_owned())
+                    }
+                    ErrorCode::DestinationNotFound => (
+                        404,
+                        "no route found in spin.toml manifest for request path".to_owned(),
+                    ),
+                    _ => (500, e.to_string()),
+                };
+                Some(IncomingResponse {
+                    status,
+                    headers: Fields::default(),
+                    body: IncomingBody::new(msg.into()).into(),
+                })
+            }
+            None => None,
+        };
+        response.map(exports::IncomingResponse::new)
     }
 }

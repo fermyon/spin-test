@@ -284,3 +284,9 @@ impl From<Vec<u8>> for Buffer {
         Buffer::new(v)
     }
 }
+
+impl From<String> for Buffer {
+    fn from(v: String) -> Self {
+        Buffer::new(v.into_bytes())
+    }
+}

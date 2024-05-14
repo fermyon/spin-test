@@ -84,6 +84,12 @@ impl<T: Clone> Consumable<T> {
     }
 }
 
+impl<T> From<T> for Consumable<T> {
+    fn from(value: T) -> Self {
+        Consumable::new(value)
+    }
+}
+
 impl exports::types::GuestIncomingRequest for IncomingRequest {
     fn method(&self) -> exports::types::Method {
         self.method.clone()
@@ -256,7 +262,17 @@ impl exports::types::GuestOutgoingBody for OutgoingBody {
 }
 
 #[derive(Clone)]
-pub struct IncomingBody(pub io::Buffer);
+pub struct IncomingBody(io::Buffer);
+
+impl IncomingBody {
+    pub fn new(buffer: io::Buffer) -> Self {
+        Self(buffer)
+    }
+
+    pub fn empty() -> Self {
+        Self::new(io::Buffer::empty())
+    }
+}
 
 impl exports::types::GuestIncomingBody for IncomingBody {
     fn stream(&self) -> Result<io::exports::streams::InputStream, ()> {
@@ -273,6 +289,15 @@ impl exports::types::GuestIncomingBody for IncomingBody {
 impl From<OutgoingBody> for IncomingBody {
     fn from(o: OutgoingBody) -> Self {
         Self(o.0)
+    }
+}
+
+impl<T> From<T> for IncomingBody
+where
+    T: Into<io::Buffer>,
+{
+    fn from(t: T) -> Self {
+        Self(t.into())
     }
 }
 
