@@ -147,6 +147,13 @@ impl Runtime {
                     // Destination is a *directory* relative to the root of the WASI virtual filesystem
                     destination,
                 } => {
+                    // Destination is always assumed to be an absolute path
+                    let destination = format!(
+                        "/{}",
+                        destination
+                            .strip_prefix('/')
+                            .unwrap_or(destination.as_str())
+                    );
                     let host_path = self.manifest.absolute_from(source);
 
                     // If the host path is a directory, add all files in the directory
@@ -158,7 +165,7 @@ impl Runtime {
                                 continue;
                             }
                             // Guest path is the path relative to the manifest appended to the destination
-                            let guest_path = std::path::Path::new(destination)
+                            let guest_path = std::path::Path::new(&destination)
                                 // Unwrap should be fine since we know this is a file
                                 .join(host_path.file_name().unwrap());
 
@@ -166,7 +173,7 @@ impl Runtime {
                         }
                     } else {
                         // Guest path is the path relative to the manifest appended to the destination
-                        let guest_path = std::path::Path::new(destination)
+                        let guest_path = std::path::Path::new(&destination)
                             // Unwrap should be fine since we know this is a file
                             .join(host_path.file_name().unwrap());
                         add_file(&mut self.store, &runner, &host_path, &guest_path)?
