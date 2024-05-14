@@ -15389,6 +15389,52 @@ pub mod exports {
         #[allow(dead_code)]
         pub mod spin_wasi_virt {
             #[allow(dead_code, clippy::all)]
+            pub mod http_handler {
+                #[used]
+                #[doc(hidden)]
+                #[cfg(target_arch = "wasm32")]
+                static __FORCE_SECTION_REF: fn() =
+                    super::super::super::super::__link_custom_section_describing_imports;
+                use super::super::super::super::_rt;
+                pub type OutgoingResponse =
+                    super::super::super::super::exports::wasi::http::types::OutgoingResponse;
+                pub type OutgoingResponseBorrow<'a> =
+                    super::super::super::super::exports::wasi::http::types::OutgoingResponseBorrow<
+                        'a,
+                    >;
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_set_response_cabi<T: Guest>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                    arg2: i32,
+                ) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    T::set_response(_rt::string_lift(bytes0), super::super::super::super::exports::wasi::http::types::OutgoingResponse::from_handle(arg2 as u32));
+                }
+                pub trait Guest {
+                    /// Set a response for a given url
+                    fn set_response(url: _rt::String, response: OutgoingResponse);
+                }
+                #[doc(hidden)]
+
+                macro_rules! __export_fermyon_spin_wasi_virt_http_handler_cabi{
+    ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+      #[export_name = "fermyon:spin-wasi-virt/http-handler#set-response"]
+      unsafe extern "C" fn export_set_response(arg0: *mut u8,arg1: usize,arg2: i32,) {
+        $($path_to_types)*::_export_set_response_cabi::<$ty>(arg0, arg1, arg2)
+      }
+    };);
+  }
+                #[doc(hidden)]
+                pub(crate) use __export_fermyon_spin_wasi_virt_http_handler_cabi;
+            }
+
+            #[allow(dead_code, clippy::all)]
             pub mod http_helper {
                 #[used]
                 #[doc(hidden)]
@@ -15606,13 +15652,13 @@ pub mod exports {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
                     let result0 = T::new_request(super::super::super::super::exports::wasi::http::types::OutgoingRequest::from_handle(arg0 as u32), match arg1 {
-    0 => None,
-    1 => {
-      let e = super::super::super::super::exports::wasi::http::types::IncomingBody::from_handle(arg2 as u32);
-      Some(e)
-    }
-    _ => _rt::invalid_enum_discriminant(),
-  });
+  0 => None,
+  1 => {
+    let e = super::super::super::super::exports::wasi::http::types::IncomingBody::from_handle(arg2 as u32);
+    Some(e)
+  }
+  _ => _rt::invalid_enum_discriminant(),
+});
                     (result0).take_handle() as i32
                 }
                 #[doc(hidden)]
@@ -15730,49 +15776,47 @@ pub mod exports {
             }
 
             #[allow(dead_code, clippy::all)]
-            pub mod http_handler {
+            pub mod fs_handler {
                 #[used]
                 #[doc(hidden)]
                 #[cfg(target_arch = "wasm32")]
                 static __FORCE_SECTION_REF: fn() =
                     super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
-                pub type OutgoingResponse =
-                    super::super::super::super::exports::wasi::http::types::OutgoingResponse;
-                pub type OutgoingResponseBorrow<'a> =
-                    super::super::super::super::exports::wasi::http::types::OutgoingResponseBorrow<
-                        'a,
-                    >;
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_set_response_cabi<T: Guest>(
+                pub unsafe fn _export_add_file_cabi<T: Guest>(
                     arg0: *mut u8,
                     arg1: usize,
-                    arg2: i32,
+                    arg2: *mut u8,
+                    arg3: usize,
                 ) {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
                     let len0 = arg1;
                     let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
-                    T::set_response(_rt::string_lift(bytes0), super::super::super::super::exports::wasi::http::types::OutgoingResponse::from_handle(arg2 as u32));
+                    let len1 = arg3;
+                    T::add_file(
+                        _rt::string_lift(bytes0),
+                        _rt::Vec::from_raw_parts(arg2.cast(), len1, len1),
+                    );
                 }
                 pub trait Guest {
-                    /// Set a response for a given url
-                    fn set_response(url: _rt::String, response: OutgoingResponse);
+                    fn add_file(path: _rt::String, contents: _rt::Vec<u8>);
                 }
                 #[doc(hidden)]
 
-                macro_rules! __export_fermyon_spin_wasi_virt_http_handler_cabi{
+                macro_rules! __export_fermyon_spin_wasi_virt_fs_handler_cabi{
   ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-    #[export_name = "fermyon:spin-wasi-virt/http-handler#set-response"]
-    unsafe extern "C" fn export_set_response(arg0: *mut u8,arg1: usize,arg2: i32,) {
-      $($path_to_types)*::_export_set_response_cabi::<$ty>(arg0, arg1, arg2)
+    #[export_name = "fermyon:spin-wasi-virt/fs-handler#add-file"]
+    unsafe extern "C" fn export_add_file(arg0: *mut u8,arg1: usize,arg2: *mut u8,arg3: usize,) {
+      $($path_to_types)*::_export_add_file_cabi::<$ty>(arg0, arg1, arg2, arg3)
     }
   };);
 }
                 #[doc(hidden)]
-                pub(crate) use __export_fermyon_spin_wasi_virt_http_handler_cabi;
+                pub(crate) use __export_fermyon_spin_wasi_virt_fs_handler_cabi;
             }
         }
     }
@@ -34270,8 +34314,9 @@ macro_rules! __export_env_impl {
   $($path_to_types_root)*::exports::wasi::sockets::ip_name_lookup::__export_wasi_sockets_ip_name_lookup_0_2_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wasi::sockets::ip_name_lookup);
   $($path_to_types_root)*::exports::wasi::http::types::__export_wasi_http_types_0_2_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wasi::http::types);
   $($path_to_types_root)*::exports::wasi::http::outgoing_handler::__export_wasi_http_outgoing_handler_0_2_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wasi::http::outgoing_handler);
-  $($path_to_types_root)*::exports::fermyon::spin_wasi_virt::http_helper::__export_fermyon_spin_wasi_virt_http_helper_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_wasi_virt::http_helper);
   $($path_to_types_root)*::exports::fermyon::spin_wasi_virt::http_handler::__export_fermyon_spin_wasi_virt_http_handler_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_wasi_virt::http_handler);
+  $($path_to_types_root)*::exports::fermyon::spin_wasi_virt::http_helper::__export_fermyon_spin_wasi_virt_http_helper_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_wasi_virt::http_helper);
+  $($path_to_types_root)*::exports::fermyon::spin_wasi_virt::fs_handler::__export_fermyon_spin_wasi_virt_fs_handler_cabi!($ty with_types_in $($path_to_types_root)*::exports::fermyon::spin_wasi_virt::fs_handler);
   )
 }
 #[doc(inline)]
@@ -34280,9 +34325,9 @@ pub(crate) use __export_env_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.24.0:env:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 27877] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xea\xd8\x01\x01A\x02\
-\x01A\x9e\x01\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 27955] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb8\xd9\x01\x01A\x02\
+\x01A\xa0\x01\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\
 \x04\0\x16[method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[me\
 thod]pollable.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04pol\
 l\x01\x06\x03\x01\x12wasi:io/poll@0.2.0\x05\0\x02\x03\0\0\x08pollable\x01B\x0f\x02\
@@ -34831,23 +34876,24 @@ d]future-incoming-response.get\x01\x89\x01\x01h\x07\x01k\x1b\x01@\x01\x03err\x8a
 \0\x02\x02\x03\x02\x01U\x04\0\x18future-incoming-response\x03\0\x04\x02\x03\x02\x01\
 V\x04\0\x0aerror-code\x03\0\x06\x01i\x01\x01i\x03\x01k\x09\x01i\x05\x01j\x01\x0b\
 \x01\x07\x01@\x02\x07request\x08\x07options\x0a\0\x0c\x04\0\x06handle\x01\x0d\x04\
-\x01\x20wasi:http/outgoing-handler@0.2.0\x05W\x02\x03\09\x10incoming-request\x02\
-\x03\09\x11incoming-response\x02\x03\09\x11outgoing-response\x02\x03\09\x11respo\
-nse-outparam\x02\x03\09\x0dincoming-body\x01B\x1f\x02\x03\x02\x01X\x04\0\x10inco\
-ming-request\x03\0\0\x02\x03\x02\x01Y\x04\0\x11incoming-response\x03\0\x02\x02\x03\
-\x02\x01Z\x04\0\x11outgoing-response\x03\0\x04\x02\x03\x02\x01S\x04\0\x10outgoin\
-g-request\x03\0\x06\x02\x03\x02\x01[\x04\0\x11response-outparam\x03\0\x08\x02\x03\
-\x02\x01U\x04\0\x18future-incoming-response\x03\0\x0a\x02\x03\x02\x01\\\x04\0\x0d\
-incoming-body\x03\0\x0c\x04\0\x11response-receiver\x03\x01\x01h\x0e\x01i\x03\x01\
-k\x10\x01@\x01\x04self\x0f\0\x11\x04\0\x1d[method]response-receiver.get\x01\x12\x01\
-i\x07\x01i\x0d\x01k\x14\x01i\x01\x01@\x02\x07request\x13\x0dincoming-body\x15\0\x16\
-\x04\0\x0bnew-request\x01\x17\x01i\x09\x01i\x0e\x01o\x02\x18\x19\x01@\0\0\x1a\x04\
-\0\x0cnew-response\x01\x1b\x04\x01\"fermyon:spin-wasi-virt/http-helper\x05]\x01B\
-\x05\x02\x03\x02\x01Z\x04\0\x11outgoing-response\x03\0\0\x01i\x01\x01@\x02\x03ur\
-ls\x08response\x02\x01\0\x04\0\x0cset-response\x01\x03\x04\x01#fermyon:spin-wasi\
--virt/http-handler\x05^\x04\x01\x1afermyon:spin-test-virt/env\x04\0\x0b\x09\x01\0\
-\x03env\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.20\
-2.0\x10wit-bindgen-rust\x060.24.0";
+\x01\x20wasi:http/outgoing-handler@0.2.0\x05W\x02\x03\09\x11outgoing-response\x01\
+B\x05\x02\x03\x02\x01X\x04\0\x11outgoing-response\x03\0\0\x01i\x01\x01@\x02\x03u\
+rls\x08response\x02\x01\0\x04\0\x0cset-response\x01\x03\x04\x01#fermyon:spin-was\
+i-virt/http-handler\x05Y\x02\x03\09\x10incoming-request\x02\x03\09\x11incoming-r\
+esponse\x02\x03\09\x11response-outparam\x02\x03\09\x0dincoming-body\x01B\x1f\x02\
+\x03\x02\x01Z\x04\0\x10incoming-request\x03\0\0\x02\x03\x02\x01[\x04\0\x11incomi\
+ng-response\x03\0\x02\x02\x03\x02\x01X\x04\0\x11outgoing-response\x03\0\x04\x02\x03\
+\x02\x01S\x04\0\x10outgoing-request\x03\0\x06\x02\x03\x02\x01\\\x04\0\x11respons\
+e-outparam\x03\0\x08\x02\x03\x02\x01U\x04\0\x18future-incoming-response\x03\0\x0a\
+\x02\x03\x02\x01]\x04\0\x0dincoming-body\x03\0\x0c\x04\0\x11response-receiver\x03\
+\x01\x01h\x0e\x01i\x03\x01k\x10\x01@\x01\x04self\x0f\0\x11\x04\0\x1d[method]resp\
+onse-receiver.get\x01\x12\x01i\x07\x01i\x0d\x01k\x14\x01i\x01\x01@\x02\x07reques\
+t\x13\x0dincoming-body\x15\0\x16\x04\0\x0bnew-request\x01\x17\x01i\x09\x01i\x0e\x01\
+o\x02\x18\x19\x01@\0\0\x1a\x04\0\x0cnew-response\x01\x1b\x04\x01\"fermyon:spin-w\
+asi-virt/http-helper\x05^\x01B\x03\x01p}\x01@\x02\x04paths\x08contents\0\x01\0\x04\
+\0\x08add-file\x01\x01\x04\x01!fermyon:spin-wasi-virt/fs-handler\x05_\x04\x01\x1a\
+fermyon:spin-test-virt/env\x04\0\x0b\x09\x01\0\x03env\x03\0\0\0G\x09producers\x01\
+\x0cprocessed-by\x02\x0dwit-component\x070.202.0\x10wit-bindgen-rust\x060.24.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-use anyhow::{bail, Context};
+use anyhow::Context as _;
 use clap::Parser;
 use owo_colors::OwoColorize as _;
-use spin_test::{Component, TestTarget};
+use spin_test::{Component, ManifestInformation, TestTarget};
 
 #[derive(clap::Parser)]
 #[command(version, about)]
@@ -64,67 +64,24 @@ struct Run {
 
 impl Run {
     fn exec(self) -> anyhow::Result<()> {
-        let manifest_path = spin_common::paths::resolve_manifest_file_path(self.app_source)
-            .context("failed to find spin.toml manifest file")?;
-        let raw_manifest = std::fs::read_to_string(&manifest_path).with_context(|| {
-            format!(
-                "failed to read spin.toml manifest at {}",
-                manifest_path.display()
-            )
-        })?;
-        let manifest = spin_manifest::manifest_from_str(&raw_manifest).with_context(|| {
-            format!(
-                "failed to deserialize spin.toml manifest at {}",
-                manifest_path.display()
-            )
-        })?;
-        if manifest.components.len() > 1 {
-            bail!("Spin applications with more than one component are not yet supported by `spin-test`")
+        let manifest = ManifestInformation::resolve(self.app_source)?;
+        if let Some(build) = manifest.build_info()? {
+            build.exec()?;
         }
-        let component = manifest
-            .components
-            .values()
-            .next()
-            .context("spin.toml did not contain any components")?;
-        let app_path = match &component.source {
-            spin_manifest::schema::v2::ComponentSource::Local(path) => path,
-            spin_manifest::schema::v2::ComponentSource::Remote { .. } => {
-                bail!("components with remote sources are not yet supported by `spin-test`")
-            }
-        };
-        let spin_test_config = component
-            .tool
-            .get("spin-test")
-            .context("component did not have a `spin-test` tool configuration")?;
-
-        if let Some(build) = spin_test_config.get("build").and_then(|b| b.as_str()) {
-            let dir = spin_test_config.get("dir").and_then(|d| d.as_str());
-            let mut cmd = std::process::Command::new("/bin/sh");
-            if let Some(dir) = dir {
-                cmd.current_dir(dir);
-            }
-            cmd.args(["-c", build])
-                .status()
-                .context("failed to build component")?;
-        }
-        let test_source = spin_test_config
-            .get("source")
-            .context("component did not have a `spin-test.source` configuration")?
-            .as_str()
-            .context("component `spin-test.source` was not a string")?;
-        let test_path = std::path::Path::new(test_source);
+        let test_path = manifest.test_path()?;
         let test_name = test_path
             .file_name()
             .and_then(|n| n.to_str())
-            .unwrap_or("test");
+            .unwrap_or("test")
+            .to_owned();
 
         let (encoded, test_target) = spin_test::encode_composition(
-            Component::from_file(app_path.into())?,
+            Component::from_file(manifest.app_source()?.into())?,
             Component::from_file(test_path.to_owned())?,
         )
         .context("failed to compose Spin app, test, and virtualized Spin environment")?;
 
-        let tests = run_tests(test_name, test_target, raw_manifest, encoded)?;
+        let tests = run_tests(&test_name, test_target, encoded, manifest)?;
         let _ = libtest_mimic::run(&libtest_mimic::Arguments::default(), tests);
 
         Ok(())
@@ -148,8 +105,8 @@ fn print_error_chain(err: anyhow::Error) {
 fn run_tests(
     test_name: &str,
     test_target: spin_test::TestTarget,
-    raw_manifest: String,
     encoded: Vec<u8>,
+    manifest: ManifestInformation,
 ) -> anyhow::Result<Vec<libtest_mimic::Trial>> {
     let mut trials = vec![];
     let encoded = std::sync::Arc::new(encoded);
@@ -161,12 +118,11 @@ fn run_tests(
                     .strip_prefix(TestTarget::SPIN_TEST_NAME_PREFIX)
                     .unwrap()
                     .to_owned();
-                let raw_manifest = raw_manifest.clone();
+                let manifest = manifest.clone();
                 let encoded = encoded.clone();
 
                 trials.push(libtest_mimic::Trial::test(test_name, move || {
-                    let mut runtime =
-                        spin_test::runtime::Runtime::instantiate(raw_manifest, &encoded)?;
+                    let mut runtime = spin_test::runtime::Runtime::instantiate(manifest, &encoded)?;
 
                     Ok(runtime.run(Some(&test_export)).map_err(FullError::from)?)
                 }));
@@ -174,7 +130,7 @@ fn run_tests(
         }
         spin_test::TestTarget::TestWorld => {
             trials.push(libtest_mimic::Trial::test(test_name, move || {
-                let mut runtime = spin_test::runtime::Runtime::instantiate(raw_manifest, &encoded)
+                let mut runtime = spin_test::runtime::Runtime::instantiate(manifest, &encoded)
                     .context("failed to create `spin-test` runtime")?;
 
                 Ok(runtime.run(None).map_err(FullError::from)?)

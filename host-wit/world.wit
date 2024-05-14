@@ -15,10 +15,19 @@ world test {
     export run: func();
 }
 
-/// A test runner that can run a `spin-test` test composition
-world runner {
+/// A test runner where the "run" function(s) are not known until runtime
+world dynamic-runner {
     /// Supply the `spin.toml` manifest
     import get-manifest: func() -> string;
+
+    /// Control the filesystem
+    export fermyon:spin-wasi-virt/fs-handler;
+}
+
+/// A test runner that can run a `spin-test` test composition
+world runner {
+    /// Include all dynamic runner items
+    include dynamic-runner;
     
     /// Run the test
     export run: func();
