@@ -32,11 +32,8 @@ impl Guest for Component {
                 return;
             }
             Ok(RoutingResult::RouteFound(route_match)) => route_match,
-            Ok(RoutingResult::RouteNotFound { path }) => {
-                set_error_response(
-                    response_out,
-                    format!("no route found in spin.toml manifest for request path '{path}'"),
-                );
+            Ok(RoutingResult::RouteNotFound) => {
+                ResponseOutparam::set(response_out, Err(ErrorCode::DestinationNotFound));
                 return;
             }
         };
@@ -61,7 +58,7 @@ fn set_error_response(response_out: ResponseOutparam, message: impl Display) {
 
 enum RoutingResult {
     RouteFound(RouteMatch),
-    RouteNotFound { path: String },
+    RouteNotFound,
 }
 
 fn find_matching_route(
@@ -100,12 +97,10 @@ fn find_matching_route(
         .unwrap_or(&path_with_query);
     let (router, _) =
         spin_http::routes::Router::build(base, routes.iter().map(|(c, t)| (c.as_str(), t)))?;
-    match router.route(path).ok() {
-        Some(route_match) => Ok(RoutingResult::RouteFound(route_match)),
-        None => Ok(RoutingResult::RouteNotFound {
-            path: path.to_owned(),
-        }),
-    }
+    router
+        .route(path)
+        .map(RoutingResult::RouteFound)
+        .or(Ok(RoutingResult::RouteNotFound))
 }
 
 /// Apply any request transformations needed for the given route.
