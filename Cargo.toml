@@ -15,6 +15,7 @@ log = "0.4"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 spin-common = { git = "https://github.com/fermyon/spin" }
 spin-componentize = { git = "https://github.com/fermyon/spin" }
+spin-http = { git = "https://github.com/fermyon/spin", default-features = false }
 spin-manifest = { workspace = true }
 temp-dir = "0.1.13"
 tokio = "1.0"
