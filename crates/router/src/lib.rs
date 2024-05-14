@@ -113,7 +113,7 @@ fn calculate_default_headers<'a>(
     let mut res = vec![];
     // TODO: calculate base path from manifest
     let base = "/".to_owned();
-    let abs_path = req.path_with_query().context("cannot get path and query")?;
+    let abs_path = req.path_with_query().unwrap_or_else(|| String::from("/"));
     let scheme = req.scheme();
     let scheme = match scheme.as_ref().unwrap_or(&Scheme::Https) {
         Scheme::Http => "http",
