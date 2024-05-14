@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     fs::File,
+    path::PathBuf,
     sync::{Arc, Mutex, OnceLock},
 };
 
@@ -14,7 +15,9 @@ use crate::bindings::exports::wasi::filesystem as exports;
 impl exports::preopens::Guest for Component {
     fn get_directories() -> Vec<(exports::preopens::Descriptor, String)> {
         vec![(
-            exports::preopens::Descriptor::new(Descriptor::Directory),
+            exports::preopens::Descriptor::new(Descriptor::Directory(Directory {
+                path: "/".into(),
+            })),
             "/".to_owned(),
         )]
     }
@@ -32,9 +35,49 @@ impl exports::types::Guest for Component {
     }
 }
 
+#[derive(Debug)]
 pub enum Descriptor {
-    Directory,
+    Directory(Directory),
     File(Arc<Vec<u8>>),
+}
+
+impl Descriptor {
+    fn len(&self) -> u64 {
+        match self {
+            Descriptor::Directory(_) => 0,
+            Descriptor::File(c) => c.len() as u64,
+        }
+    }
+
+    fn typ(&self) -> exports::types::DescriptorType {
+        match self {
+            Descriptor::Directory(_) => exports::types::DescriptorType::Directory,
+            Descriptor::File(_) => exports::types::DescriptorType::RegularFile,
+        }
+    }
+
+    fn get_stat(&self) -> exports::types::DescriptorStat {
+        exports::types::DescriptorStat {
+            type_: self.typ(),
+            link_count: 0,
+            size: self.len(),
+            data_access_timestamp: None,
+            data_modification_timestamp: None,
+            status_change_timestamp: None,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Directory {
+    path: PathBuf,
+}
+
+impl Directory {
+    /// Join a relative path to the directory's path
+    fn join(&self, path: String) -> PathBuf {
+        self.path.join(path)
+    }
 }
 
 impl exports::types::GuestDescriptor for Descriptor {
@@ -43,7 +86,7 @@ impl exports::types::GuestDescriptor for Descriptor {
         offset: exports::types::Filesize,
     ) -> Result<exports::types::InputStream, exports::types::ErrorCode> {
         match self {
-            Descriptor::Directory => todo!(),
+            Descriptor::Directory(_) => todo!(),
             Descriptor::File(c) => Ok(exports::types::InputStream::new(io::InputStream::Buffered(
                 Vec::clone(c).into(),
             ))),
@@ -71,7 +114,7 @@ impl exports::types::GuestDescriptor for Descriptor {
     }
 
     fn sync_data(&self) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn get_flags(&self) -> Result<exports::types::DescriptorFlags, exports::types::ErrorCode> {
@@ -79,14 +122,11 @@ impl exports::types::GuestDescriptor for Descriptor {
     }
 
     fn get_type(&self) -> Result<exports::types::DescriptorType, exports::types::ErrorCode> {
-        Ok(match self {
-            Descriptor::Directory => exports::types::DescriptorType::Directory,
-            Descriptor::File(_) => exports::types::DescriptorType::RegularFile,
-        })
+        Ok(self.typ())
     }
 
     fn set_size(&self, size: exports::types::Filesize) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn set_times(
@@ -94,7 +134,7 @@ impl exports::types::GuestDescriptor for Descriptor {
         data_access_timestamp: exports::types::NewTimestamp,
         data_modification_timestamp: exports::types::NewTimestamp,
     ) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn read(
@@ -102,7 +142,18 @@ impl exports::types::GuestDescriptor for Descriptor {
         length: exports::types::Filesize,
         offset: exports::types::Filesize,
     ) -> Result<(Vec<u8>, bool), exports::types::ErrorCode> {
-        todo!()
+        use io::exports::streams::GuestInputStream;
+        match self
+            .read_via_stream(offset)?
+            .get::<io::InputStream>()
+            .read(length)
+        {
+            Ok(bytes) => Ok((bytes, false)),
+            Err(io::exports::streams::StreamError::Closed) => Ok((Vec::new(), true)),
+            Err(io::exports::streams::StreamError::LastOperationFailed(_)) => {
+                Err(exports::types::ErrorCode::Io)
+            }
+        }
     }
 
     fn write(
@@ -110,35 +161,28 @@ impl exports::types::GuestDescriptor for Descriptor {
         buffer: Vec<u8>,
         offset: exports::types::Filesize,
     ) -> Result<exports::types::Filesize, exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn read_directory(
         &self,
     ) -> Result<exports::types::DirectoryEntryStream, exports::types::ErrorCode> {
+        if self.get_type()? != exports::types::DescriptorType::Directory {
+            return Err(exports::types::ErrorCode::NotDirectory);
+        }
         todo!()
     }
 
     fn sync(&self) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn create_directory_at(&self, path: String) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn stat(&self) -> Result<exports::types::DescriptorStat, exports::types::ErrorCode> {
-        Ok(exports::types::DescriptorStat {
-            type_: match self {
-                Descriptor::Directory => exports::types::DescriptorType::Directory,
-                Descriptor::File(_) => exports::types::DescriptorType::RegularFile,
-            },
-            link_count: 0,
-            size: 64,
-            data_access_timestamp: None,
-            data_modification_timestamp: None,
-            status_change_timestamp: None,
-        })
+        Ok(self.get_stat())
     }
 
     fn stat_at(
@@ -146,15 +190,18 @@ impl exports::types::GuestDescriptor for Descriptor {
         path_flags: exports::types::PathFlags,
         path: String,
     ) -> Result<exports::types::DescriptorStat, exports::types::ErrorCode> {
-        crate::println!("stat_at: {:?}", path);
-        Ok(exports::types::DescriptorStat {
-            type_: exports::types::DescriptorType::RegularFile,
-            link_count: 0,
-            size: 64,
-            data_access_timestamp: None,
-            data_modification_timestamp: None,
-            status_change_timestamp: None,
-        })
+        match self {
+            Descriptor::Directory(d) if path == "." => self.stat(),
+            Descriptor::Directory(d) => {
+                let path = d.join(path);
+                let file = Descriptor::File(
+                    FileSystem::get(path.to_str().unwrap())
+                        .ok_or_else(|| exports::types::ErrorCode::NoEntry)?,
+                );
+                Ok(file.get_stat())
+            }
+            Descriptor::File(_) => self.stat(),
+        }
     }
 
     fn set_times_at(
@@ -164,7 +211,7 @@ impl exports::types::GuestDescriptor for Descriptor {
         data_access_timestamp: exports::types::NewTimestamp,
         data_modification_timestamp: exports::types::NewTimestamp,
     ) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn link_at(
@@ -174,7 +221,7 @@ impl exports::types::GuestDescriptor for Descriptor {
         new_descriptor: exports::types::DescriptorBorrow<'_>,
         new_path: String,
     ) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn open_at(
@@ -185,7 +232,12 @@ impl exports::types::GuestDescriptor for Descriptor {
         open_flags: exports::types::OpenFlags,
         flags: exports::types::DescriptorFlags,
     ) -> Result<exports::types::Descriptor, exports::types::ErrorCode> {
-        let file = FileSystem::get(&path).ok_or_else(|| exports::types::ErrorCode::NoEntry)?;
+        let path = match self {
+            Descriptor::Directory(d) => d.path.join(path),
+            Descriptor::File(_) => todo!(),
+        };
+        let file = FileSystem::get(&path.to_str().unwrap())
+            .ok_or_else(|| exports::types::ErrorCode::NoEntry)?;
         Ok(exports::types::Descriptor::new(Descriptor::File(file)))
     }
 
@@ -194,7 +246,7 @@ impl exports::types::GuestDescriptor for Descriptor {
     }
 
     fn remove_directory_at(&self, path: String) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn rename_at(
@@ -203,7 +255,7 @@ impl exports::types::GuestDescriptor for Descriptor {
         new_descriptor: exports::types::DescriptorBorrow<'_>,
         new_path: String,
     ) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn symlink_at(
@@ -211,11 +263,11 @@ impl exports::types::GuestDescriptor for Descriptor {
         old_path: String,
         new_path: String,
     ) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn unlink_file_at(&self, path: String) -> Result<(), exports::types::ErrorCode> {
-        todo!()
+        Err(exports::types::ErrorCode::Access)
     }
 
     fn is_same_object(&self, other: exports::types::DescriptorBorrow<'_>) -> bool {
@@ -225,6 +277,7 @@ impl exports::types::GuestDescriptor for Descriptor {
     fn metadata_hash(
         &self,
     ) -> Result<exports::types::MetadataHashValue, exports::types::ErrorCode> {
+        // TODO(rylev): Implement metadata hash calculation
         Ok(exports::types::MetadataHashValue { lower: 0, upper: 0 })
     }
 
@@ -233,6 +286,7 @@ impl exports::types::GuestDescriptor for Descriptor {
         path_flags: exports::types::PathFlags,
         path: String,
     ) -> Result<exports::types::MetadataHashValue, exports::types::ErrorCode> {
+        // TODO(rylev): Implement metadata hash calculation
         Ok(exports::types::MetadataHashValue { lower: 0, upper: 0 })
     }
 }
@@ -268,10 +322,9 @@ impl FileSystem {
     }
 
     fn get_files() -> std::sync::MutexGuard<'static, HashMap<String, Arc<Vec<u8>>>> {
-        let mut files = FILES
+        FILES
             .get_or_init(|| Mutex::new(HashMap::new()))
             .lock()
-            .unwrap();
-        files
+            .unwrap()
     }
 }

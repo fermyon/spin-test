@@ -103,6 +103,7 @@ impl Runtime {
 
     /// Make all mounted files visible to the WASI virtual filesystem
     fn add_files(&mut self, runner: dynamic::DynamicRunner) -> anyhow::Result<()> {
+        //TODO(rylev): handle component.exclude_files
         /// Make a file visible to the WASI virtual filesystem
         fn add_file<T>(
             store: &mut wasmtime::Store<T>,
@@ -120,51 +121,62 @@ impl Runtime {
         for file in self.manifest.component().files.iter() {
             match file {
                 spin_manifest::schema::v2::WasiFilesMount::Pattern(p) => {
-                    for path in glob::glob(p).context("failed to glob pattern")? {
-                        let path = path.context("failed to read glob entry")?;
-                        let path = self.manifest.relative_from(path);
-                        if path.is_dir() {
-                            for entry in
-                                std::fs::read_dir(path).context("failed to read directory")?
-                            {
-                                let entry = entry.context("failed to read directory entry")?;
-                                let path = entry.path();
-                                if path.is_file() {
-                                    add_file(&mut self.store, &runner, &path, &path)?;
-                                }
-                            }
-                        } else {
-                            add_file(&mut self.store, &runner, &path, &path)?;
+                    // Expand the glob pattern
+                    for host_path in glob::glob(p)
+                        .with_context(|| format!("failed to read glob pattern '{p}'"))?
+                    {
+                        let host_path = host_path.with_context(|| {
+                            format!("failed to read glob entry for pattern '{p}'")
+                        })?;
+
+                        // Host path is the absolute path to the file
+                        let host_path = self.manifest.absolute_from(host_path);
+                        // Only add files
+                        if !host_path.is_file() {
+                            continue;
                         }
+
+                        // Guest path is the path relative to the manifest
+                        let guest_path = self.manifest.relative_from(&host_path);
+                        add_file(&mut self.store, &runner, &host_path, &guest_path)?;
                     }
                 }
                 spin_manifest::schema::v2::WasiFilesMount::Placement {
+                    // Source can either be a directory or a file
                     source,
+                    // Destination is a *directory* relative to the root of the WASI virtual filesystem
                     destination,
                 } => {
-                    let source = self.manifest.relative_from(source);
-                    if source.is_dir() {
-                        let source = source.join("**/*");
-                        println!("source: {:?}", source);
-                        for path in glob::glob(&source.to_string_lossy())? {
-                            let path = path.context("failed to read glob entry")?;
-                            if !path.is_file() {
+                    // Destination is always assumed to be an absolute path
+                    let destination = format!(
+                        "/{}",
+                        destination
+                            .strip_prefix('/')
+                            .unwrap_or(destination.as_str())
+                    );
+                    let host_path = self.manifest.absolute_from(source);
+
+                    // If the host path is a directory, add all files in the directory
+                    if host_path.is_dir() {
+                        let host_path = host_path.join("**/*");
+                        for host_path in glob::glob(&host_path.to_string_lossy())? {
+                            let host_path = host_path.context("failed to read glob entry")?;
+                            if !host_path.is_file() {
                                 continue;
                             }
-                            add_file(
-                                &mut self.store,
-                                &runner,
-                                &path,
-                                std::path::Path::new(destination),
-                            )?;
+                            // Guest path is the path relative to the manifest appended to the destination
+                            let guest_path = std::path::Path::new(&destination)
+                                // Unwrap should be fine since we know this is a file
+                                .join(host_path.file_name().unwrap());
+
+                            add_file(&mut self.store, &runner, &host_path, &guest_path)?;
                         }
                     } else {
-                        add_file(
-                            &mut self.store,
-                            &runner,
-                            &source,
-                            std::path::Path::new(destination),
-                        )?
+                        // Guest path is the path relative to the manifest appended to the destination
+                        let guest_path = std::path::Path::new(&destination)
+                            // Unwrap should be fine since we know this is a file
+                            .join(host_path.file_name().unwrap());
+                        add_file(&mut self.store, &runner, &host_path, &guest_path)?
                     }
                 }
             }
