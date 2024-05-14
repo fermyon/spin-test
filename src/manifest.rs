@@ -92,9 +92,20 @@ impl ManifestInformation {
         Ok(std::path::Path::new(test_source))
     }
 
-    /// Resolve a relative path from the manifest file
-    pub fn relative_from(&self, path: impl AsRef<std::path::Path>) -> PathBuf {
+    /// Resolve a relative path from the manifest file to an absolute path
+    pub fn absolute_from(&self, path: impl AsRef<std::path::Path>) -> PathBuf {
         self.path.parent().unwrap().join(path)
+    }
+
+    /// Resolve an absolute path to a relative path from the manifest file
+    pub fn relative_from(&self, path: impl AsRef<std::path::Path>) -> PathBuf {
+        let path = path.as_ref();
+        if !path.is_absolute() {
+            return path.to_owned();
+        }
+        path.strip_prefix(self.path.parent().unwrap())
+            .unwrap_or(path)
+            .to_owned()
     }
 
     fn test_config(&self) -> anyhow::Result<&toml::map::Map<String, toml::Value>> {
