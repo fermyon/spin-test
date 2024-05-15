@@ -149,16 +149,14 @@ impl Runtime {
                             }
                             // Guest path is the path relative to the manifest appended to the destination
                             let guest_path = std::path::Path::new(&destination)
-                                // Unwrap should be fine since we know this is a file
-                                .join(host_path.file_name().unwrap());
+                                .join(self.manifest.relative_from(&host_path));
 
                             add_file(&mut self.store, &runner, &host_path, &guest_path)?;
                         }
                     } else {
                         // Guest path is the path relative to the manifest appended to the destination
                         let guest_path = std::path::Path::new(&destination)
-                            // Unwrap should be fine since we know this is a file
-                            .join(host_path.file_name().unwrap());
+                            .join(self.manifest.relative_from(&host_path));
                         add_file(&mut self.store, &runner, &host_path, &guest_path)?
                     }
                 }
