@@ -23,6 +23,10 @@ impl http::types::IncomingResponse {
         self.consume().unwrap().read(callback)
     }
 
+    pub fn body(self) -> Result<Vec<u8>, streams::Error> {
+        self.consume().unwrap().read_all()
+    }
+
     pub fn body_as_string(self) -> Result<String, streams::Error> {
         self.consume().unwrap().read_to_string()
     }
@@ -55,6 +59,12 @@ impl http::types::IncomingBody {
                 }
             }
         }
+    }
+
+    pub fn read_all(self) -> Result<Vec<u8>, streams::Error> {
+        let mut result = Vec::new();
+        self.read(|buffer| result.extend(buffer))?;
+        Ok(result)
     }
 
     pub fn read_to_string(self) -> Result<String, streams::Error> {
