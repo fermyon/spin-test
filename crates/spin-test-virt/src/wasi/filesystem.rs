@@ -308,7 +308,6 @@ impl crate::bindings::exports::fermyon::spin_wasi_virt::fs_handler::Guest for Co
 }
 
 struct FileSystem;
-static FILES: OnceLock<Mutex<HashMap<String, Arc<Vec<u8>>>>> = OnceLock::new();
 
 impl FileSystem {
     fn add(path: String, contents: Vec<u8>) {
@@ -322,6 +321,7 @@ impl FileSystem {
     }
 
     fn get_files() -> std::sync::MutexGuard<'static, HashMap<String, Arc<Vec<u8>>>> {
+        static FILES: OnceLock<Mutex<HashMap<String, Arc<Vec<u8>>>>> = OnceLock::new();
         FILES
             .get_or_init(|| Mutex::new(HashMap::new()))
             .lock()
