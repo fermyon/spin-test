@@ -122,10 +122,11 @@ fn apply_request_transformations(
         headers.append(&key, &value).unwrap();
     }
     let new = OutgoingRequest::new(headers);
-    let _ = new.set_scheme(request.scheme().as_ref());
-    let _ = new.set_authority(request.authority().as_deref());
+    // Make sure that the scheme and authority are set as the Spin runtime does this
+    let _ = new.set_scheme(request.scheme().as_ref().or(Some(&Scheme::Http)));
+    let _ = new.set_authority(request.authority().as_deref().or(Some("localhost")));
     let _ = new.set_method(&request.method());
-    let _ = new.set_path_with_query(request.path_with_query().as_deref());
+    let _ = new.set_path_with_query(request.path_with_query().as_deref().or(Some("/")));
     Ok(bindings::new_request(new, Some(request.consume().unwrap())))
 }
 
