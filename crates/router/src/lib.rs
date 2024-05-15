@@ -13,6 +13,19 @@ use bindings::{
 };
 use spin_http::routes::RouteMatch;
 
+/// Print to the standard output.
+///
+/// We can't use `std::println!` because it's not available in the wasm32-unknown-unknown target.
+#[macro_export]
+macro_rules! println {
+    ($($tt:tt)*) => {
+        let stdout = $crate::bindings::wasi::cli::stdout::get_stdout();
+        stdout
+            .blocking_write_and_flush(format!("{}\n", format_args!($($tt)*)).as_bytes())
+            .unwrap();
+    };
+}
+
 struct Component;
 
 impl Guest for Component {
@@ -143,7 +156,8 @@ fn calculate_default_headers(
     route_match: &RouteMatch,
 ) -> anyhow::Result<Vec<([String; 2], String)>> {
     fn owned(strs: &[&'static str; 2]) -> [String; 2] {
-        [strs[0].to_owned(), strs[1].to_owned()]
+        let convert = |s: &str| s.to_owned().replace('_', "-");
+        [convert(strs[0]), convert(strs[1])]
     }
 
     let owned_full_url = owned(&FULL_URL);

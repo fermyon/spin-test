@@ -159,6 +159,10 @@ fn instantiate_router(
 
     let router_args = [
         ("wasi:http/types@0.2.0", virt),
+        ("wasi:io/error@0.2.0", virt),
+        ("wasi:io/streams@0.2.0", virt),
+        ("wasi:io/poll@0.2.0", virt),
+        ("wasi:cli/stdout@0.2.0", virt),
         ("set-component-id", virt),
         ("wasi:http/incoming-handler@0.2.0", &app),
         ("outgoing-request", &http_types),

@@ -79,6 +79,36 @@ pub fn new_request(
 #[allow(dead_code)]
 pub mod wasi {
     #[allow(dead_code)]
+    pub mod cli {
+        #[allow(dead_code, clippy::all)]
+        pub mod stdout {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            pub type OutputStream = super::super::super::wasi::io::streams::OutputStream;
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn get_stdout() -> OutputStream {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wasi:cli/stdout@0.2.0")]
+                    extern "C" {
+                        #[link_name = "get-stdout"]
+                        fn wit_import() -> i32;
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import() -> i32 {
+                        unreachable!()
+                    }
+                    let ret = wit_import();
+                    super::super::super::wasi::io::streams::OutputStream::from_handle(ret as u32)
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
     pub mod clocks {
         #[allow(dead_code, clippy::all)]
         pub mod monotonic_clock {
@@ -7691,8 +7721,8 @@ pub(crate) use __export_router_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.24.0:router:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6682] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x9d3\x01A\x02\x01A$\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6758] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe93\x01A\x02\x01A&\x01\
 B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[meth\
 od]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollable.b\
 lock\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\x01\
@@ -7814,17 +7844,19 @@ e\x01\x8c\x01\x03\x01\x15wasi:http/types@0.2.0\x05\x09\x02\x03\0\x04\x10incoming
 -request\x02\x03\0\x04\x11response-outparam\x01B\x08\x02\x03\x02\x01\x0a\x04\0\x10\
 incoming-request\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x11response-outparam\x03\0\x02\
 \x01i\x01\x01i\x03\x01@\x02\x07request\x04\x0cresponse-out\x05\x01\0\x04\0\x06ha\
-ndle\x01\x06\x03\x01\x20wasi:http/incoming-handler@0.2.0\x05\x0c\x02\x03\0\x04\x10\
-outgoing-request\x03\0\x10outgoing-request\x03\0\x0d\x03\0\x10incoming-request\x03\
-\0\x0a\x02\x03\0\x04\x0dincoming-body\x03\0\x0dincoming-body\x03\0\x10\x01@\0\0s\
-\x03\0\x0cget-manifest\x01\x12\x01@\x01\x0ccomponent-ids\x01\0\x03\0\x10set-comp\
-onent-id\x01\x13\x01i\x0e\x01i\x11\x01k\x15\x01i\x0f\x01@\x02\x07request\x14\x0d\
-incoming-body\x16\0\x17\x03\0\x0bnew-request\x01\x18\x01B\x08\x02\x03\x02\x01\x0a\
-\x04\0\x10incoming-request\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x11response-outpara\
-m\x03\0\x02\x01i\x01\x01i\x03\x01@\x02\x07request\x04\x0cresponse-out\x05\x01\0\x04\
-\0\x06handle\x01\x06\x04\x01\x20wasi:http/incoming-handler@0.2.0\x05\x19\x04\x01\
-\x15fermyon:router/router\x04\0\x0b\x0c\x01\0\x06router\x03\0\0\0G\x09producers\x01\
-\x0cprocessed-by\x02\x0dwit-component\x070.202.0\x10wit-bindgen-rust\x060.24.0";
+ndle\x01\x06\x03\x01\x20wasi:http/incoming-handler@0.2.0\x05\x0c\x01B\x05\x02\x03\
+\x02\x01\x08\x04\0\x0doutput-stream\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x0aget-s\
+tdout\x01\x03\x03\x01\x15wasi:cli/stdout@0.2.0\x05\x0d\x02\x03\0\x04\x10outgoing\
+-request\x03\0\x10outgoing-request\x03\0\x0e\x03\0\x10incoming-request\x03\0\x0a\
+\x02\x03\0\x04\x0dincoming-body\x03\0\x0dincoming-body\x03\0\x11\x01@\0\0s\x03\0\
+\x0cget-manifest\x01\x13\x01@\x01\x0ccomponent-ids\x01\0\x03\0\x10set-component-\
+id\x01\x14\x01i\x0f\x01i\x12\x01k\x16\x01i\x10\x01@\x02\x07request\x15\x0dincomi\
+ng-body\x17\0\x18\x03\0\x0bnew-request\x01\x19\x01B\x08\x02\x03\x02\x01\x0a\x04\0\
+\x10incoming-request\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x11response-outparam\x03\0\
+\x02\x01i\x01\x01i\x03\x01@\x02\x07request\x04\x0cresponse-out\x05\x01\0\x04\0\x06\
+handle\x01\x06\x04\x01\x20wasi:http/incoming-handler@0.2.0\x05\x1a\x04\x01\x15fe\
+rmyon:router/router\x04\0\x0b\x0c\x01\0\x06router\x03\0\0\0G\x09producers\x01\x0c\
+processed-by\x02\x0dwit-component\x070.202.0\x10wit-bindgen-rust\x060.24.0";
 
 #[inline(never)]
 #[doc(hidden)]
