@@ -59,7 +59,7 @@ source = "target/wasm32-wasi/release/test.wasm"
 # A command for building the target component.
 build = "cargo component build --release"
 # The directory where the `build` command should be run.
-dir = "../../test-rs"
+workdir = "../../test-rs"
 ```
 
 ### Run `spin test`

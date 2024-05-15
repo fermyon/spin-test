@@ -73,10 +73,13 @@ impl ManifestInformation {
             .get("build")
             .and_then(|b| b.as_str())
             .map(|build| {
-                let dir = spin_test_config.get("dir").and_then(|d| d.as_str());
+                let workdir = spin_test_config
+                    .get("workdir")
+                    .and_then(|d| d.as_str())
+                    .map(ToOwned::to_owned);
                 BuildInfo {
                     cmd: build.to_owned(),
-                    dir: dir.map(|d| d.to_owned()),
+                    workdir,
                 }
             }))
     }
@@ -120,16 +123,18 @@ impl ManifestInformation {
 
 /// Information about how to build the test
 pub struct BuildInfo {
+    /// The command to run to build the test
     cmd: String,
-    dir: Option<String>,
+    /// The working directory to run the build command in
+    workdir: Option<String>,
 }
 
 impl BuildInfo {
     /// Run the build command
     pub fn exec(self) -> anyhow::Result<()> {
         let mut cmd = std::process::Command::new("/bin/sh");
-        if let Some(dir) = self.dir {
-            cmd.current_dir(dir);
+        if let Some(workdir) = self.workdir {
+            cmd.current_dir(workdir);
         }
         cmd.args(["-c", &self.cmd])
             .status()
