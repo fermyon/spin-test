@@ -20,4 +20,4 @@ watch = ["app.py", "Pipfile"]
 [component.my-app.tool.spin-test]
 source = "../../test-rs/target/wasm32-wasi/release/wasm_test.wasm"
 build = "cargo component build --release --target-dir=target"
-dir = "../../test-rs"
+workdir = "../../test-rs"
