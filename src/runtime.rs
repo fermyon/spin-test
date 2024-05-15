@@ -5,30 +5,14 @@ use crate::manifest::ManifestInformation;
 mod non_dynamic {
     wasmtime::component::bindgen!({
         world: "runner",
-        path: "host-wit",
-        with: {
-            "wasi:io/poll": wasmtime_wasi::bindings::io::poll,
-            "wasi:io/error": wasmtime_wasi::bindings::io::error,
-            "wasi:io/streams": wasmtime_wasi::bindings::io::streams,
-            "wasi:clocks/monotonic-clock": wasmtime_wasi::bindings::clocks::monotonic_clock,
-            "wasi:http/types": wasmtime_wasi_http::bindings::http::types,
-            "fermyon:spin-test/http-helper/response-receiver": super::ResponseReceiver,
-        }
+        path: "host-wit"
     });
 }
 
 mod dynamic {
     wasmtime::component::bindgen!({
         world: "dynamic-runner",
-        path: "host-wit",
-        with: {
-            "wasi:io/poll": wasmtime_wasi::bindings::io::poll,
-            "wasi:io/error": wasmtime_wasi::bindings::io::error,
-            "wasi:io/streams": wasmtime_wasi::bindings::io::streams,
-            "wasi:clocks/monotonic-clock": wasmtime_wasi::bindings::clocks::monotonic_clock,
-            "wasi:http/types": wasmtime_wasi_http::bindings::http::types,
-            "fermyon:spin-test/http-helper/response-receiver": super::ResponseReceiver,
-        }
+        path: "host-wit"
     });
 }
 
@@ -56,8 +40,7 @@ impl Runtime {
             .context("composed component was an invalid Wasm component")?;
 
         let mut linker = wasmtime::component::Linker::<Data>::new(&engine);
-        wasmtime_wasi::command::sync::add_to_linker(&mut linker)
-            .context("failed to link to wasi")?;
+        wasmtime_wasi::add_to_linker_sync(&mut linker).context("failed to link to wasi")?;
         non_dynamic::Runner::add_to_linker(&mut linker, |x| x)
             .context("failed to link to test runner world")?;
 
