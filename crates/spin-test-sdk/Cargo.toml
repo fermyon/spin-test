@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 spin-test-sdk-macro = { path = "../spin-test-sdk-macro" }
-wit-bindgen = "0.24.0"
+wit-bindgen = "0.24"
