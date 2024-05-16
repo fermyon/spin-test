@@ -3,7 +3,15 @@ import { handle } from "wasi:http/incoming-handler@0.2.0"
 import { calls, Store } from "fermyon:spin-test-virt/key-value";
 import { OutgoingRequest, Fields } from "wasi:http/types@0.2.0"
 
-export function run() {
+export function run(test) {
+  if (test == "cacheHit") {
+    cacheHit();
+  } else {
+    throw new Error(`Test ${test} not found`);
+  }
+}
+
+export function cacheHit() {
   // Set up the test
   const user = JSON.stringify({ id: 123, name: "Ryan" });
   const cache = Store.open("cache");
@@ -27,3 +35,9 @@ export function run() {
     throw new Error(`Expected key value calls to be a get of '123' but were ${keyValueCalls}`);
   }
 }
+
+export function listTests() {
+  return [
+    "cacheHit"
+  ];
+};

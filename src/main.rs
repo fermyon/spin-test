@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Context as _;
 use clap::Parser;
 use owo_colors::OwoColorize as _;
-use spin_test::{Component, ManifestInformation, TestTarget};
+use spin_test::{runtime::TestInvocation, Component, ManifestInformation, TestTarget};
 
 #[derive(clap::Parser)]
 #[command(version, about)]
@@ -69,11 +69,6 @@ impl Run {
             build.exec()?;
         }
         let test_path = manifest.test_path()?;
-        let test_name = test_path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("test")
-            .to_owned();
 
         let (encoded, test_target) = spin_test::encode_composition(
             Component::from_file(manifest.app_source()?.into())?,
@@ -81,7 +76,7 @@ impl Run {
         )
         .context("failed to compose Spin app, test, and virtualized Spin environment")?;
 
-        let tests = run_tests(&test_name, test_target, encoded, manifest)?;
+        let tests = run_tests(test_target, encoded, manifest)?;
         libtest_mimic::run(&libtest_mimic::Arguments::default(), tests).exit();
     }
 }
@@ -101,40 +96,41 @@ fn print_error_chain(err: anyhow::Error) {
 }
 
 fn run_tests(
-    test_name: &str,
     test_target: spin_test::TestTarget,
     encoded: Vec<u8>,
     manifest: ManifestInformation,
 ) -> anyhow::Result<Vec<libtest_mimic::Trial>> {
-    let mut trials = vec![];
     let encoded = std::sync::Arc::new(encoded);
 
-    match test_target {
-        spin_test::TestTarget::AdHoc { exports } => {
-            for test_export in exports {
+    let tests: Vec<_> = match test_target {
+        spin_test::TestTarget::AdHoc { exports } => exports
+            .into_iter()
+            .map(|test_export| {
                 let test_name = test_export
                     .strip_prefix(TestTarget::SPIN_TEST_NAME_PREFIX)
                     .unwrap()
                     .to_owned();
-                let manifest = manifest.clone();
-                let encoded = encoded.clone();
+                (test_name.clone(), TestInvocation::Export(test_export))
+            })
+            .collect(),
+        spin_test::TestTarget::TestWorld { tests } => tests
+            .into_iter()
+            .map(|test| (test.clone(), TestInvocation::RunArgument(test)))
+            .collect(),
+    };
+    let trials = tests
+        .into_iter()
+        .map(|(test_name, test)| {
+            let manifest = manifest.clone();
+            let encoded = encoded.clone();
 
-                trials.push(libtest_mimic::Trial::test(test_name, move || {
-                    let mut runtime = spin_test::runtime::Runtime::instantiate(manifest, &encoded)?;
+            libtest_mimic::Trial::test(test_name, move || {
+                let mut runtime = spin_test::runtime::Runtime::instantiate(manifest, &encoded)?;
 
-                    Ok(runtime.run(Some(&test_export)).map_err(FullError::from)?)
-                }));
-            }
-        }
-        spin_test::TestTarget::TestWorld => {
-            trials.push(libtest_mimic::Trial::test(test_name, move || {
-                let mut runtime = spin_test::runtime::Runtime::instantiate(manifest, &encoded)
-                    .context("failed to create `spin-test` runtime")?;
-
-                Ok(runtime.run(None).map_err(FullError::from)?)
-            }));
-        }
-    }
+                Ok(runtime.run(test).map_err(FullError::from)?)
+            })
+        })
+        .collect();
 
     Ok(trials)
 }

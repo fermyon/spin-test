@@ -74,7 +74,7 @@ pub fn encode_composition(
                     .context("failed to export '{test_export}' function from composition")?;
             }
         }
-        TestTarget::TestWorld => {
+        TestTarget::TestWorld { .. } => {
             let export = test
                 .export("run")
                 .context("failed to export 'run' function from test component")?
@@ -290,8 +290,8 @@ pub enum TestTarget {
         exports: HashSet<String>,
     },
     /// The `TestWorld` target indicates the test component exports
-    /// a singular `run` export to execute the test.
-    TestWorld,
+    /// a singular `run` export that takes a test name as an argument.
+    TestWorld { tests: HashSet<String> },
 }
 
 impl TestTarget {
@@ -326,7 +326,12 @@ impl TestTarget {
             if !exports.is_empty() {
                 anyhow::bail!("expected ad hoc `spin-test-*` exports or `run`; found both");
             }
-            Ok(TestTarget::TestWorld)
+
+            let tests = get_tests_list(test, world, resolve)
+                .context("failed to read list of tests from the test component")?;
+            Ok(TestTarget::TestWorld {
+                tests: tests.into_iter().collect(),
+            })
         } else {
             if exports.is_empty() {
                 anyhow::bail!("expected ad hoc `spin-test-*` exports or `run`; found neither");
@@ -334,4 +339,108 @@ impl TestTarget {
             Ok(TestTarget::AdHoc { exports })
         }
     }
+}
+
+/// Get the list of tests from a test component
+fn get_tests_list(
+    test_component: &Component,
+    world: &wit_parser::World,
+    resolve: &wit_parser::Resolve,
+) -> Result<Vec<String>, anyhow::Error> {
+    struct TestComponentData {
+        table: wasmtime_wasi::ResourceTable,
+        ctx: wasmtime_wasi::WasiCtx,
+    }
+
+    impl wasmtime_wasi::WasiView for TestComponentData {
+        fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
+            &mut self.table
+        }
+        fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
+            &mut self.ctx
+        }
+    }
+
+    let engine = wasmtime::Engine::default();
+    let mut store = wasmtime::Store::new(
+        &engine,
+        TestComponentData {
+            table: wasmtime_wasi::ResourceTable::default(),
+            ctx: wasmtime_wasi::WasiCtxBuilder::new()
+                .inherit_stdout()
+                .inherit_stderr()
+                .build(),
+        },
+    );
+    let component = wasmtime::component::Component::new(&engine, &test_component.bytes)
+        .context("test component was an invalid Wasm component")?;
+
+    // Configure the linker including stubbing out all non-wasi imports
+    let mut linker = wasmtime::component::Linker::<TestComponentData>::new(&engine);
+    wasmtime_wasi::add_to_linker_sync(&mut linker)
+        .context("failed to link to wasi to the test component")?;
+    stub_imports(&mut linker, world, resolve).context("failed to stub test component imports")?;
+
+    // Instantiate the test component and call the `list-tests` export
+    let instance = linker
+        .instantiate(&mut store, &component)
+        .context("failed to instantiate test component")?;
+    let func = instance
+        .get_typed_func::<(), (Vec<String>,)>(&mut store, "list-tests")
+        .context("test component is missing the `list-tests` export")?;
+    let (tests,) = func
+        .call(&mut store, ())
+        .context("failed to call test component's `list-tests` export")?;
+    Ok(tests)
+}
+
+/// Stub out all imports with functions that panic
+fn stub_imports<T>(
+    linker: &mut wasmtime::component::Linker<T>,
+    world: &wit_parser::World,
+    resolve: &wit_parser::Resolve,
+) -> anyhow::Result<()> {
+    for (import_name, import) in world.imports.iter() {
+        let import_name = resolve.name_world_key(import_name);
+        match import {
+            wit_parser::WorldItem::Interface(i) => {
+                let interface = resolve.interfaces.get(*i).unwrap();
+                let mut root = linker.root();
+                let Ok(mut instance) = root.instance(&import_name) else {
+                    // We've already seen this instance, skip it
+                    continue;
+                };
+                for (_, f) in interface.functions.iter() {
+                    let import_name = import_name.clone();
+                    let func_name = f.name.clone();
+                    instance
+                        .func_new(&f.name, move |_ctx, _args, _rets| {
+                            panic!("unexpected call to `{import_name}/{func_name}`")
+                        })
+                        .with_context(|| format!("failed to link function '{}'", f.name))?;
+                }
+                for (name, t) in &interface.types {
+                    let t = resolve.types.get(*t).unwrap();
+                    match &t.kind {
+                        wit_parser::TypeDefKind::Resource => {
+                            let ty = wasmtime::component::ResourceType::host::<()>();
+                            instance.resource(name, ty, |_, _| Ok(())).unwrap();
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            wit_parser::WorldItem::Function(f) => {
+                let func_name = f.name.clone();
+                linker
+                    .root()
+                    .func_new(&f.name, move |_ctx, _args, _rets| {
+                        panic!("unexpected call to `{func_name}`");
+                    })
+                    .with_context(|| format!("failed to link function '{}'", f.name))?;
+            }
+            wit_parser::WorldItem::Type(_) => {}
+        }
+    }
+    Ok(())
 }
