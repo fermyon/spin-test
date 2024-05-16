@@ -82,9 +82,7 @@ impl Run {
         .context("failed to compose Spin app, test, and virtualized Spin environment")?;
 
         let tests = run_tests(&test_name, test_target, encoded, manifest)?;
-        let _ = libtest_mimic::run(&libtest_mimic::Arguments::default(), tests);
-
-        Ok(())
+        libtest_mimic::run(&libtest_mimic::Arguments::default(), tests).exit();
     }
 }
 
