@@ -421,12 +421,9 @@ fn stub_imports<T>(
                 }
                 for (name, t) in &interface.types {
                     let t = resolve.types.get(*t).unwrap();
-                    match &t.kind {
-                        wit_parser::TypeDefKind::Resource => {
-                            let ty = wasmtime::component::ResourceType::host::<()>();
-                            instance.resource(name, ty, |_, _| Ok(())).unwrap();
-                        }
-                        _ => {}
+                    if let wit_parser::TypeDefKind::Resource = &t.kind {
+                        let ty = wasmtime::component::ResourceType::host::<()>();
+                        instance.resource(name, ty, |_, _| Ok(())).unwrap();
                     }
                 }
             }

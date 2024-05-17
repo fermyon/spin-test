@@ -3,7 +3,9 @@ import { handle } from "wasi:http/incoming-handler@0.2.0"
 import { calls, Store } from "fermyon:spin-test-virt/key-value";
 import { OutgoingRequest, Fields } from "wasi:http/types@0.2.0"
 
+const testsContext = (require).context('.', true, /\.test\.js$/);
 export function run(test) {
+  console.log(`Running test ${testsContext}`);
   if (test == "cacheHit") {
     cacheHit();
   } else {
