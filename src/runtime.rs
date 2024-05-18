@@ -53,9 +53,9 @@ impl Runtime {
     }
 
     /// Run the test component
-    pub fn run(&mut self, test_name: Option<&str>) -> anyhow::Result<()> {
-        match test_name {
-            Some(test_name) => {
+    pub fn run(&mut self, test: TestInvocation) -> anyhow::Result<()> {
+        match test {
+            TestInvocation::Export(test_name) => {
                 let test_instance = self
                     .linker
                     .instantiate(&mut self.store, &self.component)
@@ -64,14 +64,14 @@ impl Runtime {
                 self.add_files(runner)?;
 
                 let test_func = test_instance
-                    .get_typed_func::<(), ()>(&mut self.store, test_name)
+                    .get_typed_func::<(), ()>(&mut self.store, &test_name)
                     .with_context(|| format!("failed to get test function '{test_name}'"))?;
 
                 test_func
                     .call(&mut self.store, ())
                     .context(format!("test '{test_name}' failed "))
             }
-            None => {
+            TestInvocation::RunArgument(test_name) => {
                 let (runner, _) = non_dynamic::Runner::instantiate(
                     &mut self.store,
                     &self.component,
@@ -79,7 +79,7 @@ impl Runtime {
                 )
                 .context("failed to instantiate spin-test composition as test runner world")?;
 
-                runner.call_run(&mut self.store)
+                runner.call_run(&mut self.store, &test_name)
             }
         }
     }
@@ -164,6 +164,14 @@ impl Runtime {
         }
         Ok(())
     }
+}
+
+/// How a test is expected to be invoked
+pub enum TestInvocation {
+    /// As a named export
+    Export(String),
+    /// As an argument to the `run` function export
+    RunArgument(String),
 }
 
 /// Store specific data

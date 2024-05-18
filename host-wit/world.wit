@@ -12,7 +12,8 @@ world test-imports {
 /// A `spin-test` compliant test
 world test {
     include test-imports;
-    export run: func();
+    export list-tests: func() -> list<string>;
+    export run: func(name: string);
 }
 
 /// A test runner where the "run" function(s) are not known until runtime
@@ -30,7 +31,7 @@ world runner {
     include dynamic-runner;
     
     /// Run the test
-    export run: func();
+    export run: func(name: string);
 }
 
 /// Helpers for overcoming the limitations of `wasi:http@0.2.0`
