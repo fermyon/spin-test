@@ -68,13 +68,23 @@ impl Run {
         if let Some(build) = manifest.build_info()? {
             build.exec()?;
         }
-        let test_path = manifest.test_path()?;
+        let test_path = manifest
+            .test_path()
+            .context("failed to read the path to the test component from the spin.toml manifest")?;
 
-        let (encoded, test_target) = spin_test::encode_composition(
-            Component::from_file(manifest.app_source()?.into())?,
-            Component::from_file(test_path.to_owned())?,
-        )
-        .context("failed to compose Spin app, test, and virtualized Spin environment")?;
+        let app_component = Component::from_file(manifest.app_source()?.into())
+            .context("failed to read app component")?;
+        let test_component = Component::from_file(test_path.to_owned())
+            .with_context(|| format!("failed to read test component '{}'", test_path.display()))?;
+        let test_target = TestTarget::from_component(&test_component).with_context(|| {
+            format!(
+                "failed to determine how to run the tests from test component '{}'",
+                test_path.display()
+            )
+        })?;
+        let encoded =
+            spin_test::perform_composition(app_component, test_component, &test_target)
+                .context("failed to compose Spin app, test, and virtualized Spin environment")?;
 
         let tests = run_tests(test_target, encoded, manifest)?;
         libtest_mimic::run(&libtest_mimic::Arguments::default(), tests).exit();

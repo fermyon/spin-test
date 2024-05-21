@@ -40,11 +40,11 @@ impl Component {
 }
 
 /// Encode a composition of an app component and a test component
-pub fn encode_composition(
+pub fn perform_composition(
     app_component: Component,
     test_component: Component,
-) -> anyhow::Result<(Vec<u8>, TestTarget)> {
-    let test_target = TestTarget::from_component(&test_component)?;
+    test_target: &TestTarget,
+) -> anyhow::Result<Vec<u8>> {
     let composition = Composition::new();
 
     // Instantiate the `virt` component
@@ -59,7 +59,7 @@ pub fn encode_composition(
     // Instantiate the `test` component
     let test = instantiate_test(&composition, test_component, router, virt)?;
 
-    match &test_target {
+    match test_target {
         TestTarget::AdHoc { exports } => {
             for test_export in exports {
                 let export = test
@@ -86,11 +86,9 @@ pub fn encode_composition(
         }
     }
 
-    let bytes = composition
+    composition
         .encode(true)
-        .context("failed to encode composition")?;
-
-    Ok((bytes, test_target))
+        .context("failed to encode composition")
 }
 
 fn instantiate_test(
@@ -298,8 +296,10 @@ impl TestTarget {
     pub const SPIN_TEST_NAME_PREFIX: &'static str = "spin-test-";
     const RUN_EXPORT: &'static str = "run";
 
-    fn from_component(test: &Component) -> anyhow::Result<Self> {
-        let decoded = wit_component::decode(&test.bytes).context("failed to decode component")?;
+    /// Determine the test target type from a test component.
+    pub fn from_component(test: &Component) -> anyhow::Result<Self> {
+        let decoded = wit_component::decode(&test.bytes)
+            .context("failed to decode test component's wit package")?;
         let resolve = decoded.resolve();
         let package = decoded.package();
 
@@ -324,7 +324,7 @@ impl TestTarget {
         // exports the specially prefixed ad-hoc test exports.
         if seen_run {
             if !exports.is_empty() {
-                anyhow::bail!("expected ad hoc `spin-test-*` exports or `run`; found both");
+                anyhow::bail!("expected test component to export either test functions `spin-test-*` or a `run` function, but it exported both");
             }
 
             let tests = get_tests_list(test, world, resolve)
@@ -334,7 +334,7 @@ impl TestTarget {
             })
         } else {
             if exports.is_empty() {
-                anyhow::bail!("expected ad hoc `spin-test-*` exports or `run`; found neither");
+                anyhow::bail!("expected test component to export either test functions `spin-test-*` or a `run` function, but it exported neither");
             }
             Ok(TestTarget::AdHoc { exports })
         }
