@@ -5,8 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-bitflags = "2.5.0"
-wit-bindgen-rt = { version = "0.24.0", features = ["bitflags"] }
+wit-bindgen-rt = { version = "0.25.0", features = ["bitflags"] }
 spin-expressions = { workspace = true }
 spin-manifest = { workspace = true }
 spin-outbound-networking = { workspace = true }

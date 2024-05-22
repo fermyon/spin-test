@@ -198,8 +198,8 @@ impl Data {
 }
 
 impl non_dynamic::RunnerImports for Data {
-    fn get_manifest(&mut self) -> wasmtime::Result<String> {
-        Ok(self.manifest.clone())
+    fn get_manifest(&mut self) -> String {
+        self.manifest.clone()
     }
 }
 
