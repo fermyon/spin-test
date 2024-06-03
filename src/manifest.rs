@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use anyhow::anyhow;
 use anyhow::Context as _;
 
 #[derive(Clone)]
@@ -136,9 +137,15 @@ impl BuildInfo {
         if let Some(workdir) = self.workdir {
             cmd.current_dir(workdir);
         }
-        cmd.args(["-c", &self.cmd])
+        let status = cmd
+            .args(["-c", &self.cmd])
             .status()
-            .context("failed to build component")?;
-        Ok(())
+            .context("failed to run test component build command")?;
+
+        if status.success() {
+            return Ok(());
+        }
+
+        Err(anyhow!("failed to build test component. {}", status))
     }
 }
