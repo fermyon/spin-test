@@ -170,7 +170,7 @@ impl Virtualize {
             .context("failed to read app component")?;
         let encoded =
             spin_test::virtualize_app(app_component).context("failed to virtualize app")?;
-        std::fs::write("virtualized.wasm", &encoded)
+        std::fs::write("virtualized.wasm", encoded)
             .context("failed to write virtualized app to disk")?;
         println!("Successfully virtualized app to virtualized.wasm");
         Ok(())

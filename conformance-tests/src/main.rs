@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use anyhow::Context as _;
 use bindings::{exports::wasi::http::types::HeaderError, VirtualizedApp};
 
@@ -12,57 +13,46 @@ mod bindings {
     });
 }
 
-fn main() {
-    let tests_dir = conformance_tests::download_tests().unwrap();
+fn main() -> anyhow::Result<()> {
+    let tests_dir = conformance_tests::download_tests()?;
 
-    for test in conformance_tests::tests(&tests_dir).unwrap() {
+    for test in conformance_tests::tests(&tests_dir)? {
         let engine = wasmtime::Engine::default();
-        let manifest = String::from_utf8(std::fs::read(test.manifest).unwrap()).unwrap();
+        let manifest = String::from_utf8(std::fs::read(test.manifest)?)?;
         let mut store = wasmtime::Store::new(&engine, StoreData::new(manifest));
         let mut linker = wasmtime::component::Linker::new(&engine);
-        let component = spin_test::Component::from_file(test.component).unwrap();
-        let component = spin_test::virtualize_app(component)
-            .context("failed to virtualize app")
-            .unwrap();
-        let component = wasmtime::component::Component::new(&engine, component).unwrap();
-        wasmtime_wasi::add_to_linker_sync(&mut linker).unwrap();
-        bindings::VirtualizedApp::add_to_linker(&mut linker, |x| x).unwrap();
+        let component = spin_test::Component::from_file(test.component)?;
+        let component = spin_test::virtualize_app(component).context("failed to virtualize app")?;
 
-        let (instance, _) =
-            bindings::VirtualizedApp::instantiate(&mut store, &component, &linker).unwrap();
+        let component = wasmtime::component::Component::new(&engine, component)?;
+        wasmtime_wasi::add_to_linker_sync(&mut linker)?;
+        bindings::VirtualizedApp::add_to_linker(&mut linker, |x| x)?;
+
+        let (instance, _) = bindings::VirtualizedApp::instantiate(&mut store, &component, &linker)?;
         for invocation in test.config.invocations {
             let conformance_tests::config::Invocation::Http(invocation) = invocation;
-            let fields = Fields::new(&instance, &mut store).unwrap();
+            let fields = Fields::new(&instance, &mut store)?;
             for header in invocation.request.headers.iter() {
-                fields
-                    .append(&mut store, &header.name, &header.value.clone().into_bytes())
-                    .unwrap()
-                    .unwrap();
+                fields.append(&mut store, &header.name, &header.value.clone().into_bytes())??;
             }
-            let outgoing_request = OutgoingRequest::new(&instance, &mut store, fields).unwrap();
+            let outgoing_request = OutgoingRequest::new(&instance, &mut store, fields)?;
             outgoing_request
-                .set_path_with_query(&mut store, Some(invocation.request.path.as_str()))
-                .unwrap()
-                .unwrap();
-            let request = IncomingRequest::new(&instance, &mut store, outgoing_request).unwrap();
-            let (out, rx) = new_response(&instance, &mut store).unwrap();
+                .set_path_with_query(&mut store, Some(invocation.request.path.as_str()))?
+                .map_err(|_| anyhow!("invalid request path"))?;
+            let request = IncomingRequest::new(&instance, &mut store, outgoing_request)?;
+            let (out, rx) = new_response(&instance, &mut store)?;
             instance
                 .wasi_http_incoming_handler()
-                .call_handle(&mut store, request.resource, out)
-                .unwrap();
-            let response = rx.get(&mut store).unwrap().unwrap();
+                .call_handle(&mut store, request.resource, out)?;
+            let response = rx.get(&mut store)?.context("no response found")?;
 
-            let status = response.status(&mut store).unwrap();
+            let status = response.status(&mut store)?;
             let body = response
-                .consume(&mut store)
-                .unwrap()
-                .unwrap()
-                .stream(&mut store)
-                .unwrap()
-                .unwrap()
-                .blocking_read(&mut store, u64::MAX)
-                .unwrap()
-                .unwrap();
+                .consume(&mut store)?
+                .map_err(|_| anyhow!("response body already consumed"))?
+                .stream(&mut store)?
+                .map_err(|_| anyhow!("response body stream already consumed"))?
+                .blocking_read(&mut store, u64::MAX)??;
             let body = String::from_utf8(body).unwrap_or_else(|_| String::from("invalid utf-8"));
             assert_eq!(
                 status, invocation.response.status,
@@ -70,10 +60,8 @@ fn main() {
             );
 
             let mut actual_headers = response
-                .headers(&mut store)
-                .unwrap()
-                .entries(&mut store)
-                .unwrap()
+                .headers(&mut store)?
+                .entries(&mut store)?
                 .into_iter()
                 .map(|(k, v)| {
                     (
@@ -109,6 +97,7 @@ fn main() {
             }
         }
     }
+    Ok(())
 }
 
 struct Fields<'a> {
