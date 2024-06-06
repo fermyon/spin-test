@@ -27,7 +27,12 @@ wit-component = { workspace = true }
 wit-parser = { workspace = true }
 
 [workspace]
-members = ["crates/*", "examples/test-rs", "examples/apps/app-rs"]
+members = [
+    "crates/*",
+    "examples/test-rs",
+    "examples/apps/app-rs",
+    "conformance-tests",
+]
 
 [workspace.dependencies]
 anyhow = "1.0"

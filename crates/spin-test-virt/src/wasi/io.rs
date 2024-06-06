@@ -1,7 +1,10 @@
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
-    sync::Arc,
+    sync::{
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+        Arc,
+    },
 };
 
 pub use crate::bindings::{exports::wasi::io as exports, wasi::io as imports};
@@ -100,6 +103,7 @@ impl exports::streams::Guest for Component {
     type OutputStream = OutputStream;
 }
 
+#[derive(Debug)]
 pub enum InputStream {
     Host(imports::streams::InputStream),
     Buffered(Buffer),
@@ -109,7 +113,7 @@ impl exports::streams::GuestInputStream for InputStream {
     fn read(&self, len: u64) -> Result<Vec<u8>, exports::streams::StreamError> {
         match self {
             InputStream::Host(h) => h.read(len).map_err(Into::into),
-            InputStream::Buffered(buffer) if buffer.is_fully_read() => {
+            InputStream::Buffered(buffer) if buffer.is_closed() => {
                 Err(exports::streams::StreamError::Closed)
             }
             InputStream::Buffered(buffer) => Ok(buffer.read(len as usize).to_vec()),
@@ -244,7 +248,8 @@ impl From<imports::streams::StreamError> for exports::streams::StreamError {
 #[derive(Clone, Debug)]
 pub struct Buffer {
     inner: Rc<RefCell<Vec<u8>>>,
-    read_offset: Cell<usize>,
+    read_offset: Rc<AtomicUsize>,
+    closed: Rc<AtomicBool>,
 }
 
 impl Buffer {
@@ -252,7 +257,8 @@ impl Buffer {
     pub fn new(inner: Vec<u8>) -> Self {
         Buffer {
             inner: Rc::new(RefCell::new(inner)),
-            read_offset: Cell::new(0),
+            read_offset: Rc::new(0.into()),
+            closed: Rc::new(false.into()),
         }
     }
 
@@ -262,9 +268,17 @@ impl Buffer {
 
     /// Read the next `len` bytes from the buffer
     fn read(&self, len: usize) -> impl std::ops::Deref<Target = [u8]> + '_ {
-        let end = std::cmp::min(self.read_offset.get() + len, self.inner.borrow().len());
-        let slice = std::cell::Ref::map(self.inner.borrow(), |s| &s[self.read_offset.get()..end]);
-        self.read_offset.set(end);
+        let end = std::cmp::min(
+            self.read_offset.load(Ordering::Relaxed) + len,
+            self.inner.borrow().len(),
+        );
+        let slice = std::cell::Ref::map(self.inner.borrow(), |s| {
+            &s[self.read_offset.load(Ordering::Relaxed)..end]
+        });
+        self.read_offset.store(end, Ordering::Relaxed);
+        if end >= self.inner.borrow().len() {
+            self.closed.store(true, Ordering::Relaxed);
+        }
         slice
     }
 
@@ -273,9 +287,12 @@ impl Buffer {
         Ok(self.inner.borrow_mut().extend_from_slice(contents))
     }
 
-    /// Check if the buffer has been fully read
-    fn is_fully_read(&self) -> bool {
-        self.inner.borrow().len() == self.read_offset.get()
+    fn is_closed(&self) -> bool {
+        self.closed.load(Ordering::Relaxed)
+    }
+
+    pub(crate) fn len(&self) -> usize {
+        self.inner.borrow().len()
     }
 }
 

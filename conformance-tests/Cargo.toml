@@ -1,0 +1,11 @@
+[package]
+name = "spin-test-conformance-tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+conformance-tests = { git = "https://github.com/fermyon/conformance-tests" }
+spin-test = { path = ".." }
+wasmtime = "21.0"
+wasmtime-wasi = "21.0"
