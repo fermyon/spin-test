@@ -19,6 +19,8 @@ struct Cli {
 enum Subcommand {
     /// Run a test suite against a Spin application
     Run(Run),
+    /// Virtualize a Spin application
+    Virtualize(Virtualize),
 }
 
 impl Default for Subcommand {
@@ -44,6 +46,7 @@ fn main() {
 fn _main() -> anyhow::Result<()> {
     match Cli::parse().subcommand.unwrap_or_default() {
         Subcommand::Run(r) => r.exec(),
+        Subcommand::Virtualize(v) => v.exec(),
     }
 }
 
@@ -143,6 +146,35 @@ fn run_tests(
         .collect();
 
     Ok(trials)
+}
+
+#[derive(clap::Parser)]
+struct Virtualize {
+    /// The manifest (spin.toml) file for the application under test.
+    ///
+    /// This may be a manifest file or a directory containing a spin.toml file.
+    #[clap(
+        name = "APP_MANIFEST_FILE",
+        short = 'f',
+        long = "from",
+        alias = "file",
+        default_value = spin_common::paths::DEFAULT_MANIFEST_FILE,
+    )]
+    pub app_source: PathBuf,
+}
+
+impl Virtualize {
+    fn exec(self) -> anyhow::Result<()> {
+        let manifest = ManifestInformation::resolve(self.app_source)?;
+        let app_component = Component::from_file(manifest.app_source()?.into())
+            .context("failed to read app component")?;
+        let encoded =
+            spin_test::virtualize_app(app_component).context("failed to virtualize app")?;
+        std::fs::write("virtualized.wasm", &encoded)
+            .context("failed to write virtualized app to disk")?;
+        println!("Successfully virtualized app to virtualized.wasm");
+        Ok(())
+    }
 }
 
 struct FullError {

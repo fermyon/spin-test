@@ -25,6 +25,18 @@ world dynamic-runner {
     export fermyon:spin-wasi-virt/fs-handler;
 }
 
+world virtualized-app {
+    import get-manifest: func() -> string;
+    
+    export wasi:clocks/monotonic-clock@0.2.0;
+    export wasi:io/streams@0.2.0;
+    export wasi:io/error@0.2.0;
+    export wasi:io/poll@0.2.0;
+    export wasi:http/types@0.2.0;
+    export wasi:http/incoming-handler@0.2.0;
+    export fermyon:spin-wasi-virt/http-helper;
+}
+
 /// A test runner that can run a `spin-test` test composition
 world runner {
     /// Include all dynamic runner items

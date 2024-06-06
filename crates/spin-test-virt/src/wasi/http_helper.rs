@@ -65,10 +65,15 @@ impl exports::GuestResponseReceiver for ResponseReceiver {
         let response = match &*self.0.lock().unwrap() {
             Some(Ok(r)) => {
                 let outgoing = r.get::<OutgoingResponse>();
+                let body = outgoing.body.unconsume();
+                let content_length = body.as_ref().len();
+                outgoing
+                    .headers
+                    .insert("Content-Length".into(), content_length.to_string().into());
                 Some(IncomingResponse {
                     status: outgoing.status_code.get(),
                     headers: outgoing.headers.clone(),
-                    body: outgoing.body.unconsume().map(Into::into),
+                    body: body.map(Into::into),
                 })
             }
             Some(Err(e)) => {

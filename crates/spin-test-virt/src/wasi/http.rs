@@ -44,7 +44,7 @@ pub struct IncomingRequest {
     pub body: Consumable<IncomingBody>,
 }
 
-/// A `Result` type where `Err` is the consumed value.
+/// A value which keeps track of whether it's been "consumed" or not.
 #[derive(Clone, Debug)]
 pub struct Consumable<T> {
     value: T,
@@ -64,6 +64,12 @@ impl<T> Consumable<T> {
             value: f(self.value),
             consumed: self.consumed,
         }
+    }
+}
+
+impl<T> AsRef<T> for Consumable<T> {
+    fn as_ref(&self) -> &T {
+        &self.value
     }
 }
 
@@ -246,6 +252,12 @@ impl exports::types::GuestIncomingResponse for IncomingResponse {
 #[derive(Clone, Debug)]
 pub struct OutgoingBody(io::Buffer);
 
+impl OutgoingBody {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
 impl exports::types::GuestOutgoingBody for OutgoingBody {
     fn write(&self) -> Result<io::exports::streams::OutputStream, ()> {
         Ok(io::exports::streams::OutputStream::new(
@@ -304,6 +316,12 @@ where
 #[derive(Debug, Default, Clone)]
 pub struct Fields {
     fields: RefCell<HashMap<exports::types::FieldKey, Vec<exports::types::FieldValue>>>,
+}
+
+impl Fields {
+    pub fn insert(&self, key: exports::types::FieldKey, value: exports::types::FieldValue) {
+        self.fields.borrow_mut().entry(key).or_default().push(value);
+    }
 }
 
 impl exports::types::GuestFields for Fields {

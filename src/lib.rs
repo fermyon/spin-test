@@ -91,6 +91,43 @@ pub fn perform_composition(
         .context("failed to encode composition")
 }
 
+/// Virtualize app component with virtualized environment and router
+pub fn virtualize_app(app_component: Component) -> anyhow::Result<Vec<u8>> {
+    let composition = Composition::new();
+
+    // Instantiate the `virt` component
+    let virt = instantiate_virt(&composition)?;
+    let export = |name| {
+        let instance = virt.export(name).unwrap().unwrap();
+        composition.export(instance, name).unwrap();
+    };
+    export("fermyon:spin-wasi-virt/http-helper");
+    export("wasi:http/types@0.2.0");
+    export("wasi:clocks/monotonic-clock@0.2.0");
+    export("wasi:io/streams@0.2.0");
+    export("wasi:io/error@0.2.0");
+    export("wasi:io/poll@0.2.0");
+
+    // Instantiate the `app` component with various exports from the virt instance
+    let app = instantiate_app(&composition, app_component, &virt)?;
+
+    // Instantiate the `router` component
+    let router = instantiate_router(&composition, &virt, app)?;
+
+    let export = router
+        .export("wasi:http/incoming-handler@0.2.0")
+        .context("failed to export 'wasi:http/incoming-handler@0.2.0' from router")?
+        .context("router must export 'wasi:http/incoming-handler@0.2.0' but it did not")?;
+
+    composition
+        .export(export, "wasi:http/incoming-handler@0.2.0")
+        .unwrap();
+
+    composition
+        .encode(true)
+        .context("failed to encode composition")
+}
+
 fn instantiate_test(
     composition: &Composition,
     test_component: Component,

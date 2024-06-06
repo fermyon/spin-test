@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
-wit-bindgen-rt = "0.25.0"
+wit-bindgen-rt = "0.26.0"
 toml = { workspace = true }
 spin-manifest = { workspace = true }
 spin-http = { git = "https://github.com/fermyon/spin", default-features = false }

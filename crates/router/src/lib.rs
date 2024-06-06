@@ -123,7 +123,7 @@ fn apply_request_transformations(
     route_match: &RouteMatch,
 ) -> anyhow::Result<IncomingRequest> {
     let headers_to_add = calculate_default_headers(&request, base, route_match)
-        .context("could not calculate default headers to for request")?
+        .context("could not calculate default headers for request")?
         .into_iter()
         .flat_map(|(k, v)| {
             k.into_iter()
@@ -137,7 +137,7 @@ fn apply_request_transformations(
     let new = OutgoingRequest::new(headers);
     // Make sure that the scheme and authority are set as the Spin runtime does this
     let _ = new.set_scheme(request.scheme().as_ref().or(Some(&Scheme::Http)));
-    let _ = new.set_authority(request.authority().as_deref().or(Some("localhost")));
+    let _ = new.set_authority(request.authority().as_deref().or(Some("127.0.0.1:3000")));
     let _ = new.set_method(&request.method());
     let _ = new.set_path_with_query(request.path_with_query().as_deref().or(Some("/")));
     Ok(bindings::new_request(new, Some(request.consume().unwrap())))
@@ -157,7 +157,7 @@ fn calculate_default_headers(
     route_match: &RouteMatch,
 ) -> anyhow::Result<Vec<([String; 2], String)>> {
     fn owned(strs: &[&'static str; 2]) -> [String; 2] {
-        let convert = |s: &str| s.to_owned().replace('_', "-");
+        let convert = |s: &str| s.to_owned().replace('_', "-").to_ascii_lowercase();
         [convert(strs[0]), convert(strs[1])]
     }
 
@@ -175,20 +175,20 @@ fn calculate_default_headers(
     let path_info = route_match.trailing_wildcard();
 
     let scheme = req.scheme();
-    let scheme = match scheme.as_ref().unwrap_or(&Scheme::Https) {
+    let scheme = match scheme.as_ref().unwrap_or(&Scheme::Http) {
         Scheme::Http => "http",
         Scheme::Https => "https",
         Scheme::Other(s) => s,
     };
     let host = req
         .headers()
-        .get(&"host".to_owned())
+        .get(&"Host".to_owned())
         .into_iter()
         .find(|v| !v.is_empty())
         .map(String::from_utf8)
         .transpose()
-        .context("expected 'host' header to be UTF-8 encoded but it was not")?
-        .unwrap_or_else(|| "localhost".to_owned());
+        .context("expected 'Host' header to be UTF-8 encoded but it was not")?
+        .unwrap_or_else(|| "localhost:3000".into());
 
     let full_url = format!("{}://{}{}", scheme, host, abs_path);
 
