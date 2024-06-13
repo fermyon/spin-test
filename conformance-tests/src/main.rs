@@ -82,7 +82,7 @@ fn to_incoming_response<'a>(
     store: &mut wasmtime::Store<StoreData>,
     request: IncomingRequest<'a>,
 ) -> anyhow::Result<IncomingResponse<'a>> {
-    let (out, rx) = new_response(&instance, &mut *store)?;
+    let (out, rx) = new_response(instance, &mut *store)?;
     instance
         .wasi_http_incoming_handler()
         .call_handle(&mut *store, request.resource, out)?;
