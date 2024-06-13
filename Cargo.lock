@@ -363,7 +363,7 @@ checksum = "0b6a852b24ab71dffc585bcb46eaf7959d175cb865a7152e35b348d1b2960422"
 [[package]]
 name = "conformance-tests"
 version = "0.1.0"
-source = "git+https://github.com/fermyon/conformance-tests#24f4d8cbde6c7e3859d2987382fe4f552f5f1c75"
+source = "git+https://github.com/fermyon/conformance-tests#84680472e1a3e46fe06c2462fa95b4466164cf8c"
 dependencies = [
  "anyhow",
  "flate2",
@@ -371,6 +371,7 @@ dependencies = [
  "reqwest",
  "serde",
  "tar",
+ "test-environment",
 ]
 
 [[package]]
@@ -786,6 +787,16 @@ dependencies = [
  "io-lifetimes",
  "rustix",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "fslock"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04412b8935272e3a9bae6f48c7bfff74c2911f60525404edfdd28e49884c3bfb"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]
@@ -2325,6 +2336,7 @@ dependencies = [
  "anyhow",
  "conformance-tests",
  "spin-test",
+ "test-environment",
  "wasmtime",
  "wasmtime-wasi",
 ]
@@ -2513,6 +2525,19 @@ dependencies = [
  "atty",
  "once_cell",
  "termcolor",
+]
+
+[[package]]
+name = "test-environment"
+version = "0.1.0"
+source = "git+https://github.com/fermyon/conformance-tests#84680472e1a3e46fe06c2462fa95b4466164cf8c"
+dependencies = [
+ "anyhow",
+ "fslock",
+ "regex",
+ "reqwest",
+ "temp-dir",
+ "tokio",
 ]
 
 [[package]]

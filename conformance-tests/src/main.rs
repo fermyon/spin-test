@@ -1,6 +1,9 @@
+use std::collections::HashMap;
+
 use anyhow::anyhow;
 use anyhow::Context as _;
 use bindings::{exports::wasi::http::types::HeaderError, VirtualizedApp};
+use test_environment::http::Response;
 
 mod bindings {
     wasmtime::component::bindgen!({
@@ -31,73 +34,80 @@ fn main() -> anyhow::Result<()> {
         let (instance, _) = bindings::VirtualizedApp::instantiate(&mut store, &component, &linker)?;
         for invocation in test.config.invocations {
             let conformance_tests::config::Invocation::Http(invocation) = invocation;
-            let fields = Fields::new(&instance, &mut store)?;
-            for header in invocation.request.headers.iter() {
-                fields.append(&mut store, &header.name, &header.value.clone().into_bytes())??;
-            }
-            let outgoing_request = OutgoingRequest::new(&instance, &mut store, fields)?;
-            outgoing_request
-                .set_path_with_query(&mut store, Some(invocation.request.path.as_str()))?
-                .map_err(|_| anyhow!("invalid request path"))?;
-            let request = IncomingRequest::new(&instance, &mut store, outgoing_request)?;
-            let (out, rx) = new_response(&instance, &mut store)?;
-            instance
-                .wasi_http_incoming_handler()
-                .call_handle(&mut store, request.resource, out)?;
-            let response = rx.get(&mut store)?.context("no response found")?;
-
-            let status = response.status(&mut store)?;
-            let body = response
-                .consume(&mut store)?
-                .map_err(|_| anyhow!("response body already consumed"))?
-                .stream(&mut store)?
-                .map_err(|_| anyhow!("response body stream already consumed"))?
-                .blocking_read(&mut store, u64::MAX)??;
-            let body = String::from_utf8(body).unwrap_or_else(|_| String::from("invalid utf-8"));
-            assert_eq!(
-                status, invocation.response.status,
-                "request to Spin failed\nbody:\n{body}",
-            );
-
-            let mut actual_headers = response
-                .headers(&mut store)?
-                .entries(&mut store)?
-                .into_iter()
-                .map(|(k, v)| {
-                    (
-                        k.to_lowercase(),
-                        String::from_utf8(v).unwrap().to_lowercase(),
-                    )
-                })
-                .collect::<std::collections::HashMap<_, _>>();
-            for expected_header in invocation.response.headers {
-                let expected_name = expected_header.name.to_lowercase();
-                let expected_value = expected_header.value.map(|v| v.to_lowercase());
-                let actual_value = actual_headers.remove(&expected_name);
-                let Some(actual_value) = actual_value.as_deref() else {
-                    if expected_header.optional {
-                        continue;
-                    } else {
-                        panic!(
-                            "expected header {name} not found in response",
-                            name = expected_header.name
-                        )
-                    }
-                };
-                if let Some(expected_value) = expected_value {
-                    assert_eq!(actual_value, expected_value);
-                }
-            }
-            if !actual_headers.is_empty() {
-                panic!("unexpected headers: {actual_headers:?}");
-            }
-
-            if let Some(expected_body) = invocation.response.body {
-                assert_eq!(body, expected_body);
-            }
+            invocation.run(|request| {
+                let request = to_outgoing_request(&instance, &mut store, request)?;
+                let response = to_incoming_response(&instance, &mut store, request)?;
+                from_incoming_response(&mut store, response)
+            })?;
         }
     }
     Ok(())
+}
+
+/// Convert a test_environment::http::Request into a wasi::http::types::IncomingRequest
+fn to_outgoing_request<'a>(
+    instance: &'a VirtualizedApp,
+    store: &mut wasmtime::Store<StoreData>,
+    request: test_environment::http::Request<String>,
+) -> anyhow::Result<IncomingRequest<'a>> {
+    let fields = Fields::new(instance, store)?;
+    for (n, v) in request.headers {
+        fields.append(store, &(*n).to_owned(), &(*v).to_owned().into_bytes())??;
+    }
+    let outgoing_request = OutgoingRequest::new(instance, store, fields)?;
+    let method = match request.method {
+        test_environment::http::Method::Get => bindings::exports::wasi::http::types::Method::Get,
+        test_environment::http::Method::Post => bindings::exports::wasi::http::types::Method::Post,
+        test_environment::http::Method::Put => bindings::exports::wasi::http::types::Method::Put,
+        test_environment::http::Method::Patch => {
+            bindings::exports::wasi::http::types::Method::Patch
+        }
+        test_environment::http::Method::Delete => {
+            bindings::exports::wasi::http::types::Method::Delete
+        }
+    };
+    outgoing_request
+        .set_method(store, &method)?
+        .map_err(|_| anyhow!("invalid request method"))?;
+    outgoing_request
+        .set_path_with_query(store, Some(request.path))?
+        .map_err(|_| anyhow!("invalid request path"))?;
+    // TODO: set the body
+    IncomingRequest::new(instance, store, outgoing_request)
+}
+
+/// Call the incoming handler with the request and return the response
+fn to_incoming_response<'a>(
+    instance: &'a VirtualizedApp,
+    store: &mut wasmtime::Store<StoreData>,
+    request: IncomingRequest<'a>,
+) -> anyhow::Result<IncomingResponse<'a>> {
+    let (out, rx) = new_response(&instance, &mut *store)?;
+    instance
+        .wasi_http_incoming_handler()
+        .call_handle(&mut *store, request.resource, out)?;
+    rx.get(&mut *store)?.context("no response found")
+}
+
+/// Convert a wasi::http::types::IncomingResponse into a test_environment::http::Response
+fn from_incoming_response(
+    store: &mut wasmtime::Store<StoreData>,
+    response: IncomingResponse,
+) -> anyhow::Result<Response> {
+    let status = response.status(store)?;
+    let headers = response
+        .headers(store)?
+        .entries(store)?
+        .into_iter()
+        .map(|(k, v)| Ok((k, String::from_utf8(v)?)))
+        .collect::<anyhow::Result<HashMap<_, _>>>()?;
+    let body = response
+        .consume(store)?
+        .map_err(|_| anyhow!("response body already consumed"))?
+        .stream(store)?
+        .map_err(|_| anyhow!("response body stream already consumed"))?
+        .blocking_read(store, u64::MAX)??;
+    Ok(Response::full(status, headers, body))
 }
 
 struct Fields<'a> {
@@ -146,6 +156,14 @@ impl<'a> OutgoingRequest<'a> {
         let guest = instance.wasi_http_types().outgoing_request();
         let resource = guest.call_constructor(store, fields.resource)?;
         Ok(Self { guest, resource })
+    }
+
+    pub fn set_method<T>(
+        &self,
+        store: &mut wasmtime::Store<T>,
+        method: &bindings::exports::wasi::http::types::Method,
+    ) -> anyhow::Result<Result<(), ()>> {
+        self.guest.call_set_method(store, self.resource, method)
     }
 
     pub fn set_path_with_query<T>(
