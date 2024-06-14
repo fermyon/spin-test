@@ -102,6 +102,7 @@ pub fn virtualize_app(app_component: Component) -> anyhow::Result<Vec<u8>> {
         composition.export(instance, name).unwrap();
     };
     export("fermyon:spin-wasi-virt/http-helper");
+    export("fermyon:spin-wasi-virt/http-handler");
     export("wasi:http/types@0.2.0");
     export("wasi:clocks/monotonic-clock@0.2.0");
     export("wasi:io/streams@0.2.0");
