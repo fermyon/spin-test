@@ -8,6 +8,7 @@ use std::{
 pub use crate::bindings::exports::wasi::http as exports;
 pub use crate::bindings::wasi::http as imports;
 
+use crate::bindings::exports::fermyon::spin_wasi_virt::http_handler;
 use crate::Component;
 
 use super::io;
@@ -389,7 +390,7 @@ impl exports::types::GuestFields for Fields {
     }
 
     fn clone(&self) -> exports::types::Fields {
-        todo!()
+        exports::types::Fields::new(Clone::clone(self))
     }
 }
 
@@ -486,9 +487,8 @@ impl exports::types::GuestFutureTrailers for FutureTrailers {
     }
 }
 
-pub static RESPONSES: std::sync::OnceLock<
-    Mutex<HashMap<String, exports::types::OutgoingResponse>>,
-> = std::sync::OnceLock::new();
+pub static RESPONSES: std::sync::OnceLock<Mutex<HashMap<String, http_handler::ResponseHandler>>> =
+    std::sync::OnceLock::new();
 
 impl exports::outgoing_handler::Guest for Component {
     fn handle(
@@ -519,7 +519,7 @@ impl exports::outgoing_handler::Guest for Component {
             exports::outgoing_handler::ErrorCode::InternalError(Some(format!("{e}")))
         })?;
         if !url_allowed {
-            (exports::outgoing_handler::ErrorCode::HttpRequestDenied);
+            return Err(exports::outgoing_handler::ErrorCode::HttpRequestDenied);
         }
         let response = RESPONSES
             .get_or_init(Default::default)
@@ -527,7 +527,7 @@ impl exports::outgoing_handler::Guest for Component {
             .unwrap()
             .remove(&url);
         match response {
-            Some(r) => {
+            Some(http_handler::ResponseHandler::Response(r)) => {
                 let r: OutgoingResponse = r.into_inner();
                 Ok(exports::types::FutureIncomingResponse::new(
                     FutureIncomingResponse::new(Ok(IncomingResponse {
@@ -537,15 +537,24 @@ impl exports::outgoing_handler::Guest for Component {
                     })),
                 ))
             }
+            Some(http_handler::ResponseHandler::Echo) => {
+                Ok(exports::types::FutureIncomingResponse::new(
+                    FutureIncomingResponse::new(Ok(IncomingResponse {
+                        status: 200,
+                        headers: Fields::default(),
+                        body: request.body.unconsume().map(Into::into),
+                    })),
+                ))
+            }
             None => Err(exports::outgoing_handler::ErrorCode::InternalError(Some(
-                format!("unrecognized url: {url}"),
+                format!("mocking error - unrecognized url: {url}"),
             ))),
         }
     }
 }
 
-impl crate::bindings::exports::fermyon::spin_wasi_virt::http_handler::Guest for Component {
-    fn set_response(url: String, response: exports::types::OutgoingResponse) {
+impl http_handler::Guest for Component {
+    fn set_response(url: String, response: http_handler::ResponseHandler) {
         RESPONSES
             .get_or_init(Default::default)
             .lock()

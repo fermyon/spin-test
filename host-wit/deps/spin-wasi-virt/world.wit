@@ -85,8 +85,13 @@ interface http-helper {
 interface http-handler {
     use wasi:http/types@0.2.0.{outgoing-response};
 
+    variant response-handler {
+        echo,
+        response(outgoing-response)
+    }
+
     /// Set a response for a given url
-    set-response: func(url: string, response: outgoing-response);
+    set-response: func(url: string, response: response-handler);
 }
 
 interface fs-handler {

@@ -35,6 +35,7 @@ world virtualized-app {
     export wasi:http/types@0.2.0;
     export wasi:http/incoming-handler@0.2.0;
     export fermyon:spin-wasi-virt/http-helper;
+    export fermyon:spin-wasi-virt/http-handler;
 }
 
 /// A test runner that can run a `spin-test` test composition

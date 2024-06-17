@@ -29,7 +29,10 @@ fn cache_miss() {
 
     let response = http::types::OutgoingResponse::new(http::types::Headers::new());
     response.write_body(user_json.as_bytes());
-    http_handler::set_response("https://my.api.com?user_id=123", response);
+    http_handler::set_response(
+        "https://my.api.com?user_id=123",
+        http_handler::ResponseHandler::Response(response),
+    );
     // Configure the test
     make_request(user_json);
 
