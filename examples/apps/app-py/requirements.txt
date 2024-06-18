@@ -3,4 +3,4 @@ charset-normalizer==3.3.2
 componentize-py==0.13.2
 idna==3.7
 spin-sdk==3.2.0
-urllib3==2.2.1
+urllib3==2.2.2
