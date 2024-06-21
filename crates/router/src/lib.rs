@@ -156,8 +156,10 @@ fn calculate_default_headers(
     base: &str,
     route_match: &RouteMatch,
 ) -> anyhow::Result<Vec<([String; 2], String)>> {
+    fn convert(s: &str) -> String {
+        s.to_owned().replace('_', "-").to_ascii_lowercase()
+    }
     fn owned(strs: &[&'static str; 2]) -> [String; 2] {
-        let convert = |s: &str| s.to_owned().replace('_', "-").to_ascii_lowercase();
         [convert(strs[0]), convert(strs[1])]
     }
 
@@ -205,8 +207,11 @@ fn calculate_default_headers(
     res.push((owned_client_addr, "127.0.0.1:0".to_owned()));
 
     for (wild_name, wild_value) in route_match.named_wildcards() {
-        let wild_header = format!("SPIN_PATH_MATCH_{}", wild_name.to_ascii_uppercase());
-        let wild_wagi_header = format!("X_PATH_MATCH_{}", wild_name.to_ascii_uppercase());
+        let wild_header = convert(&format!(
+            "SPIN_PATH_MATCH_{}",
+            wild_name.to_ascii_uppercase()
+        ));
+        let wild_wagi_header = convert(&format!("X_PATH_MATCH_{}", wild_name.to_ascii_uppercase()));
         res.push(([wild_header, wild_wagi_header], wild_value.clone()));
     }
 

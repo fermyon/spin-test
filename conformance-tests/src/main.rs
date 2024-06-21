@@ -12,7 +12,7 @@ fn main() -> anyhow::Result<()> {
     for test in conformance_tests::tests(&tests_dir)? {
         println!("Test: {}", test.name);
         let mut manifest =
-            test_environment::manifest_template::EnvTemplate::from_file(&test.manifest).unwrap();
+            test_environment::manifest_template::EnvTemplate::from_file(&test.manifest)?;
         let env_config = test_environment::TestEnvironmentConfig {
             create_runtime: Box::new(|_env| {
                 manifest.substitute_value("port", |port| {
@@ -24,9 +24,14 @@ fn main() -> anyhow::Result<()> {
             services_config: test_environment::services::ServicesConfig::none(),
         };
         let mut env = test_environment::TestEnvironment::up(env_config, |_| Ok(())).unwrap();
-        if test.config.services.iter().any(|s| s == "http-echo") {
-            env.runtime_mut()
-                .set_echo_response(format!("http://localhost:{HTTP_PORT}").as_str())?;
+        for precondition in &test.config.preconditions {
+            match precondition {
+                conformance_tests::config::Precondition::HttpEcho => {
+                    env.runtime_mut()
+                        .set_echo_response(format!("http://localhost:{HTTP_PORT}").as_str())?;
+                }
+                conformance_tests::config::Precondition::KeyValueStore(_) => {}
+            }
         }
         for invocation in test.config.invocations {
             let conformance_tests::config::Invocation::Http(mut invocation) = invocation;
