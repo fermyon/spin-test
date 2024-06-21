@@ -5,12 +5,13 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-wit-bindgen-rt = { version = "0.25.0", features = ["bitflags"] }
+ipnet = "2.9"
 spin-expressions = { workspace = true }
 spin-manifest = { workspace = true }
 spin-outbound-networking = { workspace = true }
 spin-serde = { workspace = true }
 toml = { workspace = true }
+wit-bindgen-rt = { version = "0.25.0", features = ["bitflags"] }
 
 
 [lib]

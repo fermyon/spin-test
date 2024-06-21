@@ -16,8 +16,7 @@ fn run_test(test: conformance_tests::Test) -> Result<(), anyhow::Error> {
     let mut manifest = test_environment::manifest_template::EnvTemplate::from_file(&test.manifest)?;
     let env_config = test_environment::TestEnvironmentConfig {
         create_runtime: Box::new(|_env| {
-            manifest
-                .substitute_value("port", |port| (port == "80").then(|| HTTP_PORT.to_string()))?;
+            manifest.substitute_value("port", |port| substitution("port", port))?;
             SpinTest::new(manifest.into_contents(), test.component)
         }),
         // Services are not needed in `spin-test` since everything stays in the guest
@@ -34,18 +33,25 @@ fn run_test(test: conformance_tests::Test) -> Result<(), anyhow::Error> {
             conformance_tests::config::Precondition::KeyValueStore(_) => {}
         }
     }
-    Ok(for invocation in test.config.invocations {
+    for invocation in test.config.invocations {
         let conformance_tests::config::Invocation::Http(mut invocation) = invocation;
-        invocation.request.substitute(|key, value| {
-            Ok(match (key, value) {
-                ("port", "80") => Some(HTTP_PORT.to_string()),
-                ("port", "5000") => Some(5000.to_string()),
-                _ => None,
-            })
-        })?;
+        invocation
+            .request
+            .substitute(|key, value| Ok(substitution(key, value)))?;
 
         invocation.run(|request| env.runtime_mut().make_http_request(request))?;
-    })
+    }
+
+    Ok(())
+}
+
+/// When encountering a magic key-value pair, substitute the value with a different value.
+fn substitution(key: &str, value: &str) -> Option<String> {
+    match (key, value) {
+        ("port", "80") => Some(HTTP_PORT.to_string()),
+        ("port", "5000") => Some(5000.to_string()),
+        _ => None,
+    }
 }
 
 struct StoreData {

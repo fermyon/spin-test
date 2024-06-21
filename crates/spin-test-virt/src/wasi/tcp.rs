@@ -1,4 +1,6 @@
-use crate::bindings::exports::wasi;
+use core::hash;
+
+use crate::bindings::exports::wasi::{self, sockets::network::Ipv4SocketAddress};
 use crate::Component;
 
 use super::io::{Buffer, InputStream, OutputStream};
@@ -38,7 +40,106 @@ impl wasi::sockets::tcp::GuestTcpSocket for TcpSocket {
         network: wasi::sockets::tcp::NetworkBorrow<'_>,
         remote_address: wasi::sockets::tcp::IpSocketAddress,
     ) -> Result<(), wasi::sockets::tcp::ErrorCode> {
-        Ok(())
+        let allowed_hosts = crate::manifest::AppManifest::allowed_hosts()
+            .map_err(|e| wasi::sockets::tcp::ErrorCode::PermanentResolverFailure)?;
+        let configs = match allowed_hosts {
+            // If all hosts are allowed, then we can skip the rest of the checks.
+            spin_outbound_networking::AllowedHostsConfig::All => return Ok(()),
+            spin_outbound_networking::AllowedHostsConfig::SpecificHosts(configs) => configs,
+        };
+
+        let (remote_address, remote_port) = match remote_address {
+            wasi::sockets::network::IpSocketAddress::Ipv4(i) => (
+                std::net::IpAddr::V4(std::net::Ipv4Addr::new(
+                    i.address.0,
+                    i.address.1,
+                    i.address.2,
+                    i.address.3,
+                )),
+                i.port,
+            ),
+            wasi::sockets::network::IpSocketAddress::Ipv6(i) => (
+                std::net::IpAddr::V6(std::net::Ipv6Addr::new(
+                    i.address.0,
+                    i.address.1,
+                    i.address.2,
+                    i.address.3,
+                    i.address.4,
+                    i.address.5,
+                    i.address.6,
+                    i.address.7,
+                )),
+                i.port,
+            ),
+        };
+
+        for config in configs {
+            // Check if the port is allowed.
+            let mut allowed_port = false;
+            match config.port() {
+                spin_outbound_networking::PortConfig::Any => {
+                    allowed_port = true;
+                    break;
+                }
+                spin_outbound_networking::PortConfig::List(l) => {
+                    for port in l {
+                        match port {
+                            spin_outbound_networking::IndividualPortConfig::Port(p)
+                                if *p == remote_port =>
+                            {
+                                allowed_port = true;
+                                break;
+                            }
+                            spin_outbound_networking::IndividualPortConfig::Range(r)
+                                if r.contains(&remote_port) =>
+                            {
+                                allowed_port = true;
+                                break;
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+            if !allowed_port {
+                return Err(wasi::sockets::tcp::ErrorCode::AccessDenied);
+            }
+
+            // If the scheme isn't a `*`, then this config does not grant access.
+            if !config.scheme().allows_any() {
+                continue;
+            }
+
+            match config.host() {
+                spin_outbound_networking::HostConfig::AnySubdomain(_)
+                | spin_outbound_networking::HostConfig::ToSelf => continue,
+                spin_outbound_networking::HostConfig::Any => return Ok(()),
+                spin_outbound_networking::HostConfig::List(hosts) => {
+                    // Check if any host is a CIDR block that contains the remote address.
+                    for host in hosts {
+                        // Parse the host as an `IpNet` cidr block and if it fails
+                        // then try parsing again with `/32` appended to the end.
+                        let Ok(ip_net) = host
+                            .parse::<ipnet::IpNet>()
+                            .or_else(|_| format!("{host}/32").parse())
+                        else {
+                            continue;
+                        };
+                        if ip_net.contains(&remote_address) {
+                            return Ok(());
+                        }
+                    }
+                }
+                spin_outbound_networking::HostConfig::Cidr(ip_net) => {
+                    // Check if the host is a CIDR block that contains the remote address.
+                    if ip_net.contains(&remote_address) {
+                        return Ok(());
+                    }
+                }
+            }
+        }
+
+        Err(wasi::sockets::tcp::ErrorCode::AccessDenied)
     }
 
     fn finish_connect(
