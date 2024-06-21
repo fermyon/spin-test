@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-conformance-tests = { git = "https://github.com/fermyon/conformance-tests" }
-test-environment = { git = "https://github.com/fermyon/conformance-tests" }
+conformance-tests = { git = "https://github.com/fermyon/conformance-tests", branch = "tcp-test" }
+test-environment = { git = "https://github.com/fermyon/conformance-tests", branch = "tcp-test" }
 spin-test = { path = ".." }
 wasmtime = "21.0"
 wasmtime-wasi = "21.0"

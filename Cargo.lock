@@ -363,11 +363,12 @@ checksum = "0b6a852b24ab71dffc585bcb46eaf7959d175cb865a7152e35b348d1b2960422"
 [[package]]
 name = "conformance-tests"
 version = "0.1.0"
-source = "git+https://github.com/fermyon/conformance-tests#cfee7a519b59f4318d5a19358ec3f2bf1bc23f41"
+source = "git+https://github.com/fermyon/conformance-tests?branch=tcp-test#0b6de095f37026ebb4ba75ed31f6ec509904d2c7"
 dependencies = [
  "anyhow",
  "flate2",
  "json5",
+ "libtest-mimic",
  "reqwest",
  "serde",
  "tar",
@@ -2530,7 +2531,7 @@ dependencies = [
 [[package]]
 name = "test-environment"
 version = "0.1.0"
-source = "git+https://github.com/fermyon/conformance-tests#cfee7a519b59f4318d5a19358ec3f2bf1bc23f41"
+source = "git+https://github.com/fermyon/conformance-tests?branch=tcp-test#0b6de095f37026ebb4ba75ed31f6ec509904d2c7"
 dependencies = [
  "anyhow",
  "fslock",

@@ -7,47 +7,44 @@ use runtime::SpinTest;
 const HTTP_PORT: u16 = 1234;
 
 fn main() -> anyhow::Result<()> {
-    let tests_dir = conformance_tests::download_tests()?;
+    conformance_tests::run_tests_from("../../conformance-tests/conformance-tests", |test| {
+        run_test(test)
+    })
+}
 
-    for test in conformance_tests::tests(&tests_dir)? {
-        println!("Test: {}", test.name);
-        let mut manifest =
-            test_environment::manifest_template::EnvTemplate::from_file(&test.manifest)?;
-        let env_config = test_environment::TestEnvironmentConfig {
-            create_runtime: Box::new(|_env| {
-                manifest.substitute_value("port", |port| {
-                    (port == "80").then(|| HTTP_PORT.to_string())
-                })?;
-                SpinTest::new(manifest.into_contents(), test.component)
-            }),
-            // Services are not needed in `spin-test` since everything stays in the guest
-            services_config: test_environment::services::ServicesConfig::none(),
-        };
-        let mut env = test_environment::TestEnvironment::up(env_config, |_| Ok(())).unwrap();
-        for precondition in &test.config.preconditions {
-            match precondition {
-                conformance_tests::config::Precondition::HttpEcho => {
-                    env.runtime_mut()
-                        .set_echo_response(format!("http://localhost:{HTTP_PORT}").as_str())?;
-                }
-                conformance_tests::config::Precondition::KeyValueStore(_) => {}
+fn run_test(test: conformance_tests::Test) -> Result<(), anyhow::Error> {
+    let mut manifest = test_environment::manifest_template::EnvTemplate::from_file(&test.manifest)?;
+    let env_config = test_environment::TestEnvironmentConfig {
+        create_runtime: Box::new(|_env| {
+            manifest
+                .substitute_value("port", |port| (port == "80").then(|| HTTP_PORT.to_string()))?;
+            SpinTest::new(manifest.into_contents(), test.component)
+        }),
+        // Services are not needed in `spin-test` since everything stays in the guest
+        services_config: test_environment::services::ServicesConfig::none(),
+    };
+    let mut env = test_environment::TestEnvironment::up(env_config, |_| Ok(()))?;
+    for precondition in &test.config.preconditions {
+        match precondition {
+            conformance_tests::config::Precondition::HttpEcho => {
+                env.runtime_mut()
+                    .set_echo_response(format!("http://localhost:{HTTP_PORT}").as_str())?;
             }
-        }
-        for invocation in test.config.invocations {
-            let conformance_tests::config::Invocation::Http(mut invocation) = invocation;
-            invocation
-                .request
-                .substitute(|key, value| {
-                    Ok(match (key, value) {
-                        ("port", "80") => Some(HTTP_PORT.to_string()),
-                        _ => None,
-                    })
-                })
-                .unwrap();
-            invocation.run(|request| env.runtime_mut().make_http_request(request))?;
+            conformance_tests::config::Precondition::TcpEcho => {}
+            conformance_tests::config::Precondition::KeyValueStore(_) => {}
         }
     }
-    Ok(())
+    Ok(for invocation in test.config.invocations {
+        let conformance_tests::config::Invocation::Http(mut invocation) = invocation;
+        invocation.request.substitute(|key, value| {
+            Ok(match (key, value) {
+                ("port", "80") => Some(HTTP_PORT.to_string()),
+                _ => None,
+            })
+        })?;
+
+        invocation.run(|request| env.runtime_mut().make_http_request(request))?;
+    })
 }
 
 struct StoreData {
