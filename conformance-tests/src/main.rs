@@ -39,6 +39,7 @@ fn run_test(test: conformance_tests::Test) -> Result<(), anyhow::Error> {
         invocation.request.substitute(|key, value| {
             Ok(match (key, value) {
                 ("port", "80") => Some(HTTP_PORT.to_string()),
+                ("port", "5000") => Some(5000.to_string()),
                 _ => None,
             })
         })?;
