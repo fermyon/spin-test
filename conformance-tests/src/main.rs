@@ -7,9 +7,7 @@ use runtime::SpinTest;
 const HTTP_PORT: u16 = 1234;
 
 fn main() -> anyhow::Result<()> {
-    conformance_tests::run_tests_from("../../conformance-tests/conformance-tests", |test| {
-        run_test(test)
-    })
+    conformance_tests::run_tests(run_test)
 }
 
 fn run_test(test: conformance_tests::Test) -> Result<(), anyhow::Error> {
