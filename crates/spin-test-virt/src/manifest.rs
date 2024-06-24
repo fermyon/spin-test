@@ -4,16 +4,18 @@ use std::sync::{OnceLock, RwLock};
 pub struct AppManifest;
 
 impl AppManifest {
-    /// Returns whether the given URL is allowed by the manifest.
-    pub fn allows_url(url: &str, scheme: &str) -> anyhow::Result<bool> {
+    /// Returns the allowed hosts configuration for the current component.
+    pub fn allowed_hosts() -> anyhow::Result<spin_outbound_networking::AllowedHostsConfig> {
         let allowed_outbound_hosts = Self::get_component()
             .expect("internal error: component id not yet set")
             .normalized_allowed_outbound_hosts()?;
         let resolver = spin_expressions::PreparedResolver::default();
-        let allowed_hosts = spin_outbound_networking::AllowedHostsConfig::parse(
-            &allowed_outbound_hosts,
-            &resolver,
-        )?;
+        spin_outbound_networking::AllowedHostsConfig::parse(&allowed_outbound_hosts, &resolver)
+    }
+
+    /// Returns whether the given URL is allowed by the manifest.
+    pub fn allows_url(url: &str, scheme: &str) -> anyhow::Result<bool> {
+        let allowed_hosts = Self::allowed_hosts()?;
         let url = spin_outbound_networking::OutboundUrl::parse(url, scheme)?;
         Ok(allowed_hosts.allows(&url))
     }
