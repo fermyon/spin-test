@@ -339,9 +339,9 @@ impl TestTarget {
         let decoded = wit_component::decode(&test.bytes)
             .context("failed to decode test component's wit package")?;
         let resolve = decoded.resolve();
-        let package = decoded.package();
+        let packages = &decoded.packages();
 
-        let world_id = resolve.select_world(package, None)?;
+        let world_id = resolve.select_world(packages, None)?;
         let world = &resolve.worlds[world_id];
 
         let mut exports = HashSet::new();
@@ -441,8 +441,8 @@ fn stub_imports<T>(
     for (import_name, import) in world.imports.iter() {
         let import_name = resolve.name_world_key(import_name);
         match import {
-            wit_parser::WorldItem::Interface(i) => {
-                let interface = resolve.interfaces.get(*i).unwrap();
+            wit_parser::WorldItem::Interface { id, .. } => {
+                let interface = resolve.interfaces.get(*id).unwrap();
                 let mut root = linker.root();
                 let Ok(mut instance) = root.instance(&import_name) else {
                     // We've already seen this instance, skip it

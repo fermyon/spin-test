@@ -21,8 +21,8 @@ temp-dir = "0.1.13"
 tokio = "1.0"
 toml = { workspace = true }
 wac-graph = "0.3"
-wasmtime = "21.0"
-wasmtime-wasi = "21.0"
+wasmtime = "22.0"
+wasmtime-wasi = "22.0"
 wit-component = { workspace = true }
 wit-parser = { workspace = true }
 
@@ -41,5 +41,5 @@ spin-manifest = { git = "https://github.com/fermyon/spin" }
 spin-outbound-networking = { git = "https://github.com/fermyon/spin" }
 spin-serde = { git = "https://github.com/fermyon/spin" }
 toml = { version = "0.8", features = ["preserve_order"] }
-wit-component = "0.208"
-wit-parser = "0.208"
+wit-component = "0.211"
+wit-parser = "0.211"
