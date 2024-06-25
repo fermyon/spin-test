@@ -41,5 +41,6 @@ spin-manifest = { git = "https://github.com/fermyon/spin" }
 spin-outbound-networking = { git = "https://github.com/fermyon/spin" }
 spin-serde = { git = "https://github.com/fermyon/spin" }
 toml = { version = "0.8", features = ["preserve_order"] }
+wit-bindgen-rt = { version = "0.26", features = ["bitflags"] }
 wit-component = "0.211"
 wit-parser = "0.211"
