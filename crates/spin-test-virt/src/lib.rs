@@ -376,11 +376,20 @@ impl sqlite::Guest for Component {
     type Connection = SqliteConnection;
 }
 
-struct SqliteConnection;
+struct SqliteConnection {
+    inner: rusqlite::Connection,
+}
+
+impl SqliteConnection {
+    fn new(conn: rusqlite::Connection) -> Self {
+        Self { inner: conn }
+    }
+}
 
 impl sqlite::GuestConnection for SqliteConnection {
     fn open(database: String) -> Result<sqlite::Connection, sqlite::Error> {
-        let component = manifest::AppManifest::get_component().unwrap();
+        let component =
+            manifest::AppManifest::get_component().expect("component id has not been set");
         let db = component
             .sqlite_databases
             .into_iter()
@@ -388,7 +397,9 @@ impl sqlite::GuestConnection for SqliteConnection {
         if db.is_none() {
             return Err(sqlite::Error::AccessDenied);
         }
-        Ok(sqlite::Connection::new(SqliteConnection))
+        let conn =
+            rusqlite::Connection::open_in_memory().map_err(|e| sqlite::Error::Io(e.to_string()))?;
+        Ok(sqlite::Connection::new(SqliteConnection::new(conn)))
     }
 
     fn execute(
@@ -396,13 +407,49 @@ impl sqlite::GuestConnection for SqliteConnection {
         statement: String,
         parameters: Vec<sqlite::Value>,
     ) -> Result<sqlite::QueryResult, sqlite::Error> {
-        SQLITE_RESPONSES
-            .get_or_init(Default::default)
-            .lock()
-            .unwrap()
-            .remove(&(statement, parameters))
-            .transpose()?
-            .ok_or_else(|| sqlite::Error::Io("no response found for query".into()))
+        let mut prepared = self
+            .inner
+            .prepare(&statement)
+            .map_err(|e| sqlite::Error::Io(e.to_string()))?;
+        let columns = prepared
+            .column_names()
+            .into_iter()
+            .map(String::from)
+            .collect();
+        let mut result = sqlite::QueryResult {
+            columns,
+            rows: vec![],
+        };
+        let params = parameters.into_iter().map(|v| match v {
+            sqlite::Value::Integer(i) => rusqlite::types::Value::Integer(i),
+            sqlite::Value::Real(r) => rusqlite::types::Value::Real(r),
+            sqlite::Value::Text(t) => rusqlite::types::Value::Text(t),
+            sqlite::Value::Blob(b) => rusqlite::types::Value::Blob(b),
+            sqlite::Value::Null => rusqlite::types::Value::Null,
+        });
+        let rows = prepared
+            .query_map(rusqlite::params_from_iter(params), |row| {
+                let mut values = Vec::new();
+                for i in 0..row.column_count() {
+                    let v = match row.get(i)? {
+                        rusqlite::types::Value::Null => sqlite::Value::Null,
+                        rusqlite::types::Value::Integer(i) => sqlite::Value::Integer(i),
+                        rusqlite::types::Value::Real(f) => sqlite::Value::Real(f),
+                        rusqlite::types::Value::Text(s) => sqlite::Value::Text(s),
+                        rusqlite::types::Value::Blob(b) => sqlite::Value::Blob(b),
+                    };
+                    values.push(v);
+                }
+                Ok(sqlite::RowResult { values })
+            })
+            .map_err(|e| sqlite::Error::Io(e.to_string()))?;
+
+        for row in rows {
+            result
+                .rows
+                .push(row.map_err(|e| sqlite::Error::Io(e.to_string()))?);
+        }
+        Ok(result)
     }
 }
 

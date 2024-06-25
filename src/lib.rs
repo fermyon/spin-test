@@ -11,7 +11,7 @@ pub use manifest::ManifestInformation;
 /// The built `spin-test-virt` component
 const SPIN_TEST_VIRT: &[u8] = include_bytes!(concat!(
     env!("OUT_DIR"),
-    "/wasm32-unknown-unknown/release/spin_test_virt.wasm"
+    "/wasm32-wasi/release/spin_test_virt.wasm"
 ));
 /// The built `router` component
 const ROUTER: &[u8] = include_bytes!(concat!(

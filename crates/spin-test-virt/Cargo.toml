@@ -12,6 +12,7 @@ spin-outbound-networking = { workspace = true }
 spin-serde = { workspace = true }
 toml = { workspace = true }
 wit-bindgen-rt = { workspace = true }
+rusqlite = { version = "0.25", features = ["bundled", "wasm32-wasi-vfs"] }
 
 
 [lib]
