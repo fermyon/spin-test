@@ -376,30 +376,30 @@ impl sqlite::Guest for Component {
     type Connection = SqliteConnection;
 }
 
+type ConnectionPool = HashMap<String, Arc<Mutex<rusqlite::Connection>>>;
+static SQLITE_CONNECTION_POOL: std::sync::OnceLock<Mutex<ConnectionPool>> =
+    std::sync::OnceLock::new();
+
 struct SqliteConnection {
-    inner: rusqlite::Connection,
+    inner: Arc<Mutex<rusqlite::Connection>>,
 }
 
 impl SqliteConnection {
-    fn new(conn: rusqlite::Connection) -> Self {
-        Self { inner: conn }
-    }
-}
-
-impl sqlite::GuestConnection for SqliteConnection {
-    fn open(database: String) -> Result<sqlite::Connection, sqlite::Error> {
-        let component =
-            manifest::AppManifest::get_component().expect("component id has not been set");
-        let db = component
-            .sqlite_databases
-            .into_iter()
-            .find(|db| db == &database);
-        if db.is_none() {
-            return Err(sqlite::Error::AccessDenied);
-        }
-        let conn =
-            rusqlite::Connection::open_in_memory().map_err(|e| sqlite::Error::Io(e.to_string()))?;
-        Ok(sqlite::Connection::new(SqliteConnection::new(conn)))
+    fn new(database: String) -> Result<Self, sqlite::Error> {
+        let conn = match SQLITE_CONNECTION_POOL
+            .get_or_init(Default::default)
+            .lock()
+            .unwrap()
+            .entry(database)
+        {
+            std::collections::hash_map::Entry::Occupied(c) => c.get().clone(),
+            std::collections::hash_map::Entry::Vacant(_) => {
+                let conn = rusqlite::Connection::open_in_memory()
+                    .map_err(|e| sqlite::Error::Io(e.to_string()))?;
+                Arc::new(Mutex::new(conn))
+            }
+        };
+        Ok(Self { inner: conn })
     }
 
     fn execute(
@@ -407,8 +407,8 @@ impl sqlite::GuestConnection for SqliteConnection {
         statement: String,
         parameters: Vec<sqlite::Value>,
     ) -> Result<sqlite::QueryResult, sqlite::Error> {
-        let mut prepared = self
-            .inner
+        let conn = self.inner.lock().unwrap();
+        let mut prepared = conn
             .prepare(&statement)
             .map_err(|e| sqlite::Error::Io(e.to_string()))?;
         let columns = prepared
@@ -453,21 +453,48 @@ impl sqlite::GuestConnection for SqliteConnection {
     }
 }
 
-type SqliteResponses =
-    HashMap<(String, Vec<sqlite::Value>), Result<sqlite::QueryResult, sqlite::Error>>;
-static SQLITE_RESPONSES: std::sync::OnceLock<Mutex<SqliteResponses>> = std::sync::OnceLock::new();
+impl sqlite::GuestConnection for SqliteConnection {
+    fn open(database: String) -> Result<sqlite::Connection, sqlite::Error> {
+        let component =
+            manifest::AppManifest::get_component().expect("component id has not been set");
+        let db = component
+            .sqlite_databases
+            .into_iter()
+            .find(|db| db == &database);
+        if db.is_none() {
+            return Err(sqlite::Error::AccessDenied);
+        }
+        Ok(sqlite::Connection::new(SqliteConnection::new(database)?))
+    }
+
+    fn execute(
+        &self,
+        statement: String,
+        parameters: Vec<sqlite::Value>,
+    ) -> Result<sqlite::QueryResult, sqlite::Error> {
+        self.execute(statement, parameters)
+    }
+}
 
 impl spin_test_virt::sqlite::Guest for Component {
-    fn set_response(
-        query: String,
-        params: Vec<sqlite::Value>,
-        response: Result<sqlite::QueryResult, sqlite::Error>,
-    ) {
-        SQLITE_RESPONSES
-            .get_or_init(Default::default)
-            .lock()
-            .unwrap()
-            .insert((query, params), response);
+    type Connection = SqliteConnection;
+}
+
+impl spin_test_virt::sqlite::GuestConnection for SqliteConnection {
+    fn open(
+        database: String,
+    ) -> Result<spin_test_virt::sqlite::Connection, spin_test_virt::sqlite::Error> {
+        Ok(spin_test_virt::sqlite::Connection::new(
+            SqliteConnection::new(database)?,
+        ))
+    }
+
+    fn execute(
+        &self,
+        statement: String,
+        parameters: Vec<spin_test_virt::sqlite::Value>,
+    ) -> Result<spin_test_virt::sqlite::QueryResult, spin_test_virt::sqlite::Error> {
+        self.execute(statement, parameters)
     }
 }
 
