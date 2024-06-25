@@ -37,6 +37,8 @@ fn ensure_wasi_sdk() -> Vec<(&'static str, String)> {
     vec![
         ("WASI_SDK_PATH", wasi_sdk_path_string),
         ("CC_wasm32_wasi", clang_path_string),
+        ("LIBSQLITE3_FLAGS", "-DSQLITE_OS_OTHER -USQLITE_TEMP_STORE -DSQLITE_TEMP_STORE=3 -USQLITE_THREADSAFE 
+        -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOCALTIME -DSQLITE_OMIT_LOAD_EXTENSION -DLONGDOUBLE_TYPE=double".to_string()),
     ]
 }
 

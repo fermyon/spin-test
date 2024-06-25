@@ -430,7 +430,7 @@ impl SqliteConnection {
         let rows = prepared
             .query_map(rusqlite::params_from_iter(params), |row| {
                 let mut values = Vec::new();
-                for i in 0..row.column_count() {
+                for i in 0..result.columns.len() {
                     let v = match row.get(i)? {
                         rusqlite::types::Value::Null => sqlite::Value::Null,
                         rusqlite::types::Value::Integer(i) => sqlite::Value::Integer(i),

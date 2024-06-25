@@ -32,7 +32,10 @@ pub(crate) struct SpinTest {
 
 impl SpinTest {
     pub fn new(manifest: String, component_path: PathBuf) -> anyhow::Result<Self> {
-        let engine = wasmtime::Engine::default();
+        let mut engine_config = wasmtime::Config::new();
+        engine_config.cache_config_load_default()?;
+        let engine = wasmtime::Engine::new(&engine_config)?;
+
         let mut store = wasmtime::Store::new(&engine, super::StoreData::new(manifest));
         let mut linker = wasmtime::component::Linker::new(&engine);
         let component = spin_test::Component::from_file(component_path)?;
@@ -46,6 +49,7 @@ impl SpinTest {
 
         Ok(Self { instance, store })
     }
+
     /// Make an HTTP request against the `spin-test` runtime
     pub fn make_http_request(
         &mut self,
