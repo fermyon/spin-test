@@ -75,3 +75,7 @@ spin test
 ## Examples
 
 See the [`examples`](./examples/) directory for a few examples of `spin-test` tests that test the apps in the [`apps`](./examples/apps/) directory.
+
+## Building from source and contributing
+
+See the [guide on contributing for more information](./CONTRIBUTING.md).

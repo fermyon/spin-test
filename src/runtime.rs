@@ -33,7 +33,9 @@ impl Runtime {
         if std::env::var("SPIN_TEST_DUMP_COMPOSITION").is_ok() {
             let _ = std::fs::write("composition.wasm", composed_component);
         }
-        let engine = wasmtime::Engine::default();
+        let mut engine_config = wasmtime::Config::new();
+        engine_config.cache_config_load_default()?;
+        let engine = wasmtime::Engine::new(&engine_config)?;
         let store = wasmtime::Store::new(&engine, Data::new(manifest.raw().to_owned()));
 
         let component = wasmtime::component::Component::new(&engine, composed_component)

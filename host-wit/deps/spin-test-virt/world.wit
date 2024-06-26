@@ -26,9 +26,18 @@ world env {
 /// Interface for configuring the behavior of `fermyon:spin/sqlite` interface
 interface sqlite {
     use fermyon:spin/sqlite@2.0.0.{value, query-result, error};
+  
+    resource connection {
+      /// Open a connection to a named database instance.
+      ///
+      /// If `database` is "default", the default instance is opened.
+      ///
+      /// `error::no-such-database` will be raised if the `name` is not recognized.
+      open: static func(database: string) -> result<connection, error>;
 
-    /// Set a response for a given query and set of params
-    set-response: func(query: string, params: list<value>, response: result<query-result, error>);
+      /// Execute a statement returning back data if there is any
+      execute: func(statement: string, parameters: list<value>) -> result<query-result, error>;
+    }
 }
 
 

@@ -15136,25 +15136,233 @@ pub mod exports {
                 pub type QueryResult =
                     super::super::super::super::exports::fermyon::spin::sqlite::QueryResult;
                 pub type Error = super::super::super::super::exports::fermyon::spin::sqlite::Error;
+
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct Connection {
+                    handle: _rt::Resource<Connection>,
+                }
+
+                type _ConnectionRep<T> = Option<T>;
+
+                impl Connection {
+                    /// Creates a new resource from the specified representation.
+                    ///
+                    /// This function will create a new resource handle by moving `val` onto
+                    /// the heap and then passing that heap pointer to the component model to
+                    /// create a handle. The owned handle is then returned as `Connection`.
+                    pub fn new<T: GuestConnection>(val: T) -> Self {
+                        Self::type_guard::<T>();
+                        let val: _ConnectionRep<T> = Some(val);
+                        let ptr: *mut _ConnectionRep<T> = _rt::Box::into_raw(_rt::Box::new(val));
+                        unsafe { Self::from_handle(T::_resource_new(ptr.cast())) }
+                    }
+
+                    /// Gets access to the underlying `T` which represents this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &*self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    /// Gets mutable access to the underlying `T` which represents this
+                    /// resource.
+                    pub fn get_mut<T: GuestConnection>(&mut self) -> &mut T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_mut().unwrap()
+                    }
+
+                    /// Consumes this resource and returns the underlying `T`.
+                    pub fn into_inner<T: GuestConnection>(self) -> T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.take().unwrap()
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn from_handle(handle: u32) -> Self {
+                        Self {
+                            handle: _rt::Resource::from_handle(handle),
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub fn take_handle(&self) -> u32 {
+                        _rt::Resource::take_handle(&self.handle)
+                    }
+
+                    #[doc(hidden)]
+                    pub fn handle(&self) -> u32 {
+                        _rt::Resource::handle(&self.handle)
+                    }
+
+                    // It's theoretically possible to implement the `GuestConnection` trait twice
+                    // so guard against using it with two different types here.
+                    #[doc(hidden)]
+                    fn type_guard<T: 'static>() {
+                        use core::any::TypeId;
+                        static mut LAST_TYPE: Option<TypeId> = None;
+                        unsafe {
+                            assert!(!cfg!(target_feature = "threads"));
+                            let id = TypeId::of::<T>();
+                            match LAST_TYPE {
+                                Some(ty) => assert!(
+                                    ty == id,
+                                    "cannot use two types with this resource type"
+                                ),
+                                None => LAST_TYPE = Some(id),
+                            }
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    pub unsafe fn dtor<T: 'static>(handle: *mut u8) {
+                        Self::type_guard::<T>();
+                        let _ = _rt::Box::from_raw(handle as *mut _ConnectionRep<T>);
+                    }
+
+                    fn as_ptr<T: GuestConnection>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        T::_resource_rep(self.handle()).cast()
+                    }
+                }
+
+                /// A borrowed version of [`Connection`] which represents a borrowed value
+                /// with the lifetime `'a`.
+                #[derive(Debug)]
+                #[repr(transparent)]
+                pub struct ConnectionBorrow<'a> {
+                    rep: *mut u8,
+                    _marker: core::marker::PhantomData<&'a Connection>,
+                }
+
+                impl<'a> ConnectionBorrow<'a> {
+                    #[doc(hidden)]
+                    pub unsafe fn lift(rep: usize) -> Self {
+                        Self {
+                            rep: rep as *mut u8,
+                            _marker: core::marker::PhantomData,
+                        }
+                    }
+
+                    /// Gets access to the underlying `T` in this resource.
+                    pub fn get<T: GuestConnection>(&self) -> &T {
+                        let ptr = unsafe { &mut *self.as_ptr::<T>() };
+                        ptr.as_ref().unwrap()
+                    }
+
+                    // NB: mutable access is not allowed due to the component model allowing
+                    // multiple borrows of the same resource.
+
+                    fn as_ptr<T: 'static>(&self) -> *mut _ConnectionRep<T> {
+                        Connection::type_guard::<T>();
+                        self.rep.cast()
+                    }
+                }
+
+                unsafe impl _rt::WasmResource for Connection {
+                    #[inline]
+                    unsafe fn drop(_handle: u32) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unreachable!();
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin-test-virt/sqlite")]
+                            extern "C" {
+                                #[link_name = "[resource-drop]connection"]
+                                fn drop(_: u32);
+                            }
+
+                            drop(_handle);
+                        }
+                    }
+                }
+
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
-                pub unsafe fn _export_set_response_cabi<T: Guest>(
+                pub unsafe fn _export_static_connection_open_cabi<T: GuestConnection>(
                     arg0: *mut u8,
                     arg1: usize,
-                    arg2: *mut u8,
-                    arg3: usize,
-                    arg4: i32,
-                    arg5: *mut u8,
-                    arg6: *mut u8,
-                    arg7: *mut u8,
-                    arg8: usize,
-                ) {
+                ) -> *mut u8 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
                     let len0 = arg1;
                     let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
-                    let base11 = arg2;
-                    let len11 = arg3;
+                    let result1 = T::open(_rt::string_lift(bytes0));
+                    let ptr2 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result1 {
+                        Ok(e) => {
+                            *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+                            *ptr2.add(4).cast::<i32>() = (e).take_handle() as i32;
+                        }
+                        Err(e) => {
+                            *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+                            use super::super::super::super::exports::fermyon::spin::sqlite::Error as V4;
+                            match e {
+                                V4::NoSuchDatabase => {
+                                    *ptr2.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                V4::AccessDenied => {
+                                    *ptr2.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                V4::InvalidConnection => {
+                                    *ptr2.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                V4::DatabaseFull => {
+                                    *ptr2.add(4).cast::<u8>() = (3i32) as u8;
+                                }
+                                V4::Io(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (4i32) as u8;
+                                    let vec3 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr3 = vec3.as_ptr().cast::<u8>();
+                                    let len3 = vec3.len();
+                                    ::core::mem::forget(vec3);
+                                    *ptr2.add(12).cast::<usize>() = len3;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr3.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr2
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_static_connection_open<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l1 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                3 => (),
+                                _ => {
+                                    let l2 = *arg0.add(8).cast::<*mut u8>();
+                                    let l3 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l2, l3, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_method_connection_execute_cabi<T: GuestConnection>(
+                    arg0: *mut u8,
+                    arg1: *mut u8,
+                    arg2: usize,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg2;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg1.cast(), len0, len0);
+                    let base11 = arg3;
+                    let len11 = arg4;
                     let mut result11 = _rt::Vec::with_capacity(len11);
                     for i in 0..len11 {
                         let base = base11.add(i * 16);
@@ -15211,181 +15419,333 @@ pub mod exports {
                         result11.push(e11);
                     }
                     _rt::cabi_dealloc(base11, len11 * 16, 8);
-                    T::set_response(
+                    let result12 = T::execute(
+                        ConnectionBorrow::lift(arg0 as u32 as usize).get(),
                         _rt::string_lift(bytes0),
                         result11,
-                        match arg4 {
-                            0 => {
-                                let e = {
-                                    let base15 = arg5;
-                                    let len15 = arg6 as usize;
-                                    let mut result15 = _rt::Vec::with_capacity(len15);
-                                    for i in 0..len15 {
-                                        let base = base15.add(i * 8);
-                                        let e15 = {
-                                            let l12 = *base.add(0).cast::<*mut u8>();
-                                            let l13 = *base.add(4).cast::<usize>();
-                                            let len14 = l13;
-                                            let bytes14 =
-                                                _rt::Vec::from_raw_parts(l12.cast(), len14, len14);
-
-                                            _rt::string_lift(bytes14)
-                                        };
-                                        result15.push(e15);
-                                    }
-                                    _rt::cabi_dealloc(base15, len15 * 8, 4);
-                                    let base29 = arg7;
-                                    let len29 = arg8;
-                                    let mut result29 = _rt::Vec::with_capacity(len29);
-                                    for i in 0..len29 {
-                                        let base = base29.add(i * 8);
-                                        let e29 = {
-                                            let l16 = *base.add(0).cast::<*mut u8>();
-                                            let l17 = *base.add(4).cast::<usize>();
-                                            let base28 = l16;
-                                            let len28 = l17;
-                                            let mut result28 = _rt::Vec::with_capacity(len28);
-                                            for i in 0..len28 {
-                                                let base = base28.add(i * 16);
-                                                let e28 = {
-                                                    let l18 = i32::from(*base.add(0).cast::<u8>());
-                                                    use super::super::super::super::exports::fermyon::spin::sqlite::Value as V27;
-                                                    let v27 = match l18 {
-                                                        0 => {
-                                                            let e27 = {
-                                                                let l19 =
-                                                                    *base.add(8).cast::<i64>();
-
-                                                                l19
-                                                            };
-                                                            V27::Integer(e27)
-                                                        }
-                                                        1 => {
-                                                            let e27 = {
-                                                                let l20 =
-                                                                    *base.add(8).cast::<f64>();
-
-                                                                l20
-                                                            };
-                                                            V27::Real(e27)
-                                                        }
-                                                        2 => {
-                                                            let e27 = {
-                                                                let l21 =
-                                                                    *base.add(8).cast::<*mut u8>();
-                                                                let l22 =
-                                                                    *base.add(12).cast::<usize>();
-                                                                let len23 = l22;
-                                                                let bytes23 =
-                                                                    _rt::Vec::from_raw_parts(
-                                                                        l21.cast(),
-                                                                        len23,
-                                                                        len23,
-                                                                    );
-
-                                                                _rt::string_lift(bytes23)
-                                                            };
-                                                            V27::Text(e27)
-                                                        }
-                                                        3 => {
-                                                            let e27 = {
-                                                                let l24 =
-                                                                    *base.add(8).cast::<*mut u8>();
-                                                                let l25 =
-                                                                    *base.add(12).cast::<usize>();
-                                                                let len26 = l25;
-
-                                                                _rt::Vec::from_raw_parts(
-                                                                    l24.cast(),
-                                                                    len26,
-                                                                    len26,
-                                                                )
-                                                            };
-                                                            V27::Blob(e27)
-                                                        }
-                                                        n => {
-                                                            debug_assert_eq!(
-                                                                n, 4,
-                                                                "invalid enum discriminant"
-                                                            );
-                                                            V27::Null
-                                                        }
-                                                    };
-
-                                                    v27
-                                                };
-                                                result28.push(e28);
-                                            }
-                                            _rt::cabi_dealloc(base28, len28 * 16, 8);
-
-                                            super::super::super::super::exports::fermyon::spin::sqlite::RowResult{
-              values: result28,
-            }
-                                        };
-                                        result29.push(e29);
-                                    }
-                                    _rt::cabi_dealloc(base29, len29 * 8, 4);
-
-                                    super::super::super::super::exports::fermyon::spin::sqlite::QueryResult{
-          columns: result15,
-          rows: result29,
-        }
-                                };
-                                Ok(e)
+                    );
+                    let ptr13 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result12 {
+                        Ok(e) => {
+                            *ptr13.add(0).cast::<u8>() = (0i32) as u8;
+                            let super::super::super::super::exports::fermyon::spin::sqlite::QueryResult{ columns:columns14, rows:rows14, } = e;
+                            let vec16 = columns14;
+                            let len16 = vec16.len();
+                            let layout16 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec16.len() * 8, 4);
+                            let result16 = if layout16.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout16).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout16);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec16.into_iter().enumerate() {
+                                let base = result16.add(i * 8);
+                                {
+                                    let vec15 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr15 = vec15.as_ptr().cast::<u8>();
+                                    let len15 = vec15.len();
+                                    ::core::mem::forget(vec15);
+                                    *base.add(4).cast::<usize>() = len15;
+                                    *base.add(0).cast::<*mut u8>() = ptr15.cast_mut();
+                                }
                             }
-                            1 => {
-                                let e = {
-                                    use super::super::super::super::exports::fermyon::spin::sqlite::Error as V31;
-                                    let v31 = match arg5 as i32 {
-                                        0 => V31::NoSuchDatabase,
-                                        1 => V31::AccessDenied,
-                                        2 => V31::InvalidConnection,
-                                        3 => V31::DatabaseFull,
-                                        n => {
-                                            debug_assert_eq!(n, 4, "invalid enum discriminant");
-                                            let e31 = {
-                                                let len30 = arg7 as usize;
-                                                let bytes30 = _rt::Vec::from_raw_parts(
-                                                    arg6.cast(),
-                                                    len30,
-                                                    len30,
-                                                );
-
-                                                _rt::string_lift(bytes30)
-                                            };
-                                            V31::Io(e31)
+                            *ptr13.add(8).cast::<usize>() = len16;
+                            *ptr13.add(4).cast::<*mut u8>() = result16;
+                            let vec22 = rows14;
+                            let len22 = vec22.len();
+                            let layout22 =
+                                _rt::alloc::Layout::from_size_align_unchecked(vec22.len() * 8, 4);
+                            let result22 = if layout22.size() != 0 {
+                                let ptr = _rt::alloc::alloc(layout22).cast::<u8>();
+                                if ptr.is_null() {
+                                    _rt::alloc::handle_alloc_error(layout22);
+                                }
+                                ptr
+                            } else {
+                                {
+                                    ::core::ptr::null_mut()
+                                }
+                            };
+                            for (i, e) in vec22.into_iter().enumerate() {
+                                let base = result22.add(i * 8);
+                                {
+                                    let super::super::super::super::exports::fermyon::spin::sqlite::RowResult{ values:values17, } = e;
+                                    let vec21 = values17;
+                                    let len21 = vec21.len();
+                                    let layout21 = _rt::alloc::Layout::from_size_align_unchecked(
+                                        vec21.len() * 16,
+                                        8,
+                                    );
+                                    let result21 = if layout21.size() != 0 {
+                                        let ptr = _rt::alloc::alloc(layout21).cast::<u8>();
+                                        if ptr.is_null() {
+                                            _rt::alloc::handle_alloc_error(layout21);
+                                        }
+                                        ptr
+                                    } else {
+                                        {
+                                            ::core::ptr::null_mut()
                                         }
                                     };
-
-                                    v31
-                                };
-                                Err(e)
+                                    for (i, e) in vec21.into_iter().enumerate() {
+                                        let base = result21.add(i * 16);
+                                        {
+                                            use super::super::super::super::exports::fermyon::spin::sqlite::Value as V20;
+                                            match e {
+                                                V20::Integer(e) => {
+                                                    *base.add(0).cast::<u8>() = (0i32) as u8;
+                                                    *base.add(8).cast::<i64>() = _rt::as_i64(e);
+                                                }
+                                                V20::Real(e) => {
+                                                    *base.add(0).cast::<u8>() = (1i32) as u8;
+                                                    *base.add(8).cast::<f64>() = _rt::as_f64(e);
+                                                }
+                                                V20::Text(e) => {
+                                                    *base.add(0).cast::<u8>() = (2i32) as u8;
+                                                    let vec18 = (e.into_bytes()).into_boxed_slice();
+                                                    let ptr18 = vec18.as_ptr().cast::<u8>();
+                                                    let len18 = vec18.len();
+                                                    ::core::mem::forget(vec18);
+                                                    *base.add(12).cast::<usize>() = len18;
+                                                    *base.add(8).cast::<*mut u8>() =
+                                                        ptr18.cast_mut();
+                                                }
+                                                V20::Blob(e) => {
+                                                    *base.add(0).cast::<u8>() = (3i32) as u8;
+                                                    let vec19 = (e).into_boxed_slice();
+                                                    let ptr19 = vec19.as_ptr().cast::<u8>();
+                                                    let len19 = vec19.len();
+                                                    ::core::mem::forget(vec19);
+                                                    *base.add(12).cast::<usize>() = len19;
+                                                    *base.add(8).cast::<*mut u8>() =
+                                                        ptr19.cast_mut();
+                                                }
+                                                V20::Null => {
+                                                    *base.add(0).cast::<u8>() = (4i32) as u8;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    *base.add(4).cast::<usize>() = len21;
+                                    *base.add(0).cast::<*mut u8>() = result21;
+                                }
                             }
-                            _ => _rt::invalid_enum_discriminant(),
-                        },
-                    );
+                            *ptr13.add(16).cast::<usize>() = len22;
+                            *ptr13.add(12).cast::<*mut u8>() = result22;
+                        }
+                        Err(e) => {
+                            *ptr13.add(0).cast::<u8>() = (1i32) as u8;
+                            use super::super::super::super::exports::fermyon::spin::sqlite::Error as V24;
+                            match e {
+                                V24::NoSuchDatabase => {
+                                    *ptr13.add(4).cast::<u8>() = (0i32) as u8;
+                                }
+                                V24::AccessDenied => {
+                                    *ptr13.add(4).cast::<u8>() = (1i32) as u8;
+                                }
+                                V24::InvalidConnection => {
+                                    *ptr13.add(4).cast::<u8>() = (2i32) as u8;
+                                }
+                                V24::DatabaseFull => {
+                                    *ptr13.add(4).cast::<u8>() = (3i32) as u8;
+                                }
+                                V24::Io(e) => {
+                                    *ptr13.add(4).cast::<u8>() = (4i32) as u8;
+                                    let vec23 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr23 = vec23.as_ptr().cast::<u8>();
+                                    let len23 = vec23.len();
+                                    ::core::mem::forget(vec23);
+                                    *ptr13.add(12).cast::<usize>() = len23;
+                                    *ptr13.add(8).cast::<*mut u8>() = ptr23.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr13
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_method_connection_execute<T: GuestConnection>(
+                    arg0: *mut u8,
+                ) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => {
+                            let l3 = *arg0.add(4).cast::<*mut u8>();
+                            let l4 = *arg0.add(8).cast::<usize>();
+                            let base5 = l3;
+                            let len5 = l4;
+                            for i in 0..len5 {
+                                let base = base5.add(i * 8);
+                                {
+                                    let l1 = *base.add(0).cast::<*mut u8>();
+                                    let l2 = *base.add(4).cast::<usize>();
+                                    _rt::cabi_dealloc(l1, l2, 1);
+                                }
+                            }
+                            _rt::cabi_dealloc(base5, len5 * 8, 4);
+                            let l15 = *arg0.add(12).cast::<*mut u8>();
+                            let l16 = *arg0.add(16).cast::<usize>();
+                            let base17 = l15;
+                            let len17 = l16;
+                            for i in 0..len17 {
+                                let base = base17.add(i * 8);
+                                {
+                                    let l12 = *base.add(0).cast::<*mut u8>();
+                                    let l13 = *base.add(4).cast::<usize>();
+                                    let base14 = l12;
+                                    let len14 = l13;
+                                    for i in 0..len14 {
+                                        let base = base14.add(i * 16);
+                                        {
+                                            let l6 = i32::from(*base.add(0).cast::<u8>());
+                                            match l6 {
+                                                0 => (),
+                                                1 => (),
+                                                2 => {
+                                                    let l7 = *base.add(8).cast::<*mut u8>();
+                                                    let l8 = *base.add(12).cast::<usize>();
+                                                    _rt::cabi_dealloc(l7, l8, 1);
+                                                }
+                                                3 => {
+                                                    let l9 = *base.add(8).cast::<*mut u8>();
+                                                    let l10 = *base.add(12).cast::<usize>();
+                                                    let base11 = l9;
+                                                    let len11 = l10;
+                                                    _rt::cabi_dealloc(base11, len11 * 1, 1);
+                                                }
+                                                _ => (),
+                                            }
+                                        }
+                                    }
+                                    _rt::cabi_dealloc(base14, len14 * 16, 8);
+                                }
+                            }
+                            _rt::cabi_dealloc(base17, len17 * 8, 4);
+                        }
+                        _ => {
+                            let l18 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l18 {
+                                0 => (),
+                                1 => (),
+                                2 => (),
+                                3 => (),
+                                _ => {
+                                    let l19 = *arg0.add(8).cast::<*mut u8>();
+                                    let l20 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l19, l20, 1);
+                                }
+                            }
+                        }
+                    }
                 }
                 pub trait Guest {
-                    /// Set a response for a given query and set of params
-                    fn set_response(
-                        query: _rt::String,
-                        params: _rt::Vec<Value>,
-                        response: Result<QueryResult, Error>,
-                    );
+                    type Connection: GuestConnection;
+                }
+                pub trait GuestConnection: 'static {
+                    #[doc(hidden)]
+                    unsafe fn _resource_new(val: *mut u8) -> u32
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = val;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin-test-virt/sqlite")]
+                            extern "C" {
+                                #[link_name = "[resource-new]connection"]
+                                fn new(_: *mut u8) -> u32;
+                            }
+                            new(val)
+                        }
+                    }
+
+                    #[doc(hidden)]
+                    fn _resource_rep(handle: u32) -> *mut u8
+                    where
+                        Self: Sized,
+                    {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let _ = handle;
+                            unreachable!();
+                        }
+
+                        #[cfg(target_arch = "wasm32")]
+                        {
+                            #[link(wasm_import_module = "[export]fermyon:spin-test-virt/sqlite")]
+                            extern "C" {
+                                #[link_name = "[resource-rep]connection"]
+                                fn rep(_: u32) -> *mut u8;
+                            }
+                            unsafe { rep(handle) }
+                        }
+                    }
+
+                    /// Open a connection to a named database instance.
+                    ///
+                    /// If `database` is "default", the default instance is opened.
+                    ///
+                    /// `error::no-such-database` will be raised if the `name` is not recognized.
+                    fn open(database: _rt::String) -> Result<Connection, Error>;
+                    /// Execute a statement returning back data if there is any
+                    fn execute(
+                        &self,
+                        statement: _rt::String,
+                        parameters: _rt::Vec<Value>,
+                    ) -> Result<QueryResult, Error>;
                 }
                 #[doc(hidden)]
 
                 macro_rules! __export_fermyon_spin_test_virt_sqlite_cabi{
   ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-    #[export_name = "fermyon:spin-test-virt/sqlite#set-response"]
-    unsafe extern "C" fn export_set_response(arg0: *mut u8,arg1: usize,arg2: *mut u8,arg3: usize,arg4: i32,arg5: *mut u8,arg6: *mut u8,arg7: *mut u8,arg8: usize,) {
-      $($path_to_types)*::_export_set_response_cabi::<$ty>(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+    #[export_name = "fermyon:spin-test-virt/sqlite#[static]connection.open"]
+    unsafe extern "C" fn export_static_connection_open(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_static_connection_open_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1)
     }
+    #[export_name = "cabi_post_fermyon:spin-test-virt/sqlite#[static]connection.open"]
+    unsafe extern "C" fn _post_return_static_connection_open(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_static_connection_open::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+    #[export_name = "fermyon:spin-test-virt/sqlite#[method]connection.execute"]
+    unsafe extern "C" fn export_method_connection_execute(arg0: *mut u8,arg1: *mut u8,arg2: usize,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_method_connection_execute_cabi::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_fermyon:spin-test-virt/sqlite#[method]connection.execute"]
+    unsafe extern "C" fn _post_return_method_connection_execute(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_method_connection_execute::<<$ty as $($path_to_types)*::Guest>::Connection>(arg0)
+    }
+
+    const _: () = {
+      #[doc(hidden)]
+      #[export_name = "fermyon:spin-test-virt/sqlite#[dtor]connection"]
+      #[allow(non_snake_case)]
+      unsafe extern "C" fn dtor(rep: *mut u8) {
+        $($path_to_types)*::Connection::dtor::<
+        <$ty as $($path_to_types)*::Guest>::Connection
+        >(rep)
+      }
+    };
+
   };);
 }
                 #[doc(hidden)]
                 pub(crate) use __export_fermyon_spin_test_virt_sqlite_cabi;
+                #[repr(align(4))]
+                struct _RetArea([::core::mem::MaybeUninit<u8>; 20]);
+                static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 20]);
             }
         }
         #[allow(dead_code)]
@@ -34359,8 +34719,8 @@ pub(crate) use __export_env_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:env:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 27999] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe4\xd9\x01\x01A\x02\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 28087] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xbc\xda\x01\x01A\x02\
 \x01A\xa0\x01\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\
 \x04\0\x16[method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[me\
 thod]pollable.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04pol\
@@ -34602,333 +34962,335 @@ k\x01\x01@\x02\x04self\x07\x03keys\0\x09\x04\0\x11[method]store.get\x01\x0a\x01@
 @\x02\x04self\x07\x03keys\x01\0\x04\0\x14[method]store.delete\x01\x0c\x01p\x04\x01\
 o\x02s\x0d\x01p\x0e\x01@\0\0\x0f\x04\0\x05calls\x01\x10\x01@\0\x01\0\x04\0\x0bre\
 set-calls\x01\x11\x04\x01\x20fermyon:spin-test-virt/key-value\x05(\x02\x03\0\x1a\
-\x05value\x02\x03\0\x1a\x0cquery-result\x02\x03\0\x1a\x05error\x01B\x0a\x02\x03\x02\
+\x05value\x02\x03\0\x1a\x0cquery-result\x02\x03\0\x1a\x05error\x01B\x10\x02\x03\x02\
 \x01)\x04\0\x05value\x03\0\0\x02\x03\x02\x01*\x04\0\x0cquery-result\x03\0\x02\x02\
-\x03\x02\x01+\x04\0\x05error\x03\0\x04\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x05\
-querys\x06params\x06\x08response\x07\x01\0\x04\0\x0cset-response\x01\x08\x04\x01\
-\x1dfermyon:spin-test-virt/sqlite\x05,\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\
-\x01@\x01\x04self\x01\0\x7f\x04\0\x16[method]pollable.ready\x01\x02\x01@\x01\x04\
-self\x01\x01\0\x04\0\x16[method]pollable.block\x01\x03\x01p\x01\x01py\x01@\x01\x02\
-in\x04\0\x05\x04\0\x04poll\x01\x06\x04\x01\x12wasi:io/poll@0.2.0\x05-\x01B\x0f\x02\
-\x03\x02\x01\x01\x04\0\x08pollable\x03\0\0\x01w\x04\0\x07instant\x03\0\x02\x01w\x04\
-\0\x08duration\x03\0\x04\x01@\0\0\x03\x04\0\x03now\x01\x06\x01@\0\0\x05\x04\0\x0a\
-resolution\x01\x07\x01i\x01\x01@\x01\x04when\x03\0\x08\x04\0\x11subscribe-instan\
-t\x01\x09\x01@\x01\x04when\x05\0\x08\x04\0\x12subscribe-duration\x01\x0a\x04\x01\
-!wasi:clocks/monotonic-clock@0.2.0\x05.\x01B\x05\x01r\x02\x07secondsw\x0bnanosec\
-ondsy\x04\0\x08datetime\x03\0\0\x01@\0\0\x01\x04\0\x03now\x01\x02\x04\0\x0aresol\
-ution\x01\x02\x04\x01\x1cwasi:clocks/wall-clock@0.2.0\x05/\x01B\x05\x01p}\x01@\x01\
-\x03lenw\0\0\x04\0\x10get-random-bytes\x01\x01\x01@\0\0w\x04\0\x0eget-random-u64\
-\x01\x02\x04\x01\x18wasi:random/random@0.2.0\x050\x01B\x05\x01p}\x01@\x01\x03len\
-w\0\0\x04\0\x19get-insecure-random-bytes\x01\x01\x01@\0\0w\x04\0\x17get-insecure\
--random-u64\x01\x02\x04\x01\x1awasi:random/insecure@0.2.0\x051\x01B\x03\x01o\x02\
-ww\x01@\0\0\0\x04\0\x0dinsecure-seed\x01\x01\x04\x01\x1fwasi:random/insecure-see\
-d@0.2.0\x052\x01B\x04\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\0\
-\x1d[method]error.to-debug-string\x01\x02\x04\x01\x13wasi:io/error@0.2.0\x053\x01\
-B(\x02\x03\x02\x01\x08\x04\0\x05error\x03\0\0\x02\x03\x02\x01\x01\x04\0\x08polla\
-ble\x03\0\x02\x01i\x01\x01q\x02\x15last-operation-failed\x01\x04\0\x06closed\0\0\
-\x04\0\x0cstream-error\x03\0\x05\x04\0\x0cinput-stream\x03\x01\x04\0\x0doutput-s\
-tream\x03\x01\x01h\x07\x01p}\x01j\x01\x0a\x01\x06\x01@\x02\x04self\x09\x03lenw\0\
-\x0b\x04\0\x19[method]input-stream.read\x01\x0c\x04\0\"[method]input-stream.bloc\
-king-read\x01\x0c\x01j\x01w\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0d\x04\0\x19\
-[method]input-stream.skip\x01\x0e\x04\0\"[method]input-stream.blocking-skip\x01\x0e\
-\x01i\x03\x01@\x01\x04self\x09\0\x0f\x04\0\x1e[method]input-stream.subscribe\x01\
-\x10\x01h\x08\x01@\x01\x04self\x11\0\x0d\x04\0![method]output-stream.check-write\
-\x01\x12\x01j\0\x01\x06\x01@\x02\x04self\x11\x08contents\x0a\0\x13\x04\0\x1b[met\
-hod]output-stream.write\x01\x14\x04\0.[method]output-stream.blocking-write-and-f\
-lush\x01\x14\x01@\x01\x04self\x11\0\x13\x04\0\x1b[method]output-stream.flush\x01\
-\x15\x04\0$[method]output-stream.blocking-flush\x01\x15\x01@\x01\x04self\x11\0\x0f\
-\x04\0\x1f[method]output-stream.subscribe\x01\x16\x01@\x02\x04self\x11\x03lenw\0\
-\x13\x04\0\"[method]output-stream.write-zeroes\x01\x17\x04\05[method]output-stre\
-am.blocking-write-zeroes-and-flush\x01\x17\x01@\x03\x04self\x11\x03src\x09\x03le\
-nw\0\x0d\x04\0\x1c[method]output-stream.splice\x01\x18\x04\0%[method]output-stre\
-am.blocking-splice\x01\x18\x04\x01\x15wasi:io/streams@0.2.0\x054\x02\x03\0%\x05e\
-rror\x02\x03\0\x20\x08datetime\x01Br\x02\x03\x02\x01\x0c\x04\0\x0cinput-stream\x03\
-\0\0\x02\x03\x02\x01\x0a\x04\0\x0doutput-stream\x03\0\x02\x02\x03\x02\x015\x04\0\
-\x05error\x03\0\x04\x02\x03\x02\x016\x04\0\x08datetime\x03\0\x06\x01w\x04\0\x08f\
-ilesize\x03\0\x08\x01m\x08\x07unknown\x0cblock-device\x10character-device\x09dir\
-ectory\x04fifo\x0dsymbolic-link\x0cregular-file\x06socket\x04\0\x0fdescriptor-ty\
-pe\x03\0\x0a\x01n\x06\x04read\x05write\x13file-integrity-sync\x13data-integrity-\
-sync\x14requested-write-sync\x10mutate-directory\x04\0\x10descriptor-flags\x03\0\
-\x0c\x01n\x01\x0esymlink-follow\x04\0\x0apath-flags\x03\0\x0e\x01n\x04\x06create\
-\x09directory\x09exclusive\x08truncate\x04\0\x0aopen-flags\x03\0\x10\x01w\x04\0\x0a\
-link-count\x03\0\x12\x01k\x07\x01r\x06\x04type\x0b\x0alink-count\x13\x04size\x09\
-\x15data-access-timestamp\x14\x1bdata-modification-timestamp\x14\x17status-chang\
-e-timestamp\x14\x04\0\x0fdescriptor-stat\x03\0\x15\x01q\x03\x09no-change\0\0\x03\
-now\0\0\x09timestamp\x01\x07\0\x04\0\x0dnew-timestamp\x03\0\x17\x01r\x02\x04type\
-\x0b\x04names\x04\0\x0fdirectory-entry\x03\0\x19\x01m%\x06access\x0bwould-block\x07\
-already\x0ebad-descriptor\x04busy\x08deadlock\x05quota\x05exist\x0efile-too-larg\
-e\x15illegal-byte-sequence\x0bin-progress\x0binterrupted\x07invalid\x02io\x0cis-\
-directory\x04loop\x0etoo-many-links\x0cmessage-size\x0dname-too-long\x09no-devic\
-e\x08no-entry\x07no-lock\x13insufficient-memory\x12insufficient-space\x0dnot-dir\
-ectory\x09not-empty\x0fnot-recoverable\x0bunsupported\x06no-tty\x0eno-such-devic\
-e\x08overflow\x0dnot-permitted\x04pipe\x09read-only\x0cinvalid-seek\x0etext-file\
--busy\x0ccross-device\x04\0\x0aerror-code\x03\0\x1b\x01m\x06\x06normal\x0asequen\
-tial\x06random\x09will-need\x09dont-need\x08no-reuse\x04\0\x06advice\x03\0\x1d\x01\
-r\x02\x05lowerw\x05upperw\x04\0\x13metadata-hash-value\x03\0\x1f\x04\0\x0adescri\
-ptor\x03\x01\x04\0\x16directory-entry-stream\x03\x01\x01h!\x01i\x01\x01j\x01$\x01\
-\x1c\x01@\x02\x04self#\x06offset\x09\0%\x04\0\"[method]descriptor.read-via-strea\
-m\x01&\x01i\x03\x01j\x01'\x01\x1c\x01@\x02\x04self#\x06offset\x09\0(\x04\0#[meth\
-od]descriptor.write-via-stream\x01)\x01@\x01\x04self#\0(\x04\0$[method]descripto\
-r.append-via-stream\x01*\x01j\0\x01\x1c\x01@\x04\x04self#\x06offset\x09\x06lengt\
-h\x09\x06advice\x1e\0+\x04\0\x19[method]descriptor.advise\x01,\x01@\x01\x04self#\
-\0+\x04\0\x1c[method]descriptor.sync-data\x01-\x01j\x01\x0d\x01\x1c\x01@\x01\x04\
-self#\0.\x04\0\x1c[method]descriptor.get-flags\x01/\x01j\x01\x0b\x01\x1c\x01@\x01\
-\x04self#\00\x04\0\x1b[method]descriptor.get-type\x011\x01@\x02\x04self#\x04size\
-\x09\0+\x04\0\x1b[method]descriptor.set-size\x012\x01@\x03\x04self#\x15data-acce\
-ss-timestamp\x18\x1bdata-modification-timestamp\x18\0+\x04\0\x1c[method]descript\
-or.set-times\x013\x01p}\x01o\x024\x7f\x01j\x015\x01\x1c\x01@\x03\x04self#\x06len\
-gth\x09\x06offset\x09\06\x04\0\x17[method]descriptor.read\x017\x01j\x01\x09\x01\x1c\
-\x01@\x03\x04self#\x06buffer4\x06offset\x09\08\x04\0\x18[method]descriptor.write\
-\x019\x01i\"\x01j\x01:\x01\x1c\x01@\x01\x04self#\0;\x04\0![method]descriptor.rea\
-d-directory\x01<\x04\0\x17[method]descriptor.sync\x01-\x01@\x02\x04self#\x04path\
-s\0+\x04\0&[method]descriptor.create-directory-at\x01=\x01j\x01\x16\x01\x1c\x01@\
-\x01\x04self#\0>\x04\0\x17[method]descriptor.stat\x01?\x01@\x03\x04self#\x0apath\
--flags\x0f\x04paths\0>\x04\0\x1a[method]descriptor.stat-at\x01@\x01@\x05\x04self\
-#\x0apath-flags\x0f\x04paths\x15data-access-timestamp\x18\x1bdata-modification-t\
-imestamp\x18\0+\x04\0\x1f[method]descriptor.set-times-at\x01A\x01@\x05\x04self#\x0e\
-old-path-flags\x0f\x08old-paths\x0enew-descriptor#\x08new-paths\0+\x04\0\x1a[met\
-hod]descriptor.link-at\x01B\x01i!\x01j\x01\xc3\0\x01\x1c\x01@\x05\x04self#\x0apa\
-th-flags\x0f\x04paths\x0aopen-flags\x11\x05flags\x0d\0\xc4\0\x04\0\x1a[method]de\
-scriptor.open-at\x01E\x01j\x01s\x01\x1c\x01@\x02\x04self#\x04paths\0\xc6\0\x04\0\
-\x1e[method]descriptor.readlink-at\x01G\x04\0&[method]descriptor.remove-director\
-y-at\x01=\x01@\x04\x04self#\x08old-paths\x0enew-descriptor#\x08new-paths\0+\x04\0\
-\x1c[method]descriptor.rename-at\x01H\x01@\x03\x04self#\x08old-paths\x08new-path\
-s\0+\x04\0\x1d[method]descriptor.symlink-at\x01I\x04\0![method]descriptor.unlink\
--file-at\x01=\x01@\x02\x04self#\x05other#\0\x7f\x04\0![method]descriptor.is-same\
--object\x01J\x01j\x01\x20\x01\x1c\x01@\x01\x04self#\0\xcb\0\x04\0\x20[method]des\
-criptor.metadata-hash\x01L\x01@\x03\x04self#\x0apath-flags\x0f\x04paths\0\xcb\0\x04\
-\0#[method]descriptor.metadata-hash-at\x01M\x01h\"\x01k\x1a\x01j\x01\xcf\0\x01\x1c\
-\x01@\x01\x04self\xce\0\0\xd0\0\x04\03[method]directory-entry-stream.read-direct\
-ory-entry\x01Q\x01h\x05\x01k\x1c\x01@\x01\x03err\xd2\0\0\xd3\0\x04\0\x15filesyst\
-em-error-code\x01T\x04\x01\x1bwasi:filesystem/types@0.2.0\x057\x02\x03\0&\x0ades\
-criptor\x01B\x07\x02\x03\x02\x018\x04\0\x0adescriptor\x03\0\0\x01i\x01\x01o\x02\x02\
-s\x01p\x03\x01@\0\0\x04\x04\0\x0fget-directories\x01\x05\x04\x01\x1ewasi:filesys\
-tem/preopens@0.2.0\x059\x01B\x05\x02\x03\x02\x01\x0a\x04\0\x0doutput-stream\x03\0\
-\0\x01i\x01\x01@\0\0\x02\x04\0\x0aget-stdout\x01\x03\x04\x01\x15wasi:cli/stdout@\
-0.2.0\x05:\x01B\x05\x02\x03\x02\x01\x0c\x04\0\x0cinput-stream\x03\0\0\x01i\x01\x01\
-@\0\0\x02\x04\0\x09get-stdin\x01\x03\x04\x01\x14wasi:cli/stdin@0.2.0\x05;\x01B\x05\
+\x03\x02\x01+\x04\0\x05error\x03\0\x04\x04\0\x0aconnection\x03\x01\x01i\x06\x01j\
+\x01\x07\x01\x05\x01@\x01\x08databases\0\x08\x04\0\x17[static]connection.open\x01\
+\x09\x01h\x06\x01p\x01\x01j\x01\x03\x01\x05\x01@\x03\x04self\x0a\x09statements\x0a\
+parameters\x0b\0\x0c\x04\0\x1a[method]connection.execute\x01\x0d\x04\x01\x1dferm\
+yon:spin-test-virt/sqlite\x05,\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\
+\x04self\x01\0\x7f\x04\0\x16[method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\
+\0\x04\0\x16[method]pollable.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\
+\x04\0\x04poll\x01\x06\x04\x01\x12wasi:io/poll@0.2.0\x05-\x01B\x0f\x02\x03\x02\x01\
+\x01\x04\0\x08pollable\x03\0\0\x01w\x04\0\x07instant\x03\0\x02\x01w\x04\0\x08dur\
+ation\x03\0\x04\x01@\0\0\x03\x04\0\x03now\x01\x06\x01@\0\0\x05\x04\0\x0aresoluti\
+on\x01\x07\x01i\x01\x01@\x01\x04when\x03\0\x08\x04\0\x11subscribe-instant\x01\x09\
+\x01@\x01\x04when\x05\0\x08\x04\0\x12subscribe-duration\x01\x0a\x04\x01!wasi:clo\
+cks/monotonic-clock@0.2.0\x05.\x01B\x05\x01r\x02\x07secondsw\x0bnanosecondsy\x04\
+\0\x08datetime\x03\0\0\x01@\0\0\x01\x04\0\x03now\x01\x02\x04\0\x0aresolution\x01\
+\x02\x04\x01\x1cwasi:clocks/wall-clock@0.2.0\x05/\x01B\x05\x01p}\x01@\x01\x03len\
+w\0\0\x04\0\x10get-random-bytes\x01\x01\x01@\0\0w\x04\0\x0eget-random-u64\x01\x02\
+\x04\x01\x18wasi:random/random@0.2.0\x050\x01B\x05\x01p}\x01@\x01\x03lenw\0\0\x04\
+\0\x19get-insecure-random-bytes\x01\x01\x01@\0\0w\x04\0\x17get-insecure-random-u\
+64\x01\x02\x04\x01\x1awasi:random/insecure@0.2.0\x051\x01B\x03\x01o\x02ww\x01@\0\
+\0\0\x04\0\x0dinsecure-seed\x01\x01\x04\x01\x1fwasi:random/insecure-seed@0.2.0\x05\
+2\x01B\x04\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\0\x1d[metho\
+d]error.to-debug-string\x01\x02\x04\x01\x13wasi:io/error@0.2.0\x053\x01B(\x02\x03\
+\x02\x01\x08\x04\0\x05error\x03\0\0\x02\x03\x02\x01\x01\x04\0\x08pollable\x03\0\x02\
+\x01i\x01\x01q\x02\x15last-operation-failed\x01\x04\0\x06closed\0\0\x04\0\x0cstr\
+eam-error\x03\0\x05\x04\0\x0cinput-stream\x03\x01\x04\0\x0doutput-stream\x03\x01\
+\x01h\x07\x01p}\x01j\x01\x0a\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19\
+[method]input-stream.read\x01\x0c\x04\0\"[method]input-stream.blocking-read\x01\x0c\
+\x01j\x01w\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0d\x04\0\x19[method]input-str\
+eam.skip\x01\x0e\x04\0\"[method]input-stream.blocking-skip\x01\x0e\x01i\x03\x01@\
+\x01\x04self\x09\0\x0f\x04\0\x1e[method]input-stream.subscribe\x01\x10\x01h\x08\x01\
+@\x01\x04self\x11\0\x0d\x04\0![method]output-stream.check-write\x01\x12\x01j\0\x01\
+\x06\x01@\x02\x04self\x11\x08contents\x0a\0\x13\x04\0\x1b[method]output-stream.w\
+rite\x01\x14\x04\0.[method]output-stream.blocking-write-and-flush\x01\x14\x01@\x01\
+\x04self\x11\0\x13\x04\0\x1b[method]output-stream.flush\x01\x15\x04\0$[method]ou\
+tput-stream.blocking-flush\x01\x15\x01@\x01\x04self\x11\0\x0f\x04\0\x1f[method]o\
+utput-stream.subscribe\x01\x16\x01@\x02\x04self\x11\x03lenw\0\x13\x04\0\"[method\
+]output-stream.write-zeroes\x01\x17\x04\05[method]output-stream.blocking-write-z\
+eroes-and-flush\x01\x17\x01@\x03\x04self\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[\
+method]output-stream.splice\x01\x18\x04\0%[method]output-stream.blocking-splice\x01\
+\x18\x04\x01\x15wasi:io/streams@0.2.0\x054\x02\x03\0%\x05error\x02\x03\0\x20\x08\
+datetime\x01Br\x02\x03\x02\x01\x0c\x04\0\x0cinput-stream\x03\0\0\x02\x03\x02\x01\
+\x0a\x04\0\x0doutput-stream\x03\0\x02\x02\x03\x02\x015\x04\0\x05error\x03\0\x04\x02\
+\x03\x02\x016\x04\0\x08datetime\x03\0\x06\x01w\x04\0\x08filesize\x03\0\x08\x01m\x08\
+\x07unknown\x0cblock-device\x10character-device\x09directory\x04fifo\x0dsymbolic\
+-link\x0cregular-file\x06socket\x04\0\x0fdescriptor-type\x03\0\x0a\x01n\x06\x04r\
+ead\x05write\x13file-integrity-sync\x13data-integrity-sync\x14requested-write-sy\
+nc\x10mutate-directory\x04\0\x10descriptor-flags\x03\0\x0c\x01n\x01\x0esymlink-f\
+ollow\x04\0\x0apath-flags\x03\0\x0e\x01n\x04\x06create\x09directory\x09exclusive\
+\x08truncate\x04\0\x0aopen-flags\x03\0\x10\x01w\x04\0\x0alink-count\x03\0\x12\x01\
+k\x07\x01r\x06\x04type\x0b\x0alink-count\x13\x04size\x09\x15data-access-timestam\
+p\x14\x1bdata-modification-timestamp\x14\x17status-change-timestamp\x14\x04\0\x0f\
+descriptor-stat\x03\0\x15\x01q\x03\x09no-change\0\0\x03now\0\0\x09timestamp\x01\x07\
+\0\x04\0\x0dnew-timestamp\x03\0\x17\x01r\x02\x04type\x0b\x04names\x04\0\x0fdirec\
+tory-entry\x03\0\x19\x01m%\x06access\x0bwould-block\x07already\x0ebad-descriptor\
+\x04busy\x08deadlock\x05quota\x05exist\x0efile-too-large\x15illegal-byte-sequenc\
+e\x0bin-progress\x0binterrupted\x07invalid\x02io\x0cis-directory\x04loop\x0etoo-\
+many-links\x0cmessage-size\x0dname-too-long\x09no-device\x08no-entry\x07no-lock\x13\
+insufficient-memory\x12insufficient-space\x0dnot-directory\x09not-empty\x0fnot-r\
+ecoverable\x0bunsupported\x06no-tty\x0eno-such-device\x08overflow\x0dnot-permitt\
+ed\x04pipe\x09read-only\x0cinvalid-seek\x0etext-file-busy\x0ccross-device\x04\0\x0a\
+error-code\x03\0\x1b\x01m\x06\x06normal\x0asequential\x06random\x09will-need\x09\
+dont-need\x08no-reuse\x04\0\x06advice\x03\0\x1d\x01r\x02\x05lowerw\x05upperw\x04\
+\0\x13metadata-hash-value\x03\0\x1f\x04\0\x0adescriptor\x03\x01\x04\0\x16directo\
+ry-entry-stream\x03\x01\x01h!\x01i\x01\x01j\x01$\x01\x1c\x01@\x02\x04self#\x06of\
+fset\x09\0%\x04\0\"[method]descriptor.read-via-stream\x01&\x01i\x03\x01j\x01'\x01\
+\x1c\x01@\x02\x04self#\x06offset\x09\0(\x04\0#[method]descriptor.write-via-strea\
+m\x01)\x01@\x01\x04self#\0(\x04\0$[method]descriptor.append-via-stream\x01*\x01j\
+\0\x01\x1c\x01@\x04\x04self#\x06offset\x09\x06length\x09\x06advice\x1e\0+\x04\0\x19\
+[method]descriptor.advise\x01,\x01@\x01\x04self#\0+\x04\0\x1c[method]descriptor.\
+sync-data\x01-\x01j\x01\x0d\x01\x1c\x01@\x01\x04self#\0.\x04\0\x1c[method]descri\
+ptor.get-flags\x01/\x01j\x01\x0b\x01\x1c\x01@\x01\x04self#\00\x04\0\x1b[method]d\
+escriptor.get-type\x011\x01@\x02\x04self#\x04size\x09\0+\x04\0\x1b[method]descri\
+ptor.set-size\x012\x01@\x03\x04self#\x15data-access-timestamp\x18\x1bdata-modifi\
+cation-timestamp\x18\0+\x04\0\x1c[method]descriptor.set-times\x013\x01p}\x01o\x02\
+4\x7f\x01j\x015\x01\x1c\x01@\x03\x04self#\x06length\x09\x06offset\x09\06\x04\0\x17\
+[method]descriptor.read\x017\x01j\x01\x09\x01\x1c\x01@\x03\x04self#\x06buffer4\x06\
+offset\x09\08\x04\0\x18[method]descriptor.write\x019\x01i\"\x01j\x01:\x01\x1c\x01\
+@\x01\x04self#\0;\x04\0![method]descriptor.read-directory\x01<\x04\0\x17[method]\
+descriptor.sync\x01-\x01@\x02\x04self#\x04paths\0+\x04\0&[method]descriptor.crea\
+te-directory-at\x01=\x01j\x01\x16\x01\x1c\x01@\x01\x04self#\0>\x04\0\x17[method]\
+descriptor.stat\x01?\x01@\x03\x04self#\x0apath-flags\x0f\x04paths\0>\x04\0\x1a[m\
+ethod]descriptor.stat-at\x01@\x01@\x05\x04self#\x0apath-flags\x0f\x04paths\x15da\
+ta-access-timestamp\x18\x1bdata-modification-timestamp\x18\0+\x04\0\x1f[method]d\
+escriptor.set-times-at\x01A\x01@\x05\x04self#\x0eold-path-flags\x0f\x08old-paths\
+\x0enew-descriptor#\x08new-paths\0+\x04\0\x1a[method]descriptor.link-at\x01B\x01\
+i!\x01j\x01\xc3\0\x01\x1c\x01@\x05\x04self#\x0apath-flags\x0f\x04paths\x0aopen-f\
+lags\x11\x05flags\x0d\0\xc4\0\x04\0\x1a[method]descriptor.open-at\x01E\x01j\x01s\
+\x01\x1c\x01@\x02\x04self#\x04paths\0\xc6\0\x04\0\x1e[method]descriptor.readlink\
+-at\x01G\x04\0&[method]descriptor.remove-directory-at\x01=\x01@\x04\x04self#\x08\
+old-paths\x0enew-descriptor#\x08new-paths\0+\x04\0\x1c[method]descriptor.rename-\
+at\x01H\x01@\x03\x04self#\x08old-paths\x08new-paths\0+\x04\0\x1d[method]descript\
+or.symlink-at\x01I\x04\0![method]descriptor.unlink-file-at\x01=\x01@\x02\x04self\
+#\x05other#\0\x7f\x04\0![method]descriptor.is-same-object\x01J\x01j\x01\x20\x01\x1c\
+\x01@\x01\x04self#\0\xcb\0\x04\0\x20[method]descriptor.metadata-hash\x01L\x01@\x03\
+\x04self#\x0apath-flags\x0f\x04paths\0\xcb\0\x04\0#[method]descriptor.metadata-h\
+ash-at\x01M\x01h\"\x01k\x1a\x01j\x01\xcf\0\x01\x1c\x01@\x01\x04self\xce\0\0\xd0\0\
+\x04\03[method]directory-entry-stream.read-directory-entry\x01Q\x01h\x05\x01k\x1c\
+\x01@\x01\x03err\xd2\0\0\xd3\0\x04\0\x15filesystem-error-code\x01T\x04\x01\x1bwa\
+si:filesystem/types@0.2.0\x057\x02\x03\0&\x0adescriptor\x01B\x07\x02\x03\x02\x01\
+8\x04\0\x0adescriptor\x03\0\0\x01i\x01\x01o\x02\x02s\x01p\x03\x01@\0\0\x04\x04\0\
+\x0fget-directories\x01\x05\x04\x01\x1ewasi:filesystem/preopens@0.2.0\x059\x01B\x05\
 \x02\x03\x02\x01\x0a\x04\0\x0doutput-stream\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x0a\
-get-stderr\x01\x03\x04\x01\x15wasi:cli/stderr@0.2.0\x05<\x01B\x01\x04\0\x0etermi\
-nal-input\x03\x01\x04\x01\x1dwasi:cli/terminal-input@0.2.0\x05=\x01B\x01\x04\0\x0f\
-terminal-output\x03\x01\x04\x01\x1ewasi:cli/terminal-output@0.2.0\x05>\x01B\x06\x02\
-\x03\x02\x01\x11\x04\0\x0eterminal-input\x03\0\0\x01i\x01\x01k\x02\x01@\0\0\x03\x04\
-\0\x12get-terminal-stdin\x01\x04\x04\x01\x1dwasi:cli/terminal-stdin@0.2.0\x05?\x01\
-B\x06\x02\x03\x02\x01\x13\x04\0\x0fterminal-output\x03\0\0\x01i\x01\x01k\x02\x01\
-@\0\0\x03\x04\0\x13get-terminal-stdout\x01\x04\x04\x01\x1ewasi:cli/terminal-stdo\
-ut@0.2.0\x05@\x01B\x06\x02\x03\x02\x01\x13\x04\0\x0fterminal-output\x03\0\0\x01i\
-\x01\x01k\x02\x01@\0\0\x03\x04\0\x13get-terminal-stderr\x01\x04\x04\x01\x1ewasi:\
-cli/terminal-stderr@0.2.0\x05A\x01B\x0a\x01o\x02ss\x01p\0\x01@\0\0\x01\x04\0\x0f\
-get-environment\x01\x02\x01ps\x01@\0\0\x03\x04\0\x0dget-arguments\x01\x04\x01ks\x01\
-@\0\0\x05\x04\0\x0binitial-cwd\x01\x06\x04\x01\x1awasi:cli/environment@0.2.0\x05\
-B\x01B\x03\x01j\0\0\x01@\x01\x06status\0\x01\0\x04\0\x04exit\x01\x01\x04\x01\x13\
-wasi:cli/exit@0.2.0\x05C\x01B\x11\x04\0\x07network\x03\x01\x01m\x15\x07unknown\x0d\
-access-denied\x0dnot-supported\x10invalid-argument\x0dout-of-memory\x07timeout\x14\
-concurrency-conflict\x0fnot-in-progress\x0bwould-block\x0dinvalid-state\x10new-s\
-ocket-limit\x14address-not-bindable\x0eaddress-in-use\x12remote-unreachable\x12c\
-onnection-refused\x10connection-reset\x12connection-aborted\x12datagram-too-larg\
-e\x11name-unresolvable\x1atemporary-resolver-failure\x1apermanent-resolver-failu\
-re\x04\0\x0aerror-code\x03\0\x01\x01m\x02\x04ipv4\x04ipv6\x04\0\x11ip-address-fa\
-mily\x03\0\x03\x01o\x04}}}}\x04\0\x0cipv4-address\x03\0\x05\x01o\x08{{{{{{{{\x04\
-\0\x0cipv6-address\x03\0\x07\x01q\x02\x04ipv4\x01\x06\0\x04ipv6\x01\x08\0\x04\0\x0a\
-ip-address\x03\0\x09\x01r\x02\x04port{\x07address\x06\x04\0\x13ipv4-socket-addre\
-ss\x03\0\x0b\x01r\x04\x04port{\x09flow-infoy\x07address\x08\x08scope-idy\x04\0\x13\
-ipv6-socket-address\x03\0\x0d\x01q\x02\x04ipv4\x01\x0c\0\x04ipv6\x01\x0e\0\x04\0\
-\x11ip-socket-address\x03\0\x0f\x04\x01\x1awasi:sockets/network@0.2.0\x05D\x02\x03\
-\02\x07network\x01B\x05\x02\x03\x02\x01E\x04\0\x07network\x03\0\0\x01i\x01\x01@\0\
-\0\x02\x04\0\x10instance-network\x01\x03\x04\x01#wasi:sockets/instance-network@0\
-.2.0\x05F\x02\x03\02\x0aerror-code\x02\x03\02\x11ip-socket-address\x02\x03\02\x11\
-ip-address-family\x01BD\x02\x03\x02\x01\x01\x04\0\x08pollable\x03\0\0\x02\x03\x02\
-\x01E\x04\0\x07network\x03\0\x02\x02\x03\x02\x01G\x04\0\x0aerror-code\x03\0\x04\x02\
-\x03\x02\x01H\x04\0\x11ip-socket-address\x03\0\x06\x02\x03\x02\x01I\x04\0\x11ip-\
-address-family\x03\0\x08\x01p}\x01r\x02\x04data\x0a\x0eremote-address\x07\x04\0\x11\
-incoming-datagram\x03\0\x0b\x01k\x07\x01r\x02\x04data\x0a\x0eremote-address\x0d\x04\
-\0\x11outgoing-datagram\x03\0\x0e\x04\0\x0audp-socket\x03\x01\x04\0\x18incoming-\
-datagram-stream\x03\x01\x04\0\x18outgoing-datagram-stream\x03\x01\x01h\x10\x01h\x03\
-\x01j\0\x01\x05\x01@\x03\x04self\x13\x07network\x14\x0dlocal-address\x07\0\x15\x04\
-\0\x1d[method]udp-socket.start-bind\x01\x16\x01@\x01\x04self\x13\0\x15\x04\0\x1e\
-[method]udp-socket.finish-bind\x01\x17\x01i\x11\x01i\x12\x01o\x02\x18\x19\x01j\x01\
-\x1a\x01\x05\x01@\x02\x04self\x13\x0eremote-address\x0d\0\x1b\x04\0\x19[method]u\
-dp-socket.stream\x01\x1c\x01j\x01\x07\x01\x05\x01@\x01\x04self\x13\0\x1d\x04\0\x20\
-[method]udp-socket.local-address\x01\x1e\x04\0![method]udp-socket.remote-address\
-\x01\x1e\x01@\x01\x04self\x13\0\x09\x04\0![method]udp-socket.address-family\x01\x1f\
-\x01j\x01}\x01\x05\x01@\x01\x04self\x13\0\x20\x04\0$[method]udp-socket.unicast-h\
-op-limit\x01!\x01@\x02\x04self\x13\x05value}\0\x15\x04\0([method]udp-socket.set-\
-unicast-hop-limit\x01\"\x01j\x01w\x01\x05\x01@\x01\x04self\x13\0#\x04\0&[method]\
-udp-socket.receive-buffer-size\x01$\x01@\x02\x04self\x13\x05valuew\0\x15\x04\0*[\
-method]udp-socket.set-receive-buffer-size\x01%\x04\0#[method]udp-socket.send-buf\
-fer-size\x01$\x04\0'[method]udp-socket.set-send-buffer-size\x01%\x01i\x01\x01@\x01\
-\x04self\x13\0&\x04\0\x1c[method]udp-socket.subscribe\x01'\x01h\x11\x01p\x0c\x01\
-j\x01)\x01\x05\x01@\x02\x04self(\x0bmax-resultsw\0*\x04\0([method]incoming-datag\
-ram-stream.receive\x01+\x01@\x01\x04self(\0&\x04\0*[method]incoming-datagram-str\
-eam.subscribe\x01,\x01h\x12\x01@\x01\x04self-\0#\x04\0+[method]outgoing-datagram\
--stream.check-send\x01.\x01p\x0f\x01@\x02\x04self-\x09datagrams/\0#\x04\0%[metho\
-d]outgoing-datagram-stream.send\x010\x01@\x01\x04self-\0&\x04\0*[method]outgoing\
--datagram-stream.subscribe\x011\x04\x01\x16wasi:sockets/udp@0.2.0\x05J\x02\x03\0\
-4\x0audp-socket\x01B\x0c\x02\x03\x02\x01E\x04\0\x07network\x03\0\0\x02\x03\x02\x01\
-G\x04\0\x0aerror-code\x03\0\x02\x02\x03\x02\x01I\x04\0\x11ip-address-family\x03\0\
-\x04\x02\x03\x02\x01K\x04\0\x0audp-socket\x03\0\x06\x01i\x07\x01j\x01\x08\x01\x03\
-\x01@\x01\x0eaddress-family\x05\0\x09\x04\0\x11create-udp-socket\x01\x0a\x04\x01\
-$wasi:sockets/udp-create-socket@0.2.0\x05L\x01BT\x02\x03\x02\x01\x0c\x04\0\x0cin\
-put-stream\x03\0\0\x02\x03\x02\x01\x0a\x04\0\x0doutput-stream\x03\0\x02\x02\x03\x02\
-\x01\x01\x04\0\x08pollable\x03\0\x04\x02\x03\x02\x01\x18\x04\0\x08duration\x03\0\
-\x06\x02\x03\x02\x01E\x04\0\x07network\x03\0\x08\x02\x03\x02\x01G\x04\0\x0aerror\
--code\x03\0\x0a\x02\x03\x02\x01H\x04\0\x11ip-socket-address\x03\0\x0c\x02\x03\x02\
-\x01I\x04\0\x11ip-address-family\x03\0\x0e\x01m\x03\x07receive\x04send\x04both\x04\
-\0\x0dshutdown-type\x03\0\x10\x04\0\x0atcp-socket\x03\x01\x01h\x12\x01h\x09\x01j\
-\0\x01\x0b\x01@\x03\x04self\x13\x07network\x14\x0dlocal-address\x0d\0\x15\x04\0\x1d\
-[method]tcp-socket.start-bind\x01\x16\x01@\x01\x04self\x13\0\x15\x04\0\x1e[metho\
-d]tcp-socket.finish-bind\x01\x17\x01@\x03\x04self\x13\x07network\x14\x0eremote-a\
-ddress\x0d\0\x15\x04\0\x20[method]tcp-socket.start-connect\x01\x18\x01i\x01\x01i\
-\x03\x01o\x02\x19\x1a\x01j\x01\x1b\x01\x0b\x01@\x01\x04self\x13\0\x1c\x04\0![met\
-hod]tcp-socket.finish-connect\x01\x1d\x04\0\x1f[method]tcp-socket.start-listen\x01\
-\x17\x04\0\x20[method]tcp-socket.finish-listen\x01\x17\x01i\x12\x01o\x03\x1e\x19\
-\x1a\x01j\x01\x1f\x01\x0b\x01@\x01\x04self\x13\0\x20\x04\0\x19[method]tcp-socket\
-.accept\x01!\x01j\x01\x0d\x01\x0b\x01@\x01\x04self\x13\0\"\x04\0\x20[method]tcp-\
-socket.local-address\x01#\x04\0![method]tcp-socket.remote-address\x01#\x01@\x01\x04\
-self\x13\0\x7f\x04\0\x1f[method]tcp-socket.is-listening\x01$\x01@\x01\x04self\x13\
-\0\x0f\x04\0![method]tcp-socket.address-family\x01%\x01@\x02\x04self\x13\x05valu\
-ew\0\x15\x04\0*[method]tcp-socket.set-listen-backlog-size\x01&\x01j\x01\x7f\x01\x0b\
-\x01@\x01\x04self\x13\0'\x04\0%[method]tcp-socket.keep-alive-enabled\x01(\x01@\x02\
-\x04self\x13\x05value\x7f\0\x15\x04\0)[method]tcp-socket.set-keep-alive-enabled\x01\
-)\x01j\x01\x07\x01\x0b\x01@\x01\x04self\x13\0*\x04\0'[method]tcp-socket.keep-ali\
-ve-idle-time\x01+\x01@\x02\x04self\x13\x05value\x07\0\x15\x04\0+[method]tcp-sock\
-et.set-keep-alive-idle-time\x01,\x04\0&[method]tcp-socket.keep-alive-interval\x01\
-+\x04\0*[method]tcp-socket.set-keep-alive-interval\x01,\x01j\x01y\x01\x0b\x01@\x01\
-\x04self\x13\0-\x04\0#[method]tcp-socket.keep-alive-count\x01.\x01@\x02\x04self\x13\
-\x05valuey\0\x15\x04\0'[method]tcp-socket.set-keep-alive-count\x01/\x01j\x01}\x01\
-\x0b\x01@\x01\x04self\x13\00\x04\0\x1c[method]tcp-socket.hop-limit\x011\x01@\x02\
-\x04self\x13\x05value}\0\x15\x04\0\x20[method]tcp-socket.set-hop-limit\x012\x01j\
-\x01w\x01\x0b\x01@\x01\x04self\x13\03\x04\0&[method]tcp-socket.receive-buffer-si\
-ze\x014\x04\0*[method]tcp-socket.set-receive-buffer-size\x01&\x04\0#[method]tcp-\
-socket.send-buffer-size\x014\x04\0'[method]tcp-socket.set-send-buffer-size\x01&\x01\
-i\x05\x01@\x01\x04self\x13\05\x04\0\x1c[method]tcp-socket.subscribe\x016\x01@\x02\
-\x04self\x13\x0dshutdown-type\x11\0\x15\x04\0\x1b[method]tcp-socket.shutdown\x01\
-7\x04\x01\x16wasi:sockets/tcp@0.2.0\x05M\x02\x03\06\x0atcp-socket\x01B\x0c\x02\x03\
+get-stdout\x01\x03\x04\x01\x15wasi:cli/stdout@0.2.0\x05:\x01B\x05\x02\x03\x02\x01\
+\x0c\x04\0\x0cinput-stream\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x09get-stdin\x01\x03\
+\x04\x01\x14wasi:cli/stdin@0.2.0\x05;\x01B\x05\x02\x03\x02\x01\x0a\x04\0\x0doutp\
+ut-stream\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x0aget-stderr\x01\x03\x04\x01\x15w\
+asi:cli/stderr@0.2.0\x05<\x01B\x01\x04\0\x0eterminal-input\x03\x01\x04\x01\x1dwa\
+si:cli/terminal-input@0.2.0\x05=\x01B\x01\x04\0\x0fterminal-output\x03\x01\x04\x01\
+\x1ewasi:cli/terminal-output@0.2.0\x05>\x01B\x06\x02\x03\x02\x01\x11\x04\0\x0ete\
+rminal-input\x03\0\0\x01i\x01\x01k\x02\x01@\0\0\x03\x04\0\x12get-terminal-stdin\x01\
+\x04\x04\x01\x1dwasi:cli/terminal-stdin@0.2.0\x05?\x01B\x06\x02\x03\x02\x01\x13\x04\
+\0\x0fterminal-output\x03\0\0\x01i\x01\x01k\x02\x01@\0\0\x03\x04\0\x13get-termin\
+al-stdout\x01\x04\x04\x01\x1ewasi:cli/terminal-stdout@0.2.0\x05@\x01B\x06\x02\x03\
+\x02\x01\x13\x04\0\x0fterminal-output\x03\0\0\x01i\x01\x01k\x02\x01@\0\0\x03\x04\
+\0\x13get-terminal-stderr\x01\x04\x04\x01\x1ewasi:cli/terminal-stderr@0.2.0\x05A\
+\x01B\x0a\x01o\x02ss\x01p\0\x01@\0\0\x01\x04\0\x0fget-environment\x01\x02\x01ps\x01\
+@\0\0\x03\x04\0\x0dget-arguments\x01\x04\x01ks\x01@\0\0\x05\x04\0\x0binitial-cwd\
+\x01\x06\x04\x01\x1awasi:cli/environment@0.2.0\x05B\x01B\x03\x01j\0\0\x01@\x01\x06\
+status\0\x01\0\x04\0\x04exit\x01\x01\x04\x01\x13wasi:cli/exit@0.2.0\x05C\x01B\x11\
+\x04\0\x07network\x03\x01\x01m\x15\x07unknown\x0daccess-denied\x0dnot-supported\x10\
+invalid-argument\x0dout-of-memory\x07timeout\x14concurrency-conflict\x0fnot-in-p\
+rogress\x0bwould-block\x0dinvalid-state\x10new-socket-limit\x14address-not-binda\
+ble\x0eaddress-in-use\x12remote-unreachable\x12connection-refused\x10connection-\
+reset\x12connection-aborted\x12datagram-too-large\x11name-unresolvable\x1atempor\
+ary-resolver-failure\x1apermanent-resolver-failure\x04\0\x0aerror-code\x03\0\x01\
+\x01m\x02\x04ipv4\x04ipv6\x04\0\x11ip-address-family\x03\0\x03\x01o\x04}}}}\x04\0\
+\x0cipv4-address\x03\0\x05\x01o\x08{{{{{{{{\x04\0\x0cipv6-address\x03\0\x07\x01q\
+\x02\x04ipv4\x01\x06\0\x04ipv6\x01\x08\0\x04\0\x0aip-address\x03\0\x09\x01r\x02\x04\
+port{\x07address\x06\x04\0\x13ipv4-socket-address\x03\0\x0b\x01r\x04\x04port{\x09\
+flow-infoy\x07address\x08\x08scope-idy\x04\0\x13ipv6-socket-address\x03\0\x0d\x01\
+q\x02\x04ipv4\x01\x0c\0\x04ipv6\x01\x0e\0\x04\0\x11ip-socket-address\x03\0\x0f\x04\
+\x01\x1awasi:sockets/network@0.2.0\x05D\x02\x03\02\x07network\x01B\x05\x02\x03\x02\
+\x01E\x04\0\x07network\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x10instance-network\x01\
+\x03\x04\x01#wasi:sockets/instance-network@0.2.0\x05F\x02\x03\02\x0aerror-code\x02\
+\x03\02\x11ip-socket-address\x02\x03\02\x11ip-address-family\x01BD\x02\x03\x02\x01\
+\x01\x04\0\x08pollable\x03\0\0\x02\x03\x02\x01E\x04\0\x07network\x03\0\x02\x02\x03\
+\x02\x01G\x04\0\x0aerror-code\x03\0\x04\x02\x03\x02\x01H\x04\0\x11ip-socket-addr\
+ess\x03\0\x06\x02\x03\x02\x01I\x04\0\x11ip-address-family\x03\0\x08\x01p}\x01r\x02\
+\x04data\x0a\x0eremote-address\x07\x04\0\x11incoming-datagram\x03\0\x0b\x01k\x07\
+\x01r\x02\x04data\x0a\x0eremote-address\x0d\x04\0\x11outgoing-datagram\x03\0\x0e\
+\x04\0\x0audp-socket\x03\x01\x04\0\x18incoming-datagram-stream\x03\x01\x04\0\x18\
+outgoing-datagram-stream\x03\x01\x01h\x10\x01h\x03\x01j\0\x01\x05\x01@\x03\x04se\
+lf\x13\x07network\x14\x0dlocal-address\x07\0\x15\x04\0\x1d[method]udp-socket.sta\
+rt-bind\x01\x16\x01@\x01\x04self\x13\0\x15\x04\0\x1e[method]udp-socket.finish-bi\
+nd\x01\x17\x01i\x11\x01i\x12\x01o\x02\x18\x19\x01j\x01\x1a\x01\x05\x01@\x02\x04s\
+elf\x13\x0eremote-address\x0d\0\x1b\x04\0\x19[method]udp-socket.stream\x01\x1c\x01\
+j\x01\x07\x01\x05\x01@\x01\x04self\x13\0\x1d\x04\0\x20[method]udp-socket.local-a\
+ddress\x01\x1e\x04\0![method]udp-socket.remote-address\x01\x1e\x01@\x01\x04self\x13\
+\0\x09\x04\0![method]udp-socket.address-family\x01\x1f\x01j\x01}\x01\x05\x01@\x01\
+\x04self\x13\0\x20\x04\0$[method]udp-socket.unicast-hop-limit\x01!\x01@\x02\x04s\
+elf\x13\x05value}\0\x15\x04\0([method]udp-socket.set-unicast-hop-limit\x01\"\x01\
+j\x01w\x01\x05\x01@\x01\x04self\x13\0#\x04\0&[method]udp-socket.receive-buffer-s\
+ize\x01$\x01@\x02\x04self\x13\x05valuew\0\x15\x04\0*[method]udp-socket.set-recei\
+ve-buffer-size\x01%\x04\0#[method]udp-socket.send-buffer-size\x01$\x04\0'[method\
+]udp-socket.set-send-buffer-size\x01%\x01i\x01\x01@\x01\x04self\x13\0&\x04\0\x1c\
+[method]udp-socket.subscribe\x01'\x01h\x11\x01p\x0c\x01j\x01)\x01\x05\x01@\x02\x04\
+self(\x0bmax-resultsw\0*\x04\0([method]incoming-datagram-stream.receive\x01+\x01\
+@\x01\x04self(\0&\x04\0*[method]incoming-datagram-stream.subscribe\x01,\x01h\x12\
+\x01@\x01\x04self-\0#\x04\0+[method]outgoing-datagram-stream.check-send\x01.\x01\
+p\x0f\x01@\x02\x04self-\x09datagrams/\0#\x04\0%[method]outgoing-datagram-stream.\
+send\x010\x01@\x01\x04self-\0&\x04\0*[method]outgoing-datagram-stream.subscribe\x01\
+1\x04\x01\x16wasi:sockets/udp@0.2.0\x05J\x02\x03\04\x0audp-socket\x01B\x0c\x02\x03\
 \x02\x01E\x04\0\x07network\x03\0\0\x02\x03\x02\x01G\x04\0\x0aerror-code\x03\0\x02\
-\x02\x03\x02\x01I\x04\0\x11ip-address-family\x03\0\x04\x02\x03\x02\x01N\x04\0\x0a\
-tcp-socket\x03\0\x06\x01i\x07\x01j\x01\x08\x01\x03\x01@\x01\x0eaddress-family\x05\
-\0\x09\x04\0\x11create-tcp-socket\x01\x0a\x04\x01$wasi:sockets/tcp-create-socket\
-@0.2.0\x05O\x02\x03\02\x0aip-address\x01B\x16\x02\x03\x02\x01\x01\x04\0\x08polla\
-ble\x03\0\0\x02\x03\x02\x01E\x04\0\x07network\x03\0\x02\x02\x03\x02\x01G\x04\0\x0a\
-error-code\x03\0\x04\x02\x03\x02\x01P\x04\0\x0aip-address\x03\0\x06\x04\0\x16res\
-olve-address-stream\x03\x01\x01h\x08\x01k\x07\x01j\x01\x0a\x01\x05\x01@\x01\x04s\
-elf\x09\0\x0b\x04\03[method]resolve-address-stream.resolve-next-address\x01\x0c\x01\
-i\x01\x01@\x01\x04self\x09\0\x0d\x04\0([method]resolve-address-stream.subscribe\x01\
-\x0e\x01h\x03\x01i\x08\x01j\x01\x10\x01\x05\x01@\x02\x07network\x0f\x04names\0\x11\
-\x04\0\x11resolve-addresses\x01\x12\x04\x01!wasi:sockets/ip-name-lookup@0.2.0\x05\
-Q\x01B\xc0\x01\x02\x03\x02\x01\x18\x04\0\x08duration\x03\0\0\x02\x03\x02\x01\x0c\
-\x04\0\x0cinput-stream\x03\0\x02\x02\x03\x02\x01\x0a\x04\0\x0doutput-stream\x03\0\
-\x04\x02\x03\x02\x01\x08\x04\0\x08io-error\x03\0\x06\x02\x03\x02\x01\x01\x04\0\x08\
-pollable\x03\0\x08\x01q\x0a\x03get\0\0\x04head\0\0\x04post\0\0\x03put\0\0\x06del\
-ete\0\0\x07connect\0\0\x07options\0\0\x05trace\0\0\x05patch\0\0\x05other\x01s\0\x04\
-\0\x06method\x03\0\x0a\x01q\x03\x04HTTP\0\0\x05HTTPS\0\0\x05other\x01s\0\x04\0\x06\
-scheme\x03\0\x0c\x01ks\x01k{\x01r\x02\x05rcode\x0e\x09info-code\x0f\x04\0\x11DNS\
--error-payload\x03\0\x10\x01k}\x01r\x02\x08alert-id\x12\x0dalert-message\x0e\x04\
-\0\x1aTLS-alert-received-payload\x03\0\x13\x01ky\x01r\x02\x0afield-name\x0e\x0af\
-ield-size\x15\x04\0\x12field-size-payload\x03\0\x16\x01kw\x01k\x17\x01q'\x0bDNS-\
-timeout\0\0\x09DNS-error\x01\x11\0\x15destination-not-found\0\0\x17destination-u\
-navailable\0\0\x19destination-IP-prohibited\0\0\x19destination-IP-unroutable\0\0\
-\x12connection-refused\0\0\x15connection-terminated\0\0\x12connection-timeout\0\0\
-\x17connection-read-timeout\0\0\x18connection-write-timeout\0\0\x18connection-li\
-mit-reached\0\0\x12TLS-protocol-error\0\0\x15TLS-certificate-error\0\0\x12TLS-al\
-ert-received\x01\x14\0\x13HTTP-request-denied\0\0\x1cHTTP-request-length-require\
-d\0\0\x16HTTP-request-body-size\x01\x18\0\x1bHTTP-request-method-invalid\0\0\x18\
-HTTP-request-URI-invalid\0\0\x19HTTP-request-URI-too-long\0\0\x20HTTP-request-he\
-ader-section-size\x01\x15\0\x18HTTP-request-header-size\x01\x19\0!HTTP-request-t\
-railer-section-size\x01\x15\0\x19HTTP-request-trailer-size\x01\x17\0\x18HTTP-res\
-ponse-incomplete\0\0!HTTP-response-header-section-size\x01\x15\0\x19HTTP-respons\
-e-header-size\x01\x17\0\x17HTTP-response-body-size\x01\x18\0\"HTTP-response-trai\
-ler-section-size\x01\x15\0\x1aHTTP-response-trailer-size\x01\x17\0\x1dHTTP-respo\
-nse-transfer-coding\x01\x0e\0\x1cHTTP-response-content-coding\x01\x0e\0\x15HTTP-\
-response-timeout\0\0\x13HTTP-upgrade-failed\0\0\x13HTTP-protocol-error\0\0\x0dlo\
-op-detected\0\0\x13configuration-error\0\0\x0einternal-error\x01\x0e\0\x04\0\x0a\
-error-code\x03\0\x1a\x01q\x03\x0einvalid-syntax\0\0\x09forbidden\0\0\x09immutabl\
-e\0\0\x04\0\x0cheader-error\x03\0\x1c\x01s\x04\0\x09field-key\x03\0\x1e\x01p}\x04\
-\0\x0bfield-value\x03\0\x20\x04\0\x06fields\x03\x01\x04\0\x07headers\x03\0\"\x04\
-\0\x08trailers\x03\0\"\x04\0\x10incoming-request\x03\x01\x04\0\x10outgoing-reque\
-st\x03\x01\x04\0\x0frequest-options\x03\x01\x04\0\x11response-outparam\x03\x01\x01\
-{\x04\0\x0bstatus-code\x03\0)\x04\0\x11incoming-response\x03\x01\x04\0\x0dincomi\
-ng-body\x03\x01\x04\0\x0ffuture-trailers\x03\x01\x04\0\x11outgoing-response\x03\x01\
-\x04\0\x0doutgoing-body\x03\x01\x04\0\x18future-incoming-response\x03\x01\x01i\"\
-\x01@\0\01\x04\0\x13[constructor]fields\x012\x01o\x02\x1f!\x01p3\x01j\x011\x01\x1d\
-\x01@\x01\x07entries4\05\x04\0\x18[static]fields.from-list\x016\x01h\"\x01p!\x01\
-@\x02\x04self7\x04name\x1f\08\x04\0\x12[method]fields.get\x019\x01@\x02\x04self7\
-\x04name\x1f\0\x7f\x04\0\x12[method]fields.has\x01:\x01j\0\x01\x1d\x01@\x03\x04s\
-elf7\x04name\x1f\x05value8\0;\x04\0\x12[method]fields.set\x01<\x01@\x02\x04self7\
-\x04name\x1f\0;\x04\0\x15[method]fields.delete\x01=\x01@\x03\x04self7\x04name\x1f\
-\x05value!\0;\x04\0\x15[method]fields.append\x01>\x01@\x01\x04self7\04\x04\0\x16\
-[method]fields.entries\x01?\x01@\x01\x04self7\01\x04\0\x14[method]fields.clone\x01\
-@\x01h%\x01@\x01\x04self\xc1\0\0\x0b\x04\0\x1f[method]incoming-request.method\x01\
-B\x01@\x01\x04self\xc1\0\0\x0e\x04\0([method]incoming-request.path-with-query\x01\
-C\x01k\x0d\x01@\x01\x04self\xc1\0\0\xc4\0\x04\0\x1f[method]incoming-request.sche\
-me\x01E\x04\0\"[method]incoming-request.authority\x01C\x01i#\x01@\x01\x04self\xc1\
-\0\0\xc6\0\x04\0\x20[method]incoming-request.headers\x01G\x01i,\x01j\x01\xc8\0\0\
-\x01@\x01\x04self\xc1\0\0\xc9\0\x04\0\x20[method]incoming-request.consume\x01J\x01\
-i&\x01@\x01\x07headers\xc6\0\0\xcb\0\x04\0\x1d[constructor]outgoing-request\x01L\
-\x01h&\x01i/\x01j\x01\xce\0\0\x01@\x01\x04self\xcd\0\0\xcf\0\x04\0\x1d[method]ou\
-tgoing-request.body\x01P\x01@\x01\x04self\xcd\0\0\x0b\x04\0\x1f[method]outgoing-\
-request.method\x01Q\x01j\0\0\x01@\x02\x04self\xcd\0\x06method\x0b\0\xd2\0\x04\0#\
-[method]outgoing-request.set-method\x01S\x01@\x01\x04self\xcd\0\0\x0e\x04\0([met\
-hod]outgoing-request.path-with-query\x01T\x01@\x02\x04self\xcd\0\x0fpath-with-qu\
-ery\x0e\0\xd2\0\x04\0,[method]outgoing-request.set-path-with-query\x01U\x01@\x01\
-\x04self\xcd\0\0\xc4\0\x04\0\x1f[method]outgoing-request.scheme\x01V\x01@\x02\x04\
-self\xcd\0\x06scheme\xc4\0\0\xd2\0\x04\0#[method]outgoing-request.set-scheme\x01\
-W\x04\0\"[method]outgoing-request.authority\x01T\x01@\x02\x04self\xcd\0\x09autho\
-rity\x0e\0\xd2\0\x04\0&[method]outgoing-request.set-authority\x01X\x01@\x01\x04s\
-elf\xcd\0\0\xc6\0\x04\0\x20[method]outgoing-request.headers\x01Y\x01i'\x01@\0\0\xda\
-\0\x04\0\x1c[constructor]request-options\x01[\x01h'\x01k\x01\x01@\x01\x04self\xdc\
-\0\0\xdd\0\x04\0'[method]request-options.connect-timeout\x01^\x01@\x02\x04self\xdc\
-\0\x08duration\xdd\0\0\xd2\0\x04\0+[method]request-options.set-connect-timeout\x01\
-_\x04\0*[method]request-options.first-byte-timeout\x01^\x04\0.[method]request-op\
-tions.set-first-byte-timeout\x01_\x04\0-[method]request-options.between-bytes-ti\
-meout\x01^\x04\01[method]request-options.set-between-bytes-timeout\x01_\x01i(\x01\
-i.\x01j\x01\xe1\0\x01\x1b\x01@\x02\x05param\xe0\0\x08response\xe2\0\x01\0\x04\0\x1d\
-[static]response-outparam.set\x01c\x01h+\x01@\x01\x04self\xe4\0\0*\x04\0\x20[met\
-hod]incoming-response.status\x01e\x01@\x01\x04self\xe4\0\0\xc6\0\x04\0![method]i\
-ncoming-response.headers\x01f\x01@\x01\x04self\xe4\0\0\xc9\0\x04\0![method]incom\
-ing-response.consume\x01g\x01h,\x01i\x03\x01j\x01\xe9\0\0\x01@\x01\x04self\xe8\0\
-\0\xea\0\x04\0\x1c[method]incoming-body.stream\x01k\x01i-\x01@\x01\x04this\xc8\0\
-\0\xec\0\x04\0\x1c[static]incoming-body.finish\x01m\x01h-\x01i\x09\x01@\x01\x04s\
-elf\xee\0\0\xef\0\x04\0![method]future-trailers.subscribe\x01p\x01i$\x01k\xf1\0\x01\
-j\x01\xf2\0\x01\x1b\x01j\x01\xf3\0\0\x01k\xf4\0\x01@\x01\x04self\xee\0\0\xf5\0\x04\
-\0\x1b[method]future-trailers.get\x01v\x01@\x01\x07headers\xc6\0\0\xe1\0\x04\0\x1e\
-[constructor]outgoing-response\x01w\x01h.\x01@\x01\x04self\xf8\0\0*\x04\0%[metho\
-d]outgoing-response.status-code\x01y\x01@\x02\x04self\xf8\0\x0bstatus-code*\0\xd2\
-\0\x04\0)[method]outgoing-response.set-status-code\x01z\x01@\x01\x04self\xf8\0\0\
-\xc6\0\x04\0![method]outgoing-response.headers\x01{\x01@\x01\x04self\xf8\0\0\xcf\
-\0\x04\0\x1e[method]outgoing-response.body\x01|\x01h/\x01i\x05\x01j\x01\xfe\0\0\x01\
-@\x01\x04self\xfd\0\0\xff\0\x04\0\x1b[method]outgoing-body.write\x01\x80\x01\x01\
-j\0\x01\x1b\x01@\x02\x04this\xce\0\x08trailers\xf2\0\0\x81\x01\x04\0\x1c[static]\
-outgoing-body.finish\x01\x82\x01\x01h0\x01@\x01\x04self\x83\x01\0\xef\0\x04\0*[m\
-ethod]future-incoming-response.subscribe\x01\x84\x01\x01i+\x01j\x01\x85\x01\x01\x1b\
-\x01j\x01\x86\x01\0\x01k\x87\x01\x01@\x01\x04self\x83\x01\0\x88\x01\x04\0$[metho\
-d]future-incoming-response.get\x01\x89\x01\x01h\x07\x01k\x1b\x01@\x01\x03err\x8a\
-\x01\0\x8b\x01\x04\0\x0fhttp-error-code\x01\x8c\x01\x04\x01\x15wasi:http/types@0\
-.2.0\x05R\x02\x03\09\x10outgoing-request\x02\x03\09\x0frequest-options\x02\x03\0\
-9\x18future-incoming-response\x02\x03\09\x0aerror-code\x01B\x0f\x02\x03\x02\x01S\
-\x04\0\x10outgoing-request\x03\0\0\x02\x03\x02\x01T\x04\0\x0frequest-options\x03\
-\0\x02\x02\x03\x02\x01U\x04\0\x18future-incoming-response\x03\0\x04\x02\x03\x02\x01\
-V\x04\0\x0aerror-code\x03\0\x06\x01i\x01\x01i\x03\x01k\x09\x01i\x05\x01j\x01\x0b\
-\x01\x07\x01@\x02\x07request\x08\x07options\x0a\0\x0c\x04\0\x06handle\x01\x0d\x04\
-\x01\x20wasi:http/outgoing-handler@0.2.0\x05W\x02\x03\09\x11outgoing-response\x01\
-B\x07\x02\x03\x02\x01X\x04\0\x11outgoing-response\x03\0\0\x01i\x01\x01q\x02\x04e\
-cho\0\0\x08response\x01\x02\0\x04\0\x10response-handler\x03\0\x03\x01@\x02\x03ur\
-ls\x08response\x04\x01\0\x04\0\x0cset-response\x01\x05\x04\x01#fermyon:spin-wasi\
--virt/http-handler\x05Y\x02\x03\09\x10incoming-request\x02\x03\09\x11incoming-re\
-sponse\x02\x03\09\x11response-outparam\x02\x03\09\x0dincoming-body\x01B\x1f\x02\x03\
-\x02\x01Z\x04\0\x10incoming-request\x03\0\0\x02\x03\x02\x01[\x04\0\x11incoming-r\
-esponse\x03\0\x02\x02\x03\x02\x01X\x04\0\x11outgoing-response\x03\0\x04\x02\x03\x02\
-\x01S\x04\0\x10outgoing-request\x03\0\x06\x02\x03\x02\x01\\\x04\0\x11response-ou\
-tparam\x03\0\x08\x02\x03\x02\x01U\x04\0\x18future-incoming-response\x03\0\x0a\x02\
-\x03\x02\x01]\x04\0\x0dincoming-body\x03\0\x0c\x04\0\x11response-receiver\x03\x01\
-\x01h\x0e\x01i\x03\x01k\x10\x01@\x01\x04self\x0f\0\x11\x04\0\x1d[method]response\
--receiver.get\x01\x12\x01i\x07\x01i\x0d\x01k\x14\x01i\x01\x01@\x02\x07request\x13\
-\x0dincoming-body\x15\0\x16\x04\0\x0bnew-request\x01\x17\x01i\x09\x01i\x0e\x01o\x02\
-\x18\x19\x01@\0\0\x1a\x04\0\x0cnew-response\x01\x1b\x04\x01\"fermyon:spin-wasi-v\
-irt/http-helper\x05^\x01B\x03\x01p}\x01@\x02\x04paths\x08contents\0\x01\0\x04\0\x08\
-add-file\x01\x01\x04\x01!fermyon:spin-wasi-virt/fs-handler\x05_\x04\x01\x1afermy\
-on:spin-test-virt/env\x04\0\x0b\x09\x01\0\x03env\x03\0\0\0G\x09producers\x01\x0c\
-processed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\x02\x03\x02\x01I\x04\0\x11ip-address-family\x03\0\x04\x02\x03\x02\x01K\x04\0\x0a\
+udp-socket\x03\0\x06\x01i\x07\x01j\x01\x08\x01\x03\x01@\x01\x0eaddress-family\x05\
+\0\x09\x04\0\x11create-udp-socket\x01\x0a\x04\x01$wasi:sockets/udp-create-socket\
+@0.2.0\x05L\x01BT\x02\x03\x02\x01\x0c\x04\0\x0cinput-stream\x03\0\0\x02\x03\x02\x01\
+\x0a\x04\0\x0doutput-stream\x03\0\x02\x02\x03\x02\x01\x01\x04\0\x08pollable\x03\0\
+\x04\x02\x03\x02\x01\x18\x04\0\x08duration\x03\0\x06\x02\x03\x02\x01E\x04\0\x07n\
+etwork\x03\0\x08\x02\x03\x02\x01G\x04\0\x0aerror-code\x03\0\x0a\x02\x03\x02\x01H\
+\x04\0\x11ip-socket-address\x03\0\x0c\x02\x03\x02\x01I\x04\0\x11ip-address-famil\
+y\x03\0\x0e\x01m\x03\x07receive\x04send\x04both\x04\0\x0dshutdown-type\x03\0\x10\
+\x04\0\x0atcp-socket\x03\x01\x01h\x12\x01h\x09\x01j\0\x01\x0b\x01@\x03\x04self\x13\
+\x07network\x14\x0dlocal-address\x0d\0\x15\x04\0\x1d[method]tcp-socket.start-bin\
+d\x01\x16\x01@\x01\x04self\x13\0\x15\x04\0\x1e[method]tcp-socket.finish-bind\x01\
+\x17\x01@\x03\x04self\x13\x07network\x14\x0eremote-address\x0d\0\x15\x04\0\x20[m\
+ethod]tcp-socket.start-connect\x01\x18\x01i\x01\x01i\x03\x01o\x02\x19\x1a\x01j\x01\
+\x1b\x01\x0b\x01@\x01\x04self\x13\0\x1c\x04\0![method]tcp-socket.finish-connect\x01\
+\x1d\x04\0\x1f[method]tcp-socket.start-listen\x01\x17\x04\0\x20[method]tcp-socke\
+t.finish-listen\x01\x17\x01i\x12\x01o\x03\x1e\x19\x1a\x01j\x01\x1f\x01\x0b\x01@\x01\
+\x04self\x13\0\x20\x04\0\x19[method]tcp-socket.accept\x01!\x01j\x01\x0d\x01\x0b\x01\
+@\x01\x04self\x13\0\"\x04\0\x20[method]tcp-socket.local-address\x01#\x04\0![meth\
+od]tcp-socket.remote-address\x01#\x01@\x01\x04self\x13\0\x7f\x04\0\x1f[method]tc\
+p-socket.is-listening\x01$\x01@\x01\x04self\x13\0\x0f\x04\0![method]tcp-socket.a\
+ddress-family\x01%\x01@\x02\x04self\x13\x05valuew\0\x15\x04\0*[method]tcp-socket\
+.set-listen-backlog-size\x01&\x01j\x01\x7f\x01\x0b\x01@\x01\x04self\x13\0'\x04\0\
+%[method]tcp-socket.keep-alive-enabled\x01(\x01@\x02\x04self\x13\x05value\x7f\0\x15\
+\x04\0)[method]tcp-socket.set-keep-alive-enabled\x01)\x01j\x01\x07\x01\x0b\x01@\x01\
+\x04self\x13\0*\x04\0'[method]tcp-socket.keep-alive-idle-time\x01+\x01@\x02\x04s\
+elf\x13\x05value\x07\0\x15\x04\0+[method]tcp-socket.set-keep-alive-idle-time\x01\
+,\x04\0&[method]tcp-socket.keep-alive-interval\x01+\x04\0*[method]tcp-socket.set\
+-keep-alive-interval\x01,\x01j\x01y\x01\x0b\x01@\x01\x04self\x13\0-\x04\0#[metho\
+d]tcp-socket.keep-alive-count\x01.\x01@\x02\x04self\x13\x05valuey\0\x15\x04\0'[m\
+ethod]tcp-socket.set-keep-alive-count\x01/\x01j\x01}\x01\x0b\x01@\x01\x04self\x13\
+\00\x04\0\x1c[method]tcp-socket.hop-limit\x011\x01@\x02\x04self\x13\x05value}\0\x15\
+\x04\0\x20[method]tcp-socket.set-hop-limit\x012\x01j\x01w\x01\x0b\x01@\x01\x04se\
+lf\x13\03\x04\0&[method]tcp-socket.receive-buffer-size\x014\x04\0*[method]tcp-so\
+cket.set-receive-buffer-size\x01&\x04\0#[method]tcp-socket.send-buffer-size\x014\
+\x04\0'[method]tcp-socket.set-send-buffer-size\x01&\x01i\x05\x01@\x01\x04self\x13\
+\05\x04\0\x1c[method]tcp-socket.subscribe\x016\x01@\x02\x04self\x13\x0dshutdown-\
+type\x11\0\x15\x04\0\x1b[method]tcp-socket.shutdown\x017\x04\x01\x16wasi:sockets\
+/tcp@0.2.0\x05M\x02\x03\06\x0atcp-socket\x01B\x0c\x02\x03\x02\x01E\x04\0\x07netw\
+ork\x03\0\0\x02\x03\x02\x01G\x04\0\x0aerror-code\x03\0\x02\x02\x03\x02\x01I\x04\0\
+\x11ip-address-family\x03\0\x04\x02\x03\x02\x01N\x04\0\x0atcp-socket\x03\0\x06\x01\
+i\x07\x01j\x01\x08\x01\x03\x01@\x01\x0eaddress-family\x05\0\x09\x04\0\x11create-\
+tcp-socket\x01\x0a\x04\x01$wasi:sockets/tcp-create-socket@0.2.0\x05O\x02\x03\02\x0a\
+ip-address\x01B\x16\x02\x03\x02\x01\x01\x04\0\x08pollable\x03\0\0\x02\x03\x02\x01\
+E\x04\0\x07network\x03\0\x02\x02\x03\x02\x01G\x04\0\x0aerror-code\x03\0\x04\x02\x03\
+\x02\x01P\x04\0\x0aip-address\x03\0\x06\x04\0\x16resolve-address-stream\x03\x01\x01\
+h\x08\x01k\x07\x01j\x01\x0a\x01\x05\x01@\x01\x04self\x09\0\x0b\x04\03[method]res\
+olve-address-stream.resolve-next-address\x01\x0c\x01i\x01\x01@\x01\x04self\x09\0\
+\x0d\x04\0([method]resolve-address-stream.subscribe\x01\x0e\x01h\x03\x01i\x08\x01\
+j\x01\x10\x01\x05\x01@\x02\x07network\x0f\x04names\0\x11\x04\0\x11resolve-addres\
+ses\x01\x12\x04\x01!wasi:sockets/ip-name-lookup@0.2.0\x05Q\x01B\xc0\x01\x02\x03\x02\
+\x01\x18\x04\0\x08duration\x03\0\0\x02\x03\x02\x01\x0c\x04\0\x0cinput-stream\x03\
+\0\x02\x02\x03\x02\x01\x0a\x04\0\x0doutput-stream\x03\0\x04\x02\x03\x02\x01\x08\x04\
+\0\x08io-error\x03\0\x06\x02\x03\x02\x01\x01\x04\0\x08pollable\x03\0\x08\x01q\x0a\
+\x03get\0\0\x04head\0\0\x04post\0\0\x03put\0\0\x06delete\0\0\x07connect\0\0\x07o\
+ptions\0\0\x05trace\0\0\x05patch\0\0\x05other\x01s\0\x04\0\x06method\x03\0\x0a\x01\
+q\x03\x04HTTP\0\0\x05HTTPS\0\0\x05other\x01s\0\x04\0\x06scheme\x03\0\x0c\x01ks\x01\
+k{\x01r\x02\x05rcode\x0e\x09info-code\x0f\x04\0\x11DNS-error-payload\x03\0\x10\x01\
+k}\x01r\x02\x08alert-id\x12\x0dalert-message\x0e\x04\0\x1aTLS-alert-received-pay\
+load\x03\0\x13\x01ky\x01r\x02\x0afield-name\x0e\x0afield-size\x15\x04\0\x12field\
+-size-payload\x03\0\x16\x01kw\x01k\x17\x01q'\x0bDNS-timeout\0\0\x09DNS-error\x01\
+\x11\0\x15destination-not-found\0\0\x17destination-unavailable\0\0\x19destinatio\
+n-IP-prohibited\0\0\x19destination-IP-unroutable\0\0\x12connection-refused\0\0\x15\
+connection-terminated\0\0\x12connection-timeout\0\0\x17connection-read-timeout\0\
+\0\x18connection-write-timeout\0\0\x18connection-limit-reached\0\0\x12TLS-protoc\
+ol-error\0\0\x15TLS-certificate-error\0\0\x12TLS-alert-received\x01\x14\0\x13HTT\
+P-request-denied\0\0\x1cHTTP-request-length-required\0\0\x16HTTP-request-body-si\
+ze\x01\x18\0\x1bHTTP-request-method-invalid\0\0\x18HTTP-request-URI-invalid\0\0\x19\
+HTTP-request-URI-too-long\0\0\x20HTTP-request-header-section-size\x01\x15\0\x18H\
+TTP-request-header-size\x01\x19\0!HTTP-request-trailer-section-size\x01\x15\0\x19\
+HTTP-request-trailer-size\x01\x17\0\x18HTTP-response-incomplete\0\0!HTTP-respons\
+e-header-section-size\x01\x15\0\x19HTTP-response-header-size\x01\x17\0\x17HTTP-r\
+esponse-body-size\x01\x18\0\"HTTP-response-trailer-section-size\x01\x15\0\x1aHTT\
+P-response-trailer-size\x01\x17\0\x1dHTTP-response-transfer-coding\x01\x0e\0\x1c\
+HTTP-response-content-coding\x01\x0e\0\x15HTTP-response-timeout\0\0\x13HTTP-upgr\
+ade-failed\0\0\x13HTTP-protocol-error\0\0\x0dloop-detected\0\0\x13configuration-\
+error\0\0\x0einternal-error\x01\x0e\0\x04\0\x0aerror-code\x03\0\x1a\x01q\x03\x0e\
+invalid-syntax\0\0\x09forbidden\0\0\x09immutable\0\0\x04\0\x0cheader-error\x03\0\
+\x1c\x01s\x04\0\x09field-key\x03\0\x1e\x01p}\x04\0\x0bfield-value\x03\0\x20\x04\0\
+\x06fields\x03\x01\x04\0\x07headers\x03\0\"\x04\0\x08trailers\x03\0\"\x04\0\x10i\
+ncoming-request\x03\x01\x04\0\x10outgoing-request\x03\x01\x04\0\x0frequest-optio\
+ns\x03\x01\x04\0\x11response-outparam\x03\x01\x01{\x04\0\x0bstatus-code\x03\0)\x04\
+\0\x11incoming-response\x03\x01\x04\0\x0dincoming-body\x03\x01\x04\0\x0ffuture-t\
+railers\x03\x01\x04\0\x11outgoing-response\x03\x01\x04\0\x0doutgoing-body\x03\x01\
+\x04\0\x18future-incoming-response\x03\x01\x01i\"\x01@\0\01\x04\0\x13[constructo\
+r]fields\x012\x01o\x02\x1f!\x01p3\x01j\x011\x01\x1d\x01@\x01\x07entries4\05\x04\0\
+\x18[static]fields.from-list\x016\x01h\"\x01p!\x01@\x02\x04self7\x04name\x1f\08\x04\
+\0\x12[method]fields.get\x019\x01@\x02\x04self7\x04name\x1f\0\x7f\x04\0\x12[meth\
+od]fields.has\x01:\x01j\0\x01\x1d\x01@\x03\x04self7\x04name\x1f\x05value8\0;\x04\
+\0\x12[method]fields.set\x01<\x01@\x02\x04self7\x04name\x1f\0;\x04\0\x15[method]\
+fields.delete\x01=\x01@\x03\x04self7\x04name\x1f\x05value!\0;\x04\0\x15[method]f\
+ields.append\x01>\x01@\x01\x04self7\04\x04\0\x16[method]fields.entries\x01?\x01@\
+\x01\x04self7\01\x04\0\x14[method]fields.clone\x01@\x01h%\x01@\x01\x04self\xc1\0\
+\0\x0b\x04\0\x1f[method]incoming-request.method\x01B\x01@\x01\x04self\xc1\0\0\x0e\
+\x04\0([method]incoming-request.path-with-query\x01C\x01k\x0d\x01@\x01\x04self\xc1\
+\0\0\xc4\0\x04\0\x1f[method]incoming-request.scheme\x01E\x04\0\"[method]incoming\
+-request.authority\x01C\x01i#\x01@\x01\x04self\xc1\0\0\xc6\0\x04\0\x20[method]in\
+coming-request.headers\x01G\x01i,\x01j\x01\xc8\0\0\x01@\x01\x04self\xc1\0\0\xc9\0\
+\x04\0\x20[method]incoming-request.consume\x01J\x01i&\x01@\x01\x07headers\xc6\0\0\
+\xcb\0\x04\0\x1d[constructor]outgoing-request\x01L\x01h&\x01i/\x01j\x01\xce\0\0\x01\
+@\x01\x04self\xcd\0\0\xcf\0\x04\0\x1d[method]outgoing-request.body\x01P\x01@\x01\
+\x04self\xcd\0\0\x0b\x04\0\x1f[method]outgoing-request.method\x01Q\x01j\0\0\x01@\
+\x02\x04self\xcd\0\x06method\x0b\0\xd2\0\x04\0#[method]outgoing-request.set-meth\
+od\x01S\x01@\x01\x04self\xcd\0\0\x0e\x04\0([method]outgoing-request.path-with-qu\
+ery\x01T\x01@\x02\x04self\xcd\0\x0fpath-with-query\x0e\0\xd2\0\x04\0,[method]out\
+going-request.set-path-with-query\x01U\x01@\x01\x04self\xcd\0\0\xc4\0\x04\0\x1f[\
+method]outgoing-request.scheme\x01V\x01@\x02\x04self\xcd\0\x06scheme\xc4\0\0\xd2\
+\0\x04\0#[method]outgoing-request.set-scheme\x01W\x04\0\"[method]outgoing-reques\
+t.authority\x01T\x01@\x02\x04self\xcd\0\x09authority\x0e\0\xd2\0\x04\0&[method]o\
+utgoing-request.set-authority\x01X\x01@\x01\x04self\xcd\0\0\xc6\0\x04\0\x20[meth\
+od]outgoing-request.headers\x01Y\x01i'\x01@\0\0\xda\0\x04\0\x1c[constructor]requ\
+est-options\x01[\x01h'\x01k\x01\x01@\x01\x04self\xdc\0\0\xdd\0\x04\0'[method]req\
+uest-options.connect-timeout\x01^\x01@\x02\x04self\xdc\0\x08duration\xdd\0\0\xd2\
+\0\x04\0+[method]request-options.set-connect-timeout\x01_\x04\0*[method]request-\
+options.first-byte-timeout\x01^\x04\0.[method]request-options.set-first-byte-tim\
+eout\x01_\x04\0-[method]request-options.between-bytes-timeout\x01^\x04\01[method\
+]request-options.set-between-bytes-timeout\x01_\x01i(\x01i.\x01j\x01\xe1\0\x01\x1b\
+\x01@\x02\x05param\xe0\0\x08response\xe2\0\x01\0\x04\0\x1d[static]response-outpa\
+ram.set\x01c\x01h+\x01@\x01\x04self\xe4\0\0*\x04\0\x20[method]incoming-response.\
+status\x01e\x01@\x01\x04self\xe4\0\0\xc6\0\x04\0![method]incoming-response.heade\
+rs\x01f\x01@\x01\x04self\xe4\0\0\xc9\0\x04\0![method]incoming-response.consume\x01\
+g\x01h,\x01i\x03\x01j\x01\xe9\0\0\x01@\x01\x04self\xe8\0\0\xea\0\x04\0\x1c[metho\
+d]incoming-body.stream\x01k\x01i-\x01@\x01\x04this\xc8\0\0\xec\0\x04\0\x1c[stati\
+c]incoming-body.finish\x01m\x01h-\x01i\x09\x01@\x01\x04self\xee\0\0\xef\0\x04\0!\
+[method]future-trailers.subscribe\x01p\x01i$\x01k\xf1\0\x01j\x01\xf2\0\x01\x1b\x01\
+j\x01\xf3\0\0\x01k\xf4\0\x01@\x01\x04self\xee\0\0\xf5\0\x04\0\x1b[method]future-\
+trailers.get\x01v\x01@\x01\x07headers\xc6\0\0\xe1\0\x04\0\x1e[constructor]outgoi\
+ng-response\x01w\x01h.\x01@\x01\x04self\xf8\0\0*\x04\0%[method]outgoing-response\
+.status-code\x01y\x01@\x02\x04self\xf8\0\x0bstatus-code*\0\xd2\0\x04\0)[method]o\
+utgoing-response.set-status-code\x01z\x01@\x01\x04self\xf8\0\0\xc6\0\x04\0![meth\
+od]outgoing-response.headers\x01{\x01@\x01\x04self\xf8\0\0\xcf\0\x04\0\x1e[metho\
+d]outgoing-response.body\x01|\x01h/\x01i\x05\x01j\x01\xfe\0\0\x01@\x01\x04self\xfd\
+\0\0\xff\0\x04\0\x1b[method]outgoing-body.write\x01\x80\x01\x01j\0\x01\x1b\x01@\x02\
+\x04this\xce\0\x08trailers\xf2\0\0\x81\x01\x04\0\x1c[static]outgoing-body.finish\
+\x01\x82\x01\x01h0\x01@\x01\x04self\x83\x01\0\xef\0\x04\0*[method]future-incomin\
+g-response.subscribe\x01\x84\x01\x01i+\x01j\x01\x85\x01\x01\x1b\x01j\x01\x86\x01\
+\0\x01k\x87\x01\x01@\x01\x04self\x83\x01\0\x88\x01\x04\0$[method]future-incoming\
+-response.get\x01\x89\x01\x01h\x07\x01k\x1b\x01@\x01\x03err\x8a\x01\0\x8b\x01\x04\
+\0\x0fhttp-error-code\x01\x8c\x01\x04\x01\x15wasi:http/types@0.2.0\x05R\x02\x03\0\
+9\x10outgoing-request\x02\x03\09\x0frequest-options\x02\x03\09\x18future-incomin\
+g-response\x02\x03\09\x0aerror-code\x01B\x0f\x02\x03\x02\x01S\x04\0\x10outgoing-\
+request\x03\0\0\x02\x03\x02\x01T\x04\0\x0frequest-options\x03\0\x02\x02\x03\x02\x01\
+U\x04\0\x18future-incoming-response\x03\0\x04\x02\x03\x02\x01V\x04\0\x0aerror-co\
+de\x03\0\x06\x01i\x01\x01i\x03\x01k\x09\x01i\x05\x01j\x01\x0b\x01\x07\x01@\x02\x07\
+request\x08\x07options\x0a\0\x0c\x04\0\x06handle\x01\x0d\x04\x01\x20wasi:http/ou\
+tgoing-handler@0.2.0\x05W\x02\x03\09\x11outgoing-response\x01B\x07\x02\x03\x02\x01\
+X\x04\0\x11outgoing-response\x03\0\0\x01i\x01\x01q\x02\x04echo\0\0\x08response\x01\
+\x02\0\x04\0\x10response-handler\x03\0\x03\x01@\x02\x03urls\x08response\x04\x01\0\
+\x04\0\x0cset-response\x01\x05\x04\x01#fermyon:spin-wasi-virt/http-handler\x05Y\x02\
+\x03\09\x10incoming-request\x02\x03\09\x11incoming-response\x02\x03\09\x11respon\
+se-outparam\x02\x03\09\x0dincoming-body\x01B\x1f\x02\x03\x02\x01Z\x04\0\x10incom\
+ing-request\x03\0\0\x02\x03\x02\x01[\x04\0\x11incoming-response\x03\0\x02\x02\x03\
+\x02\x01X\x04\0\x11outgoing-response\x03\0\x04\x02\x03\x02\x01S\x04\0\x10outgoin\
+g-request\x03\0\x06\x02\x03\x02\x01\\\x04\0\x11response-outparam\x03\0\x08\x02\x03\
+\x02\x01U\x04\0\x18future-incoming-response\x03\0\x0a\x02\x03\x02\x01]\x04\0\x0d\
+incoming-body\x03\0\x0c\x04\0\x11response-receiver\x03\x01\x01h\x0e\x01i\x03\x01\
+k\x10\x01@\x01\x04self\x0f\0\x11\x04\0\x1d[method]response-receiver.get\x01\x12\x01\
+i\x07\x01i\x0d\x01k\x14\x01i\x01\x01@\x02\x07request\x13\x0dincoming-body\x15\0\x16\
+\x04\0\x0bnew-request\x01\x17\x01i\x09\x01i\x0e\x01o\x02\x18\x19\x01@\0\0\x1a\x04\
+\0\x0cnew-response\x01\x1b\x04\x01\"fermyon:spin-wasi-virt/http-helper\x05^\x01B\
+\x03\x01p}\x01@\x02\x04paths\x08contents\0\x01\0\x04\0\x08add-file\x01\x01\x04\x01\
+!fermyon:spin-wasi-virt/fs-handler\x05_\x04\x01\x1afermyon:spin-test-virt/env\x04\
+\0\x0b\x09\x01\0\x03env\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-c\
+omponent\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -64,15 +64,6 @@ jobs:
               target: "aarch64-apple-darwin",
               targetDir: "target/aarch64-apple-darwin/release/",
             }
-          - {
-              os: "windows-latest",
-              arch: "amd64",
-              wasiSDK: "",
-              extension: ".exe",
-              buildArgs: "",
-              target: "",
-              targetDir: "target/release",
-            }
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust toolchain
@@ -93,6 +84,15 @@ jobs:
         uses: baptiste0928/cargo-install@v3
         with:
           crate: cargo-component
+
+      - name: Install WASI-SDK
+        shell: bash
+        run: |
+          cd /tmp
+          curl -LO https://github.com/WebAssembly/wasi-sdk/releases/download/${WASI_SDK_RELEASE}/wasi-sdk-${WASI_SDK_VERSION}-${{ matrix.config.wasiSDK }}.tar.gz
+          tar xf wasi-sdk-${WASI_SDK_VERSION}-${{ matrix.config.wasiSDK }}.tar.gz
+          mv wasi-sdk-${WASI_SDK_VERSION} ${{ matrix.config.targetDir }}/wasi-sdk
+          echo "WASI_SDK_PATH=${{ matrix.config.targetDir}}/wasi-sdk" >> $GITHUB_ENV
 
       - name: set the release version (main)
         shell: bash

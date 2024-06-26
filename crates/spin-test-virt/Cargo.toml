@@ -11,7 +11,9 @@ spin-manifest = { workspace = true }
 spin-outbound-networking = { workspace = true }
 spin-serde = { workspace = true }
 toml = { workspace = true }
-wit-bindgen-rt = { version = "0.25.0", features = ["bitflags"] }
+wit-bindgen-rt = { workspace = true }
+# rusqlite > 0.25 fails to build with various linker errors
+rusqlite = { version = "0.25", features = ["bundled", "wasm32-wasi-vfs"] }
 
 
 [lib]

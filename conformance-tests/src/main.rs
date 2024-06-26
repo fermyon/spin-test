@@ -29,6 +29,7 @@ fn run_test(test: conformance_tests::Test) -> Result<(), anyhow::Error> {
             }
             conformance_tests::config::Precondition::TcpEcho => {}
             conformance_tests::config::Precondition::KeyValueStore(_) => {}
+            conformance_tests::config::Precondition::Sqlite => {}
         }
     }
     for invocation in test.config.invocations {
@@ -46,9 +47,9 @@ fn run_test(test: conformance_tests::Test) -> Result<(), anyhow::Error> {
 /// When encountering a magic key-value pair, substitute the value with a different value.
 fn substitution(key: &str, value: &str) -> Option<String> {
     match (key, value) {
+        ("port", "7") => Some(7.to_string()),
         ("port", "80") => Some(HTTP_PORT.to_string()),
-        ("port", "5000") => Some(5000.to_string()),
-        _ => None,
+        _ => panic!("Unexpected substitution: {} = {}", key, value),
     }
 }
 
