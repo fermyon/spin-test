@@ -7,7 +7,7 @@ use runtime::SpinTest;
 const HTTP_PORT: u16 = 1234;
 
 fn main() -> anyhow::Result<()> {
-    conformance_tests::run_tests_from("../../conformance-tests/conformance-tests", run_test)
+    conformance_tests::run_tests(run_test)
 }
 
 fn run_test(test: conformance_tests::Test) -> Result<(), anyhow::Error> {
@@ -47,9 +47,9 @@ fn run_test(test: conformance_tests::Test) -> Result<(), anyhow::Error> {
 /// When encountering a magic key-value pair, substitute the value with a different value.
 fn substitution(key: &str, value: &str) -> Option<String> {
     match (key, value) {
+        ("port", "7") => Some(7.to_string()),
         ("port", "80") => Some(HTTP_PORT.to_string()),
-        ("port", "5000") => Some(5000.to_string()),
-        _ => None,
+        _ => panic!("Unexpected substitution: {} = {}", key, value),
     }
 }
 
