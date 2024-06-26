@@ -335,7 +335,7 @@ impl exports::types::GuestFields for Fields {
     ) -> Result<exports::types::Fields, exports::types::HeaderError> {
         let mut fields: HashMap<String, Vec<Vec<u8>>> = HashMap::new();
         for (k, v) in entries {
-            fields.entry(k).or_default().push(v);
+            fields.entry(k.to_lowercase()).or_default().push(v);
         }
         let fields = Fields {
             fields: RefCell::new(fields),
@@ -346,7 +346,8 @@ impl exports::types::GuestFields for Fields {
     fn get(&self, name: exports::types::FieldKey) -> Vec<exports::types::FieldValue> {
         self.fields
             .borrow()
-            .get(&name)
+            // Downcase the key to make it case-insensitive
+            .get(&name.to_lowercase())
             .map(Clone::clone)
             .unwrap_or_default()
     }
@@ -375,7 +376,7 @@ impl exports::types::GuestFields for Fields {
         // TODO: check for mutability rules
         self.fields
             .borrow_mut()
-            .entry(name)
+            .entry(name.to_lowercase())
             .or_default()
             .push(value);
         Ok(())

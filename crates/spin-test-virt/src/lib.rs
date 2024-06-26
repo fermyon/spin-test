@@ -364,11 +364,49 @@ impl redis::GuestConnection for RedisConnection {
     fn execute(
         &self,
         command: String,
-        arguments: Vec<redis::RedisParameter>,
+        mut arguments: Vec<redis::RedisParameter>,
     ) -> Result<Vec<redis::RedisResult>, redis::Error> {
-        let _ = (command, arguments);
-        // TODO: implement this by getting input from user
-        Err(redis::Error::Other("not yet implemented".into()))
+        let mut get_binary = || match arguments.pop().ok_or(redis::Error::TypeError)? {
+            redis::RedisParameter::Int64(_) => Err(redis::Error::TypeError),
+            redis::RedisParameter::Binary(b) => Ok(b),
+        };
+        match command.as_str() {
+            "incr" => {
+                let key = get_binary()?;
+                let key = String::from_utf8(key).map_err(|_| redis::Error::TypeError)?;
+                self.incr(key).map(|i| vec![redis::RedisResult::Int64(i)])
+            }
+            "set" => {
+                let value = get_binary()?;
+                let key = get_binary()?;
+                let key = String::from_utf8(key).map_err(|_| redis::Error::TypeError)?;
+                self.set(key, value);
+                Ok(vec![])
+            }
+            "append" => {
+                let value = get_binary()?;
+                let key = get_binary()?;
+                let key = String::from_utf8(key).map_err(|_| redis::Error::TypeError)?;
+                let mut current = self.get(key.clone())?.unwrap_or_default();
+                current.extend(value);
+                self.set(key, current);
+                Ok(vec![])
+            }
+            "get" => {
+                let key = get_binary()?;
+                let key = String::from_utf8(key).map_err(|_| redis::Error::TypeError)?;
+                let value = self.get(key)?;
+                Ok(value
+                    .map(|v| vec![redis::RedisResult::Binary(v)])
+                    .unwrap_or_default())
+            }
+            _ => {
+                // TODO: implement this by getting input from user
+                Err(redis::Error::Other(format!(
+                    "not able to execute '{command}' command"
+                )))
+            }
+        }
     }
 }
 
