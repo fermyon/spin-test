@@ -19,6 +19,8 @@ concurrency: ${{ github.workflow }}
 env:
   CARGO_TERM_COLOR: always
   RUST_VERSION: 1.76
+  WASI_SDK_VERSION: "22.0"
+  WASI_SDK_RELEASE: wasi-sdk-22
 
 jobs:
   build:
@@ -91,8 +93,7 @@ jobs:
           cd /tmp
           curl -LO https://github.com/WebAssembly/wasi-sdk/releases/download/${WASI_SDK_RELEASE}/wasi-sdk-${WASI_SDK_VERSION}-${{ matrix.config.wasiSDK }}.tar.gz
           tar xf wasi-sdk-${WASI_SDK_VERSION}-${{ matrix.config.wasiSDK }}.tar.gz
-          mv wasi-sdk-${WASI_SDK_VERSION} ${{ matrix.config.targetDir }}/wasi-sdk
-          echo "WASI_SDK_PATH=${{ matrix.config.targetDir}}/wasi-sdk" >> $GITHUB_ENV
+          echo "WASI_SDK_PATH=`pwd`/wasi-sdk-${WASI_SDK_VERSION}" >> $GITHUB_ENV
 
       - name: set the release version (main)
         shell: bash
