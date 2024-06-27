@@ -125,10 +125,7 @@ fn apply_request_transformations(
     let headers_to_add = calculate_default_headers(&request, base, route_match)
         .context("could not calculate default headers for request")?
         .into_iter()
-        .flat_map(|(k, v)| {
-            k.into_iter()
-                .map(move |s| (s.to_string(), v.clone().into_bytes()))
-        })
+        .flat_map(|(k, v)| k.into_iter().map(move |s| (s, v.clone().into_bytes())))
         .chain(request.headers().entries());
     let headers = Headers::new();
     for (key, value) in headers_to_add {
