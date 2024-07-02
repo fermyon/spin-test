@@ -31,6 +31,7 @@ fn run_test(test: conformance_tests::Test) -> Result<(), anyhow::Error> {
             conformance_tests::config::Precondition::KeyValueStore(_) => {}
             conformance_tests::config::Precondition::Sqlite => {}
             conformance_tests::config::Precondition::Redis => {}
+            conformance_tests::config::Precondition::Mqtt => {}
         }
     }
     for invocation in test.config.invocations {
