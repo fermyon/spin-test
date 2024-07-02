@@ -637,8 +637,15 @@ impl mqtt::GuestConnection for MqttConnection {
         password: String,
         keep_alive_interval_in_secs: u64,
     ) -> Result<mqtt::Connection, mqtt::Error> {
-        let _ = (address, username, password, keep_alive_interval_in_secs);
-        Err(mqtt::Error::Other("not yet implemented".to_string()))
+        let url_allowed = manifest::AppManifest::allows_url(&address, "mqtt")
+            .map_err(|_| mqtt::Error::InvalidAddress)?;
+        if !url_allowed {
+            return Err(mqtt::Error::ConnectionFailed(format!(
+                "address {address} is not permitted"
+            )));
+        }
+        let _ = (username, password, keep_alive_interval_in_secs);
+        Ok(mqtt::Connection::new(MqttConnection))
     }
 
     fn publish(
@@ -648,7 +655,7 @@ impl mqtt::GuestConnection for MqttConnection {
         qos: mqtt::Qos,
     ) -> Result<(), mqtt::Error> {
         let _ = (topic, payload, qos);
-        Err(mqtt::Error::Other("not yet implemented".to_string()))
+        Ok(())
     }
 }
 
