@@ -164,7 +164,7 @@ pub struct OutgoingRequest {
     pub authority: RefCell<Option<String>>,
     pub path_with_query: RefCell<Option<String>>,
     pub headers: Fields,
-    body: Consumable<OutgoingBody>,
+    pub body: Consumable<OutgoingBody>,
 }
 
 impl exports::types::GuestOutgoingRequest for OutgoingRequest {
@@ -259,6 +259,12 @@ impl OutgoingBody {
     }
 }
 
+impl From<IncomingBody> for OutgoingBody {
+    fn from(i: IncomingBody) -> Self {
+        Self(i.0)
+    }
+}
+
 impl exports::types::GuestOutgoingBody for OutgoingBody {
     fn write(&self) -> Result<io::exports::streams::OutputStream, ()> {
         Ok(io::exports::streams::OutputStream::new(
@@ -274,7 +280,7 @@ impl exports::types::GuestOutgoingBody for OutgoingBody {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct IncomingBody(io::Buffer);
 
 impl IncomingBody {

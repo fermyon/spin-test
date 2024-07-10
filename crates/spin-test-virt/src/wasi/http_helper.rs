@@ -34,7 +34,10 @@ impl exports::Guest for Component {
             authority,
             path_with_query,
             headers,
-            body: body.unwrap_or_else(IncomingBody::empty).into(),
+            // Either override the body with `incoming_body`, or use the body from the original request
+            body: body
+                .map(Into::into)
+                .unwrap_or_else(|| request.body.unconsume().map(Into::into)),
         })
     }
 
