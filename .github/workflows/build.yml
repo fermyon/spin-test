@@ -19,6 +19,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_COMPONENT_VERSION: 0.13.2
   RUST_VERSION: 1.76
   WASI_SDK_VERSION: "22.0"
   WASI_SDK_RELEASE: wasi-sdk-22
@@ -39,6 +40,7 @@ jobs:
         uses: baptiste0928/cargo-install@v3
         with:
           crate: cargo-component
+          version: ${{ env.CARGO_COMPONENT_VERSION }}
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: "${{ runner.os }}-full-${{ hashFiles('./Cargo.lock') }}"
@@ -80,6 +82,7 @@ jobs:
         uses: baptiste0928/cargo-install@v3
         with:
           crate: cargo-component
+          version: ${{ env.CARGO_COMPONENT_VERSION }}
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: "${{ runner.os }}-full-${{ hashFiles('./Cargo.lock') }}"
@@ -112,6 +115,7 @@ jobs:
         uses: baptiste0928/cargo-install@v3
         with:
           crate: cargo-component
+          version: ${{ env.CARGO_COMPONENT_VERSION }}
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: "${{ runner.os }}-full-${{ hashFiles('./Cargo.lock') }}"
