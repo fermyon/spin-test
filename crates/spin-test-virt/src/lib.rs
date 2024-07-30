@@ -6,7 +6,7 @@ mod manifest;
 mod wasi;
 
 use std::{
-    cell::LazyCell,
+    cell::{LazyCell, RefCell},
     collections::{HashMap, HashSet},
     sync::{Arc, Mutex, OnceLock, RwLock},
 };
@@ -702,20 +702,35 @@ thread_local! {
                     .map(|(k, v)| (k.to_string(), v)),
             )
             .unwrap();
-        resolver.add_provider(Box::new(TestProvider));
+        resolver.add_provider(Box::new(UserGivenProvider));
         Ok(resolver)
 
     });
+
+    /// The user-defined variables.
+    ///
+    /// These are the application variables the user is supposed to provide.
+    static USER_DEFINED_VARIABLES: LazyCell<RefCell<HashMap<String, String>>> = LazyCell::new(|| {
+        RefCell::new(HashMap::new())
+    });
 }
 
-/// A variable provider for testing.
+/// A variable provider populated through the `fermyon:spin-test-virt/variable` interface.
 #[derive(Debug)]
-struct TestProvider;
+struct UserGivenProvider;
 
 #[async_trait::async_trait]
-impl spin_expressions::Provider for TestProvider {
-    async fn get(&self, _key: &spin_expressions::Key) -> anyhow::Result<Option<String>> {
-        Ok(Some("test".to_string()))
+impl spin_expressions::Provider for UserGivenProvider {
+    async fn get(&self, key: &spin_expressions::Key) -> anyhow::Result<Option<String>> {
+        Ok(USER_DEFINED_VARIABLES.with(|vars| vars.borrow().get(key.as_str()).cloned()))
+    }
+}
+
+impl spin_test_virt::variables::Guest for Component {
+    fn set(key: String, value: String) {
+        USER_DEFINED_VARIABLES.with(|vars| {
+            vars.borrow_mut().insert(key, value);
+        });
     }
 }
 

@@ -146,6 +146,7 @@ fn instantiate_test(
         "fermyon:spin/sqlite@2.0.0",
         "fermyon:spin-test-virt/sqlite",
         "fermyon:spin-test-virt/key-value",
+        "fermyon:spin-test-virt/variables",
         "fermyon:spin/key-value@2.0.0",
         "wasi:io/error@0.2.0",
         "wasi:io/streams@0.2.0",
