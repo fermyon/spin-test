@@ -5,11 +5,14 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
+async-trait = "0.1"
+futures = "0.3"
 ipnet = "2.9"
 spin-expressions = { workspace = true }
 spin-manifest = { workspace = true }
 spin-outbound-networking = { workspace = true }
 spin-serde = { workspace = true }
+spin-locked-app = { git = "https://github.com/fermyon/spin" }
 toml = { workspace = true }
 wit-bindgen-rt = { workspace = true }
 # rusqlite > 0.25 fails to build with various linker errors
