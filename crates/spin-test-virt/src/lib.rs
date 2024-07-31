@@ -6,6 +6,7 @@ mod manifest;
 mod wasi;
 
 use std::{
+    cell::{LazyCell, RefCell},
     collections::{HashMap, HashSet},
     sync::{Arc, Mutex, OnceLock, RwLock},
 };
@@ -661,24 +662,75 @@ impl mqtt::GuestConnection for MqttConnection {
 
 impl variables::Guest for Component {
     fn get(name: String) -> Result<String, variables::Error> {
-        // TODO(rylev): use `spin-expressions`. We don't currently because
-        // it only exposes an `async` API.
-        let name: spin_serde::SnakeId = name
-            .clone()
-            .try_into()
-            .map_err(|_| variables::Error::InvalidName(name))?;
-        let variable = manifest::AppManifest::get_component()
-            .expect("internal error: component id not yet set")
+        let key = spin_expressions::Key::new(&name)
+            .map_err(|_| variables::Error::InvalidName(name.clone()))?;
+        let component_id = manifest::AppManifest::get_component_id().expect("no component id set");
+        VARIABLE_RESOLVER.with(|resolver| {
+            let name = key.as_str().to_owned();
+            let fut = resolver
+                .as_ref()
+                .map_err(|e| e.clone())?
+                .resolve(component_id.as_ref(), key);
+            futures::executor::block_on(fut).map_err(|_| variables::Error::Undefined(name))
+        })
+    }
+}
+
+thread_local! {
+    /// The global variable resolver.
+    static VARIABLE_RESOLVER: LazyCell<Result<spin_expressions::ProviderResolver, variables::Error>> = LazyCell::new(|| {
+        let variables = manifest::AppManifest::get()
             .variables
-            .remove(&name);
-        let variable = variable.or_else(|| {
-            manifest::AppManifest::get()
-                .variables
-                .into_iter()
-                .find_map(|(k, v)| (k == name).then_some(v.default))
-                .flatten()
+            .into_iter()
+            .map(|(k, v)| {
+                let v = spin_locked_app::Variable {
+                    default: v.default,
+                    secret: v.secret,
+                };
+                (k.to_string(), v)
+            });
+        let mut resolver = spin_expressions::ProviderResolver::new(variables)
+            .map_err(|e| variables::Error::Other(e.to_string()))?;
+        let component = manifest::AppManifest::get_component().expect("no component set");
+        let component_id = manifest::AppManifest::get_component_id().expect("no component id set");
+        resolver
+            .add_component_variables(
+                component_id,
+                component
+                    .variables
+                    .into_iter()
+                    .map(|(k, v)| (k.to_string(), v)),
+            )
+            .unwrap();
+        resolver.add_provider(Box::new(UserGivenProvider));
+        Ok(resolver)
+
+    });
+
+    /// The user-defined variables.
+    ///
+    /// These are the application variables the user is supposed to provide.
+    static USER_DEFINED_VARIABLES: LazyCell<RefCell<HashMap<String, String>>> = LazyCell::new(|| {
+        RefCell::new(HashMap::new())
+    });
+}
+
+/// A variable provider populated through the `fermyon:spin-test-virt/variable` interface.
+#[derive(Debug)]
+struct UserGivenProvider;
+
+#[async_trait::async_trait]
+impl spin_expressions::Provider for UserGivenProvider {
+    async fn get(&self, key: &spin_expressions::Key) -> anyhow::Result<Option<String>> {
+        Ok(USER_DEFINED_VARIABLES.with(|vars| vars.borrow().get(key.as_str()).cloned()))
+    }
+}
+
+impl spin_test_virt::variables::Guest for Component {
+    fn set(key: String, value: String) {
+        USER_DEFINED_VARIABLES.with(|vars| {
+            vars.borrow_mut().insert(key, value);
         });
-        variable.ok_or_else(|| variables::Error::Undefined(name.to_string()))
     }
 }
 

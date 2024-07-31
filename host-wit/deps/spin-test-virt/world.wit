@@ -17,10 +17,16 @@ world env {
     // Handles for configuring the environment
     export key-value;
     export sqlite;
+    export variables;
 
     // Helper functions
     export set-component-id: func(component-id: string);
     import get-manifest: func() -> string;
+}
+
+/// Interface for configuring variables
+interface variables {
+    set: func(key: string, value: string);
 }
 
 /// Interface for configuring the behavior of `fermyon:spin/sqlite` interface

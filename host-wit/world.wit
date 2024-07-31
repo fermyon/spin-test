@@ -4,6 +4,7 @@ package fermyon:spin-test;
 world test-imports {
     import fermyon:spin-test-virt/key-value;
     import fermyon:spin-test-virt/sqlite;
+    import fermyon:spin-test-virt/variables;
     import fermyon:spin-wasi-virt/http-handler;
     import wasi:http/incoming-handler@0.2.0;
     import http-helper;

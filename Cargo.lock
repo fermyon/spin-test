@@ -2435,9 +2435,12 @@ name = "spin-test-virt"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
+ "futures",
  "ipnet",
  "rusqlite",
  "spin-expressions",
+ "spin-locked-app",
  "spin-manifest",
  "spin-outbound-networking",
  "spin-serde",
