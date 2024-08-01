@@ -26,7 +26,7 @@ env:
 
 jobs:
   lint-rust:
-    name: Lint Rust
+    name: Lint
     runs-on: "ubuntu-latest"
     steps:
       # install dependencies
@@ -61,7 +61,7 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
   build-rust:
-    name: Build Plugin
+    name: Build
     runs-on: ${{ matrix.config.os }}
     strategy:
       matrix:
@@ -100,7 +100,7 @@ jobs:
           CARGO_INCREMENTAL: 0
 
   test-rust:
-    name: Plugin Unit Tests
+    name: Test
     runs-on: "ubuntu-latest"
     steps:
       - name: Install latest Rust stable toolchain
@@ -131,3 +131,5 @@ jobs:
         env:
           CARGO_INCREMENTAL: 0
           RUST_LOG: debug
+      - name: Conformance Tests
+        run: cargo run -p spin-test-conformance-tests --release
