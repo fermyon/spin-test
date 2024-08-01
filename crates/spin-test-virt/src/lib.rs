@@ -669,7 +669,7 @@ impl variables::Guest for Component {
             let name = key.as_str().to_owned();
             let fut = resolver
                 .as_ref()
-                .map_err(|e| e.clone())?
+                .map_err(|e| variables::Error::Other(e.to_string()))?
                 .resolve(component_id.as_ref(), key);
             futures::executor::block_on(fut).map_err(|_| variables::Error::Undefined(name))
         })
@@ -678,7 +678,7 @@ impl variables::Guest for Component {
 
 thread_local! {
     /// The global variable resolver.
-    static VARIABLE_RESOLVER: LazyCell<Result<spin_expressions::ProviderResolver, variables::Error>> = LazyCell::new(|| {
+    static VARIABLE_RESOLVER: LazyCell<Result<spin_expressions::ProviderResolver, spin_expressions::Error>> = LazyCell::new(|| {
         let variables = manifest::AppManifest::get()
             .variables
             .into_iter()
@@ -689,8 +689,7 @@ thread_local! {
                 };
                 (k.to_string(), v)
             });
-        let mut resolver = spin_expressions::ProviderResolver::new(variables)
-            .map_err(|e| variables::Error::Other(e.to_string()))?;
+        let mut resolver = spin_expressions::ProviderResolver::new(variables)?;
         let component = manifest::AppManifest::get_component().expect("no component set");
         let component_id = manifest::AppManifest::get_component_id().expect("no component id set");
         resolver
@@ -700,8 +699,7 @@ thread_local! {
                     .variables
                     .into_iter()
                     .map(|(k, v)| (k.to_string(), v)),
-            )
-            .unwrap();
+            )?;
         resolver.add_provider(Box::new(UserGivenProvider));
         Ok(resolver)
 

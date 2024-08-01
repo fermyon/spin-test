@@ -1,7 +1,22 @@
-use std::sync::{OnceLock, RwLock};
+use std::{
+    cell::LazyCell,
+    sync::{OnceLock, RwLock},
+};
+
+use crate::VARIABLE_RESOLVER;
 
 /// The manifest for the current Spin app.
 pub struct AppManifest;
+
+thread_local! {
+    /// A fully resolved and prepared resolver from the manifest.
+    static PREPARED_RESOLVER: LazyCell<anyhow::Result<spin_expressions::PreparedResolver>> = LazyCell::new(|| {
+        VARIABLE_RESOLVER.with(|resolver| {
+            let resolver = resolver.as_ref().map_err(|e| anyhow::anyhow!("{e}"))?.prepare();
+            Ok(futures::executor::block_on(resolver)?)
+        })
+    });
+}
 
 impl AppManifest {
     /// Returns the allowed hosts configuration for the current component.
@@ -9,8 +24,10 @@ impl AppManifest {
         let allowed_outbound_hosts = Self::get_component()
             .expect("internal error: component id not yet set")
             .normalized_allowed_outbound_hosts()?;
-        let resolver = spin_expressions::PreparedResolver::default();
-        spin_outbound_networking::AllowedHostsConfig::parse(&allowed_outbound_hosts, &resolver)
+        PREPARED_RESOLVER.with(|resolver| {
+            let resolver = resolver.as_ref().map_err(|e| anyhow::anyhow!("{e}"))?;
+            spin_outbound_networking::AllowedHostsConfig::parse(&allowed_outbound_hosts, resolver)
+        })
     }
 
     /// Returns whether the given URL is allowed by the manifest.
