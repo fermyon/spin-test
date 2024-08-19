@@ -4,10 +4,10 @@
 
 _Listed in alphabetical order by first name_
 
-| GitHub Username | Name |
+| Name | GitHub Username |
 | --- | --- |
-| **fibonacci1729** | Brian Hardock |
-| **rylev** | Ryan Levick |
+| Brian Hardock | fibonacci1729 |
+| Ryan Levick | rylev | 
 
 ## Emeritus Maintainers
 
