@@ -22,7 +22,7 @@ tokio = "1.0"
 toml = { workspace = true }
 wac-graph = "0.7"
 wasmtime = "33.0"
-wasmtime-wasi = "33.0"
+wasmtime-wasi = "34.0"
 wit-component = { workspace = true }
 wit-parser = { workspace = true }
 

@@ -9,4 +9,4 @@ conformance-tests = { git = "https://github.com/fermyon/conformance-tests", rev 
 test-environment = { git = "https://github.com/fermyon/conformance-tests", rev = "387b7f375df59e6254a7c29cf4a53507a9f46d32" }
 spin-test = { path = ".." }
 wasmtime = "33.0"
-wasmtime-wasi = "33.0"
+wasmtime-wasi = "34.0"
